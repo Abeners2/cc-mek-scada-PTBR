@@ -1,5 +1,5 @@
 --
--- Data Bus - Central Communication Linking for PLC Front Panel
+-- Barramento de Dados (Data Bus) - Vinculação Central de Comunicação para o Painel Frontal do PLC
 --
 
 local log  = require("scada-common.log")
@@ -8,15 +8,15 @@ local util = require("scada-common.util")
 
 local databus = {}
 
--- databus PSIL
+-- PSIL do barramento de dados
 databus.ps = psil.create()
 
--- diagnostics enable flag
+-- sinalizador de ativação de diagnósticos
 databus.en_diag = false
 
 local _dbus = {
-    rps_scram = function () log.debug("DBUS: unset rps_scram() called") end,
-    rps_reset = function () log.debug("DBUS: unset rps_reset() called") end,
+    rps_scram = function () log.debug("DBUS: rps_scram() nao definido chamado") end,
+    rps_reset = function () log.debug("DBUS: rps_reset() nao definido chamado") end,
 
     degraded = false,
     wd_modem = true,
@@ -24,7 +24,7 @@ local _dbus = {
     coroutines = {}
 }
 
--- evaluate and publish system health status
+-- avalia e publica o status de integridade do sistema
 local function eval_status()
     local ok = (not _dbus.degraded) and _dbus.wd_modem and _dbus.wl_modem
     for _, v in pairs(_dbus.coroutines) do ok = ok and v end
@@ -32,10 +32,10 @@ local function eval_status()
     databus.ps.publish("status", ok)
 end
 
--- call to toggle heartbeat signal
+-- chama para alternar o sinal de heartbeat
 function databus.heartbeat() databus.ps.toggle("heartbeat") end
 
--- link RPS command functions
+-- vincula as funções de comando do RPS
 ---@param scram function reactor SCRAM function
 ---@param reset function RPS reset function
 function databus.link_rps(scram, reset)
@@ -43,13 +43,13 @@ function databus.link_rps(scram, reset)
     _dbus.rps_reset = reset
 end
 
--- transmit a command to the RPS to SCRAM
+-- transmite um comando para o RPS executar SCRAM
 function databus.rps_scram() _dbus.rps_scram() end
 
--- transmit a command to the RPS to reset
+-- transmite um comando para o RPS redefinir
 function databus.rps_reset() _dbus.rps_reset() end
 
--- transmit firmware versions
+-- transmite as versões de firmware
 ---@param plc_v string PLC version
 ---@param comms_v string comms version
 function databus.tx_versions(plc_v, comms_v)
@@ -57,13 +57,13 @@ function databus.tx_versions(plc_v, comms_v)
     databus.ps.publish("comms_version", comms_v)
 end
 
--- transmit unit ID
+-- transmite o ID da unidade
 ---@param id integer unit ID
 function databus.tx_id(id)
     databus.ps.publish("unit_id", id)
 end
 
--- transmit hardware status
+-- transmite o status do hardware
 ---@param plc_state plc_state
 function databus.tx_hw_status(plc_state)
     databus.ps.publish("reactor_dev_state", util.trinary(plc_state.no_reactor, 1, util.trinary(plc_state.reactor_formed, 3, 2)))
@@ -76,25 +76,25 @@ function databus.tx_hw_status(plc_state)
     eval_status()
 end
 
--- transmit if the wired network is up
+-- transmite se a rede cabeada está ativa
 ---@param up boolean
 function databus.tx_wd_net(up)
     databus.ps.publish("has_wd_net", up)
 end
 
--- transmit if the wireless network is up
+-- transmite se a rede sem fio está ativa
 ---@param up boolean
 function databus.tx_wl_net(up)
     databus.ps.publish("has_wl_net", up)
 end
 
--- transmit if the reactor dangerously has multiple fission reactor logic adapters
+-- transmite se o reator possui perigosamente múltiplos adaptadores lógicos de reator de fissão
 ---@param multi boolean has multiple reactors
 function databus.tx_multi_reactor(multi)
     databus.ps.publish("has_multi_reactor", multi)
 end
 
--- transmit thread (routine) statuses
+-- transmite os status das threads (rotinas)
 ---@param thread string thread name
 ---@param ok boolean thread state
 function databus.tx_rt_status(thread, ok)
@@ -106,19 +106,19 @@ function databus.tx_rt_status(thread, ok)
     eval_status()
 end
 
--- transmit supervisor link state
+-- transmite o estado do link do supervisor
 ---@param state integer
 function databus.tx_link_state(state)
     databus.ps.publish("link_state", state)
 end
 
--- transmit reactor enable state
+-- transmite o estado de ativação do reator
 ---@param active any reactor active
 function databus.tx_reactor_state(active)
     databus.ps.publish("reactor_active", active == true)
 end
 
--- transmit RPS data
+-- transmite dados do RPS
 ---@param tripped boolean RPS tripped
 ---@param status boolean[] RPS status
 ---@param emer_cool_active boolean RPS activated the emergency coolant
@@ -137,7 +137,7 @@ function databus.tx_rps(tripped, status, emer_cool_active)
     databus.ps.publish("emer_cool", emer_cool_active)
 end
 
--- transmit auto control state
+-- transmite o estado do controle automático
 ---@param auto boolean if auto control is active
 function databus.tx_auto_state(auto)
     databus.ps.publish("auto_control", auto)

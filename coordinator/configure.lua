@@ -1,5 +1,5 @@
 --
--- Configuration GUI
+-- GUI de Configuração
 --
 
 local log        = require("scada-common.log")
@@ -30,17 +30,17 @@ local cpair = core.cpair
 
 local CENTER = core.ALIGN.CENTER
 
--- changes to the config data/format to let the user know
+-- alterações nos dados/formato de configuração para avisar o usuário
 local changes = {
-    { "v1.2.4", { "Added temperature scale options" } },
-    { "v1.2.12", { "Added main UI theme", "Added front panel UI theme", "Added color accessibility modes" } },
-    { "v1.3.3", { "Added standard with black off state color mode", "Added blue indicator color modes" } },
-    { "v1.5.1", { "Added energy scale options" } },
-    { "v1.6.13", { "Added option for Po/Pu pellet green/cyan pairing" } },
-    { "v1.7.0", { "Added support for wired communications modems", "Added option for allowing Pocket connections" } },
-    { "v1.9.7", { "Removed Disable Flow View option" } },
-    { "v1.11.0", { "Added option to enable the Flow Detail Views", "Added Flow Detail View switcher option" } },
-    { "v1.12.0", { "Added option for toggling the splash screen" } }
+    { "v1.2.4", { "Adicionadas opções de escala de temperatura" } },
+    { "v1.2.12", { "Adicionado tema da UI principal", "Adicionado tema da UI do painel frontal", "Adicionados modos de acessibilidade de cores" } },
+    { "v1.3.3", { "Adicionado modo de cor padrão com estado desligado preto", "Adicionados modos de cor de indicador azul" } },
+    { "v1.5.1", { "Adicionadas opções de escala de energia" } },
+    { "v1.6.13", { "Adicionada opção de par verde/ciano para pastilhas de Po/Pu" } },
+    { "v1.7.0", { "Adicionado suporte a modems de comunicação cabeados", "Adicionada opção para permitir conexões Pocket" } },
+    { "v1.9.7", { "Removida opção de Desativar Visão de Fluxo" } },
+    { "v1.11.0", { "Adicionada opção para ativar as Visões Detalhadas de Fluxo", "Adicionada opção de alternador da Visão Detalhada de Fluxo" } },
+    { "v1.12.0", { "Adicionada opção para alternar a tela de abertura (splash)" } }
 }
 
 ---@class crd_configurator
@@ -61,11 +61,11 @@ style.btn_dis_fg_bg = cpair(colors.lightGray,colors.white)
 
 ---@class _crd_cfg_tool_ctl
 local tool_ctl = {
-    -- config from supervisor
+    -- configuração do supervisor
     com_waste = false,
     tank_mode = 0,
     tank_list = {},
-    unit_bt_cnt = nil, ---@type [ integer, integer ][] list of [ boiler, turbine ] counts
+    unit_bt_cnt = nil, ---@type [ integer, integer ][] lista de contagens de [ caldeira, turbina ]
 
     launch_startup = false,
     start_fail = 0,
@@ -83,7 +83,7 @@ local tool_ctl = {
     gen_summary = nil,        ---@type function
     load_legacy = nil,        ---@type function
 
-    -- settings elements from hmi
+    -- elementos de configuração da hmi
     s_vol = nil,              ---@type NumberField
     pellet_color = nil,       ---@type RadioButton
     clock_fmt = nil,          ---@type RadioButton
@@ -93,7 +93,7 @@ local tool_ctl = {
     show_win_sw = nil,        ---@type Checkbox
     en_splash = nil,          ---@type Checkbox
 
-    -- settings elements and functions from facility
+    -- elementos e funções de configuração da instalação (facility)
     num_units = nil,          ---@type NumberField
     init_sv_connect_ui = nil, ---@type function
     is_int_min_max = nil,     ---@type function
@@ -147,40 +147,40 @@ local ini_cfg = {}
 ---@class crd_config
 local settings_cfg = {}
 
--- all settings fields, their nice names, and their default values
+-- todos os campos de configuração, seus nomes amigáveis e seus valores padrão
 local fields = {
-    { "UnitCount", "Number of Reactors", 1 },
-    { "MainDisplay", "Main Monitor", nil },
-    { "FlowDisplay", "Flow Monitor", nil },
-    { "UnitDisplays", "Unit Monitors", {} },
-    { "SpeakerVolume", "Speaker Volume", 1.0 },
-    { "Time24Hour", "Use 24-hour Time Format", true },
-    { "GreenPuPellet", "Pellet Colors", false },
-    { "TempScale", "Temperature Scale", types.TEMP_SCALE.KELVIN },
-    { "EnergyScale", "Energy Scale", types.ENERGY_SCALE.FE },
-    { "FlowDetailView", "Enable Flow Detail Views", false },
-    { "FlowViewSwitcher", "Enable Flow View Switcher", false },
-    { "SplashScreen", "Use Splash Screens", true },
-    { "WirelessModem", "Wireless/Ender Comms Modem", true },
-    { "WiredModem", "Wired Comms Modem", false },
-    { "PreferWireless", "Prefer Wireless Modem", true },
-    { "API_Enabled", "Pocket API Connectivity", true },
-    { "SVR_Channel", "SVR Channel", 16240 },
-    { "CRD_Channel", "CRD Channel", 16243 },
-    { "PKT_Channel", "PKT Channel", 16244 },
-    { "SVR_Timeout", "Supervisor Connection Timeout", 5 },
-    { "API_Timeout", "API Connection Timeout", 5 },
-    { "TrustedRange", "Trusted Range", 0 },
-    { "AuthKey", "Facility Auth Key" , ""},
-    { "LogMode", "Log Mode", log.MODE.APPEND },
-    { "LogPath", "Log Path", "/log.txt" },
-    { "LogDebug", "Log Debug Messages", false },
-    { "MainTheme", "Main UI Theme", themes.UI_THEME.SMOOTH_STONE },
-    { "FrontPanelTheme", "Front Panel Theme", themes.FP_THEME.SANDSTONE },
-    { "ColorMode", "Color Mode", themes.COLOR_MODE.STANDARD }
+    { "UnitCount", "Número de Reatores", 1 },
+    { "MainDisplay", "Monitor Principal", nil },
+    { "FlowDisplay", "Monitor de Fluxo", nil },
+    { "UnitDisplays", "Monitores de Unidade", {} },
+    { "SpeakerVolume", "Volume do Alto-falante", 1.0 },
+    { "Time24Hour", "Formato de 24 Horas", true },
+    { "GreenPuPellet", "Cor das Pastilhas", false },
+    { "TempScale", "Escala de Temperatura", types.TEMP_SCALE.KELVIN },
+    { "EnergyScale", "Escala de Energia", types.ENERGY_SCALE.FE },
+    { "FlowDetailView", "Visões Detalhadas de Fluxo", false },
+    { "FlowViewSwitcher", "Alternador de Visão de Fluxo", false },
+    { "SplashScreen", "Usar Telas de Abertura", true },
+    { "WirelessModem", "Modem Sem Fio/Ender", true },
+    { "WiredModem", "Modem Cabeado", false },
+    { "PreferWireless", "Preferir Modem Sem Fio", true },
+    { "API_Enabled", "Conectividade API Pocket", true },
+    { "SVR_Channel", "Canal SVR", 16240 },
+    { "CRD_Channel", "Canal CRD", 16243 },
+    { "PKT_Channel", "Canal PKT", 16244 },
+    { "SVR_Timeout", "Timeout de Conexão do Supervisor", 5 },
+    { "API_Timeout", "Timeout de Conexão da API", 5 },
+    { "TrustedRange", "Alcance Confiável", 0 },
+    { "AuthKey", "Chave de Autenticação" , ""},
+    { "LogMode", "Modo de Log", log.MODE.APPEND },
+    { "LogPath", "Caminho do Log", "/log.txt" },
+    { "LogDebug", "Registrar Mensagens de Debug", false },
+    { "MainTheme", "Tema da UI Principal", themes.UI_THEME.SMOOTH_STONE },
+    { "FrontPanelTheme", "Tema do Painel Frontal", themes.FP_THEME.SANDSTONE },
+    { "ColorMode", "Modo de Cor", themes.COLOR_MODE.STANDARD }
 }
 
--- load tmp_cfg fields from ini_cfg fields for displays
+-- carrega campos de tmp_cfg a partir de ini_cfg para monitores
 local function preset_monitor_fields()
     tmp_cfg.MainDisplay = ini_cfg.MainDisplay
     tmp_cfg.FlowDisplay = ini_cfg.FlowDisplay
@@ -189,9 +189,9 @@ local function preset_monitor_fields()
     end
 end
 
--- load data from the settings file
+-- carrega dados do arquivo de configurações
 ---@param target crd_config
----@param raw boolean? true to not use default values
+---@param raw boolean? verdadeiro para não usar valores padrão
 local function load_settings(target, raw)
     for _, v in pairs(fields) do settings.unset(v[1]) end
 
@@ -202,7 +202,7 @@ local function load_settings(target, raw)
     return loaded
 end
 
--- create the config view
+-- cria a visão de configuração
 ---@param display DisplayBox
 local function config_view(display)
     local bw_fg_bg      = style.bw_fg_bg
@@ -213,7 +213,7 @@ local function config_view(display)
 
     local function exit() os.queueEvent("terminate") end
 
-    TextBox{parent=display,y=1,text="Coordinator Configurator",alignment=CENTER,fg_bg=style.header}
+    TextBox{parent=display,y=1,text="Configurador do Coordenador",alignment=CENTER,fg_bg=style.header}
 
     local root_pane_div = Div{parent=display,y=2}
 
@@ -236,21 +236,21 @@ local function config_view(display)
         req_space = math.max(0, req_space - fs.getSize("/coordinator.settings"))
     end
 
-    -- show disk space warning if needed
+    -- mostra aviso de espaço em disco se necessário
     if fs.getFreeSpace("/") < req_space then main_pane.set_value(11) end
 
-    --#region Main Page
+    --#region Página Principal
 
     local y_start = 5
 
-    TextBox{parent=main_page,x=2,y=2,height=2,text="Welcome to the Coordinator configurator! Please select one of the following options."}
+    TextBox{parent=main_page,x=2,y=2,height=2,text="Bem-vindo ao configurador do Coordenador! Selecione uma das opções a seguir."}
 
     if tool_ctl.start_fail == 2 then
-        local msg = util.c("Notice: There is a problem with your monitor configuration. ", tool_ctl.fail_message, " Please reconfigure monitors or correct their sizes.")
+        local msg = util.c("Aviso: Há um problema na configuração de monitores. ", tool_ctl.fail_message, " Reconfigure os monitores ou corrija seus tamanhos.")
         TextBox{parent=main_page,x=2,y=y_start,height=4,width=49,text=msg,fg_bg=cpair(colors.red,colors.lightGray)}
         y_start = y_start + 5
     elseif tool_ctl.start_fail > 0 then
-        TextBox{parent=main_page,x=2,y=y_start,height=4,width=49,text="Notice: This device is not configured for this version of the Coordinator. If you previously had a valid config, it's not lost. You may want to check the Change Log to see what changed.",fg_bg=cpair(colors.red,colors.lightGray)}
+        TextBox{parent=main_page,x=2,y=y_start,height=4,width=49,text="Aviso: Este dispositivo não está configurado para esta versão do Coordenador. Se você tinha uma config válida, ela não foi perdida. Verifique o Log de Alterações para ver o que mudou.",fg_bg=cpair(colors.red,colors.lightGray)}
         y_start = y_start + 5
     end
 
@@ -262,12 +262,12 @@ local function config_view(display)
     end
 
     if fs.exists("/coordinator/config.lua") then
-        PushButton{parent=main_page,x=2,y=y_start,min_width=28,text="Import Legacy 'config.lua'",callback=function()tool_ctl.load_legacy()end,fg_bg=cpair(colors.black,colors.cyan),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=y_start,min_width=28,text="Importar 'config.lua' Legado",callback=function()tool_ctl.load_legacy()end,fg_bg=cpair(colors.black,colors.cyan),active_fg_bg=btn_act_fg_bg}
         y_start = y_start + 2
     end
 
-    PushButton{parent=main_page,x=2,y=y_start,min_width=18,text="Configure System",callback=function()main_pane.set_value(2)end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg}
-    tool_ctl.view_cfg = PushButton{parent=main_page,x=2,y=y_start+2,min_width=20,text="View Configuration",callback=view_config,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=main_page,x=2,y=y_start,min_width=18,text="Configurar Sistema",callback=function()main_pane.set_value(2)end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg}
+    tool_ctl.view_cfg = PushButton{parent=main_page,x=2,y=y_start+2,min_width=20,text="Ver Configuração",callback=view_config,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
 
     local function jump_color()
         tool_ctl.jumped_to_color = true
@@ -281,15 +281,15 @@ local function config_view(display)
         exit()
     end
 
-    tool_ctl.color_cfg = PushButton{parent=main_page,x=36,y=y_start,min_width=15,text="Color Options",callback=jump_color,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=cpair(colors.lightGray,colors.white)}
-    PushButton{parent=main_page,x=39,y=y_start+2,min_width=12,text="Change Log",callback=function()main_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    tool_ctl.color_cfg = PushButton{parent=main_page,x=36,y=y_start,min_width=15,text="Opções de Cor",callback=jump_color,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=cpair(colors.lightGray,colors.white)}
+    PushButton{parent=main_page,x=39,y=y_start+2,min_width=12,text="Alterações",callback=function()main_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     if tool_ctl.start_fail ~= 0 then
-        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Exit",callback=exit,dis_fg_bg=btn_dis_fg_bg}.disable()
-        PushButton{parent=main_page,x=35,y=17,min_width=16,text="Resume Startup",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Sair",callback=exit,dis_fg_bg=btn_dis_fg_bg}.disable()
+        PushButton{parent=main_page,x=35,y=17,min_width=16,text="Retomar Início",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
     else
-        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Exit",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
-        PushButton{parent=main_page,x=42,y=17,min_width=9,text="Startup",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Sair",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=42,y=17,min_width=9,text="Iniciar",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
     end
 
     if not tool_ctl.has_config then
@@ -299,9 +299,9 @@ local function config_view(display)
 
     --#endregion
 
-    -- #region Disk Space Warning
+    -- #region Aviso de Espaço em Disco
 
-    TextBox{parent=disk_warn,y=2,text=" Insufficent Disk Space",fg_bg=cpair(colors.white,colors.black)}
+    TextBox{parent=disk_warn,y=2,text=" Espaço em Disco Insuficiente",fg_bg=cpair(colors.white,colors.black)}
 
     local disk_page = Div{parent=disk_warn,x=2,y=4,width=49}
 
@@ -309,52 +309,52 @@ local function config_view(display)
         fs.delete(ini_cfg.LogPath)
 
         local space = fs.getFreeSpace("/")
-        tool_ctl.dw_free_space.set_value("Available Free Space: "..space.." bytes")
+        tool_ctl.dw_free_space.set_value("Espaço Livre Disponível: "..space.." bytes")
 
         if not fs.exists(ini_cfg.LogPath) then
-            tool_ctl.dw_log_size.set_value("Log File Size: 0 bytes")
+            tool_ctl.dw_log_size.set_value("Tamanho do Arquivo de Log: 0 bytes")
             tool_ctl.dw_del_log_btn.disable()
         end
 
         if space >= req_space then tool_ctl.dw_continue.enable() end
     end
 
-    TextBox{parent=disk_page,height=3,text="There is not enough disk space to safely configure this device. Saving the configuration may fail and cause loss of configuration data."}
+    TextBox{parent=disk_page,height=3,text="Não há espaço em disco suficiente para configurar este dispositivo com segurança. Salvar a configuração pode falhar e causar perda de dados."}
 
-    TextBox{parent=disk_page,y=5,height=1,text="Capacity:             "..fs.getCapacity("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
-    tool_ctl.dw_free_space = TextBox{parent=disk_page,height=1,text="Available Free Space: "..fs.getFreeSpace("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
-    TextBox{parent=disk_page,height=1,text="Required Free Space:  "..req_space.." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    TextBox{parent=disk_page,y=5,height=1,text="Capacidade:              "..fs.getCapacity("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    tool_ctl.dw_free_space = TextBox{parent=disk_page,height=1,text="Espaço Livre Disponível: "..fs.getFreeSpace("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    TextBox{parent=disk_page,height=1,text="Espaço Livre Necessário: "..req_space.." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
 
     if fs.exists(ini_cfg.LogPath) then
-        TextBox{parent=disk_page,y=9,height=2,text="If your log file is on this computer and not an external disk, deleting it may help."}
-        tool_ctl.dw_log_size = TextBox{parent=disk_page,y=12,height=1,text="Log File Size: "..fs.getSize(ini_cfg.LogPath).." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+        TextBox{parent=disk_page,y=9,height=2,text="Se o seu arquivo de log estiver neste computador e não em um disco externo, excluí-lo pode ajudar."}
+        tool_ctl.dw_log_size = TextBox{parent=disk_page,y=12,height=1,text="Tamanho do Arquivo de Log: "..fs.getSize(ini_cfg.LogPath).." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
 
-        tool_ctl.dw_del_log_btn = PushButton{parent=disk_page,x=33,y=12,min_width=17,text="Delete Log File",callback=delete_log,fg_bg=cpair(colors.black,colors.orange),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+        tool_ctl.dw_del_log_btn = PushButton{parent=disk_page,x=33,y=12,min_width=17,text="Excluir Log",callback=delete_log,fg_bg=cpair(colors.black,colors.orange),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
     else
-        TextBox{parent=disk_page,y=9,height=4,text="The log file wasn't found, so you'll need to manually make space. Please remove any files unrelated to this application that you may have manually created."}
+        TextBox{parent=disk_page,y=9,height=4,text="O arquivo de log não foi encontrado, então você precisará liberar espaço manualmente. Remova quaisquer arquivos não relacionados a este aplicativo que você tenha criado."}
     end
 
-    PushButton{parent=disk_page,y=14,min_width=6,text="Exit",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
-    tool_ctl.dw_continue = PushButton{parent=disk_page,x=40,y=14,min_width=10,text="Continue",callback=function()main_pane.set_value(1)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=disk_page,y=14,min_width=6,text="Sair",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
+    tool_ctl.dw_continue = PushButton{parent=disk_page,x=40,y=14,min_width=10,text="Continuar",callback=function()main_pane.set_value(1)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
     tool_ctl.dw_continue.disable()
 
     -- #endregion
 
     local settings = { settings_cfg, ini_cfg, tmp_cfg, fields, load_settings }
 
-    --#region Facility Configuration
+    --#region Configuração da Instalação
 
     local fac_pane = facility.create(tool_ctl, main_pane, settings, fac_cfg, style)
 
     --#endregion
 
-    --#region HMI Configuration
+    --#region Configuração da IHM
 
     local crd_pane, mon_pane = hmi.create(tool_ctl, main_pane, settings, { crd_cfg, mon_cfg, spkr_cfg }, style)
 
     --#endregion
 
-    --#region System Configuration
+    --#region Configuração do Sistema
 
     local divs = { net_cfg, log_cfg, clr_cfg, summary }
     local ext  = { fac_pane, crd_pane, mon_pane, preset_monitor_fields, startup, exit }
@@ -363,11 +363,11 @@ local function config_view(display)
 
     --#endregion
 
-    --#region Config Change Log
+    --#region Log de Alterações de Config
 
     local cl = Div{parent=changelog,x=2,y=4,width=49}
 
-    TextBox{parent=changelog,y=2,text=" Config Change Log",fg_bg=bw_fg_bg}
+    TextBox{parent=changelog,y=2,text=" Log de Alterações de Config",fg_bg=bw_fg_bg}
 
     local c_log = ListBox{parent=cl,y=1,height=12,width=49,scroll_height=100,fg_bg=bw_fg_bg,nav_fg_bg=g_lg_fg_bg,nav_active=cpair(colors.black,colors.gray)}
 
@@ -380,12 +380,12 @@ local function config_view(display)
         end
     end
 
-    PushButton{parent=cl,y=14,text="\x1b Back",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=cl,y=14,text="\x1b Voltar",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 end
 
--- reset terminal screen
+-- redefine a tela do terminal
 local function reset_term()
     term.setTextColor(colors.white)
     term.setBackgroundColor(colors.black)
@@ -393,10 +393,10 @@ local function reset_term()
     term.setCursorPos(1, 1)
 end
 
--- run the coordinator configurator<br>
--- start_fail of 0 is OK (default if not provided), 1 is bad config, 2 is bad monitor config
----@param start_code? 0|1|2 indicate error state when called from the startup app
----@param message? any string message to display on a start_fail of 2
+-- executa o configurador do coordenador<br>
+-- start_fail 0 é OK (padrão se não fornecido), 1 é config inválida, 2 é config de monitor inválida
+---@param start_code? 0|1|2 indica estado de erro quando chamado pelo app de inicialização
+---@param message? any mensagem em string para exibir em um start_fail de 2
 function configurator.configure(start_code, message)
     tool_ctl.start_fail = start_code or 0
     tool_ctl.fail_message = util.trinary(type(message) == "string", message, "")
@@ -404,17 +404,17 @@ function configurator.configure(start_code, message)
     load_settings(settings_cfg, true)
     tool_ctl.has_config = load_settings(ini_cfg)
 
-    -- copy in some important values to start with
+    -- copia alguns valores importantes para começar
     preset_monitor_fields()
 
-    -- this needs to be initialized as it is used before being set
+    -- precisa ser inicializado pois é usado antes de ser definido
     tmp_cfg.WiredModem = ini_cfg.WiredModem
 
     reset_term()
 
     ppm.mount_all()
 
-    -- set overridden colors
+    -- define cores sobrescritas
     for i = 1, #style.colors do
         term.setPaletteColor(style.colors[i].c, style.colors[i].hex)
     end
@@ -429,7 +429,7 @@ function configurator.configure(start_code, message)
         while true do
             local event, param1, param2, param3, param4, param5 = util.pull_event()
 
-            -- handle event
+            -- trata evento
             if event == "timer" then
                 tcd.handle(param1)
             elseif event == "mouse_click" or event == "mouse_up" or event == "mouse_drag" or event == "mouse_scroll" or event == "double_click" then
@@ -460,7 +460,7 @@ function configurator.configure(start_code, message)
         end
     end)
 
-    -- restore colors
+    -- restaura cores
     for i = 1, #style.colors do
         local r, g, b = term.nativePaletteColor(style.colors[i].c)
         term.setPaletteColor(style.colors[i].c, r, g, b)
@@ -468,7 +468,7 @@ function configurator.configure(start_code, message)
 
     reset_term()
     if not status then
-        println("configurator error: " .. error)
+        println("erro do configurador: " .. error)
     end
 
     return status, error, tool_ctl.launch_startup

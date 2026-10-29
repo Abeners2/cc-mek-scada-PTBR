@@ -1,5 +1,5 @@
 --
--- Nuclear Generation Facility SCADA Coordinator
+-- Coordenador SCADA da Instalação de Geração Nuclear
 --
 
 require("/initenv").init_env()
@@ -34,20 +34,20 @@ local log_comms  = coordinator.log_comms
 local log_crypto = coordinator.log_crypto
 
 ----------------------------------------
--- get configuration
+-- obtém configuração
 ----------------------------------------
 
--- first pass configuration check before validating monitors
+-- verificação inicial de configuração antes de validar os monitores
 if not coordinator.load_config() then
-    -- try to reconfigure (user action)
+    -- tenta reconfigurar (ação do usuário)
     local success, error = configure.configure(1)
     if success then
         if not coordinator.load_config() then
-            println("failed to load a valid configuration, please reconfigure")
+            println("falha ao carregar uma configuração válida, por favor reconfigure")
             return
         end
     else
-        println("configuration error: " .. error)
+        println("erro de configuração: " .. error)
         return
     end
 end
@@ -55,7 +55,7 @@ end
 local config = coordinator.config
 
 ----------------------------------------
--- log init
+-- inicialização de log
 ----------------------------------------
 
 log.init(config.LogPath, config.LogMode, config.LogDebug)
@@ -63,38 +63,38 @@ log.init(config.LogPath, config.LogMode, config.LogDebug)
 log.info("========================================")
 log.info("BOOTING coordinator.startup v" .. COORDINATOR_VERSION)
 log.info("========================================")
-println(">> SCADA Coordinator v" .. COORDINATOR_VERSION .. " <<")
+println(">> Coordenador SCADA v" .. COORDINATOR_VERSION .. " <<")
 
 crash.set_env("coordinator", COORDINATOR_VERSION)
 crash.dbg_log_env()
 
 ----------------------------------------
--- display init
+-- inicialização de monitores
 ----------------------------------------
 
--- mount connected devices (required for monitor setup)
+-- monta dispositivos conectados (necessário para configuração de monitores)
 ppm.mount_all()
 
 local wait_on_load = true
 
 local disp_ok, disp_err = backplane.init_displays(config)
 
--- if the computer just started, its chunk may have just loaded (...or the user rebooted)
--- if monitor config failed, maybe an adjacent chunk containing all or part of a monitor has not loaded yet, so keep trying
+-- se o computador acabou de iniciar, sua chunk pode ter acabado de carregar (...ou o usuário reiniciou)
+-- se a config. de monitor falhou, talvez uma chunk adjacente contendo parte de um monitor ainda não tenha carregado, então continua tentando
 while wait_on_load and (not disp_ok) and os.clock() < CHUNK_LOAD_DELAY_S do
     term.clear()
     term.setCursorPos(1, 1)
-    println("There was a monitor configuration problem at boot.\n")
-    println("Startup will keep trying every 2s in case of chunk load delays.\n")
-    println(util.sprintf("The configurator will be started in %ds if all attempts fail.\n", math.max(0, CHUNK_LOAD_DELAY_S - os.clock())))
-    println("(click to skip to the configurator)")
+    println("Houve um problema na configuração de monitores ao iniciar.\n")
+    println("A inicialização continuará tentando a cada 2s em caso de atrasos no carregamento de chunks.\n")
+    println(util.sprintf("O configurador será iniciado em %ds se todas as tentativas falharem.\n", math.max(0, CHUNK_LOAD_DELAY_S - os.clock())))
+    println("(clique para pular para o configurador)")
 
     local timer_id = util.start_timer(2)
 
     while true do
         local event, param1 = util.pull_event()
         if event == "timer" and param1 == timer_id then
-            -- remount and re-attempt
+            -- remonta e tenta novamente
             ppm.mount_all()
             disp_ok, disp_err = backplane.init_displays(config)
             break
@@ -106,95 +106,95 @@ while wait_on_load and (not disp_ok) and os.clock() < CHUNK_LOAD_DELAY_S do
 end
 
 if not disp_ok then
-    -- try to reconfigure (user action)
+    -- tenta reconfigurar (ação do usuário)
     local success, error = configure.configure(2, disp_err)
     if success then
         if not coordinator.load_config() then
-            println("failed to load a valid configuration, please reconfigure")
+            println("falha ao carregar uma configuração válida, por favor reconfigure")
             return
         else
             disp_ok, disp_err = backplane.init_displays(config)
 
             if not disp_ok then
                 println(disp_err)
-                println("please reconfigure")
+                println("por favor reconfigure")
                 return
             end
         end
     else
-        println("configuration error: " .. error)
+        println("erro de configuração: " .. error)
         return
     end
 end
 
 ----------------------------------------
--- main application
+-- aplicação principal
 ----------------------------------------
 
 local function main()
     ----------------------------------------
-    -- system startup
+    -- inicialização do sistema
     ----------------------------------------
 
-    -- report versions
+    -- reporta versões
     ioctl.fp_versions(COORDINATOR_VERSION, comms.version)
 
-    -- init renderer
+    -- inicializa o renderizador
     renderer.configure(config)
     renderer.init_displays(backplane.displays())
     renderer.init_dmesg()
 
-    -- lets get started!
+    -- vamos começar!
     log.info("monitors ready, dmesg output incoming...")
 
-    log_render("displays connected and reset")
-    log_sys("system start on " .. os.date("%c"))
-    log_boot("starting " .. COORDINATOR_VERSION)
+    log_render("monitores conectados e redefinidos")
+    log_sys("sistema iniciado em " .. os.date("%c"))
+    log_boot("iniciando " .. COORDINATOR_VERSION)
 
-    -- switch to splash screen for *aesthetics*
+    -- alterna para a tela de abertura por *estética*
     if config.SplashScreen then
-        log_render("starting splash screens")
+        log_render("iniciando telas de abertura")
         renderer.init_splash()
     end
 
-    -- message authentication init
+    -- inicialização de autenticação de mensagens
     if type(config.AuthKey) == "string" and string.len(config.AuthKey) > 0 then
         local init_time = network.init_mac(config.AuthKey)
-        log_crypto("HMAC init took " .. init_time .. "ms")
+        log_crypto("inicialização do HMAC levou " .. init_time .. "ms")
     end
 
     ----------------------------------------
-    -- memory allocation
+    -- alocação de memória
     ----------------------------------------
 
-    -- shared memory across threads
+    -- memória compartilhada entre threads
     ---@class crd_shared_memory
     local __shared_memory = {
-        -- time and date format for display
+        -- formato de data e hora para exibição
         date_format = util.trinary(config.Time24Hour, "%X \x04 %A, %B %d %Y", "%r \x04 %A, %B %d %Y"),
 
-        -- coordinator system state flags
+        -- flags de estado do sistema coordenador
         ---@class crd_state
         crd_state = {
             fp_ok = false,
-            ui_ok = true,       -- default true, used to abort on fail
+            ui_ok = true,       -- padrão true, usado para abortar em caso de falha
             link_fail = false,
             shutdown = false
         },
 
-        -- system objects
+        -- objetos do sistema
         ---@class crd_sys
         crd_sys = {
             coord_comms = nil,  ---@type coord_comms
             conn_watchdog = nil ---@type watchdog
         },
 
-        -- message queues
+        -- filas de mensagens
         q = {
             mq_render = mqueue.new()
         },
 
-        -- message queue message types
+        -- tipos de mensagens da fila de mensagens
         q_types = {
             MQ__RENDER_CMD = {
                 START_MAIN_UI = 1,
@@ -212,58 +212,58 @@ local function main()
     local crd_state = __shared_memory.crd_state
 
     ----------------------------------------
-    -- init system
+    -- inicialização de subsistemas
     ----------------------------------------
 
-    -- modem and speaker initialization
+    -- inicialização de modem e alto-falante
     if not backplane.init(config, __shared_memory) then return end
 
-    -- start front panel
-    log_render("starting front panel UI...")
+    -- inicia o painel frontal
+    log_render("iniciando interface do painel frontal...")
 
     local fp_message
     crd_state.fp_ok, fp_message = renderer.try_start_fp()
     if not crd_state.fp_ok then
-        log_render(util.c("front panel UI error: ", fp_message))
-        println_ts("front panel UI creation failed")
+        log_render(util.c("erro na UI do painel frontal: ", fp_message))
+        println_ts("falha na criação da interface do painel frontal")
         log.fatal(util.c("front panel GUI render failed with error ", fp_message))
         return
-    else log_render("front panel ready") end
+    else log_render("painel frontal pronto") end
 
-    -- create connection watchdog
+    -- cria watchdog de conexão
     smem_sys.conn_watchdog = util.new_watchdog(config.SVR_Timeout)
     smem_sys.conn_watchdog.cancel()
     log.debug("startup> conn watchdog created")
 
-    -- setup comms
+    -- configura comunicações
     smem_sys.coord_comms = coordinator.comms(COORDINATOR_VERSION, backplane, smem_sys.conn_watchdog)
     log.debug("startup> comms init")
-    log_comms("comms initialized")
+    log_comms("comunicações inicializadas")
 
     ----------------------------------------
-    -- start system
+    -- inicia o sistema
     ----------------------------------------
 
-    -- init threads
+    -- inicializa threads
     local main_thread   = threads.thread__main(__shared_memory)
     local render_thread = threads.thread__render(__shared_memory)
 
     log.info("startup> completed")
 
-    -- run threads
+    -- executa threads
     parallel.waitForAll(main_thread.p_exec, render_thread.p_exec)
 
     renderer.shutdown(crd_state.link_fail)
     sounder.stop()
-    log_sys("system shutdown")
+    log_sys("sistema encerrado")
 
-    if crd_state.link_fail then println_ts("failed to connect to supervisor") end
-    if not crd_state.ui_ok then println_ts("main UI creation failed") end
+    if crd_state.link_fail then println_ts("falha ao conectar ao supervisor") end
+    if not crd_state.ui_ok then println_ts("falha na criação da interface principal") end
 
-    -- close on error exit (such as UI error)
+    -- fecha ao sair com erro (como erro de UI)
     if smem_sys.coord_comms.is_linked() then smem_sys.coord_comms.close() end
 
-    println_ts("exited")
+    println_ts("encerrado")
     log.info("exited")
 end
 

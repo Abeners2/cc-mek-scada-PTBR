@@ -41,13 +41,13 @@ local self = {
     tmp_cfg = nil         ---@type crd_config
 }
 
--- check if a value is an integer within a range (inclusive)
+-- verifica se um valor é um inteiro dentro de um intervalo (inclusivo)
 ---@param x any
 ---@param min integer
 ---@param max integer
 local function is_int_min_max(x, min, max) return util.is_int(x) and x >= min and x <= max end
 
--- send a management packet to the supervisor
+-- envia um pacote de gerenciamento ao supervisor
 ---@param msg_type MGMT_TYPE
 ---@param msg table
 local function send_sv(msg_type, msg)
@@ -60,13 +60,13 @@ local function send_sv(msg_type, msg)
     self.sv_seq_num = self.sv_seq_num + 1
 end
 
--- handle an establish message from the supervisor
+-- processa uma mensagem de estabelecimento do supervisor
 ---@param packet mgmt_packet
 local function handle_packet(packet)
     local error_msg = nil
 
     if packet.scada_frame.local_channel() ~= self.tmp_cfg.CRD_Channel then
-        error_msg = "Error: unknown receive channel."
+        error_msg = "Erro: canal de recepção desconhecido."
     elseif packet.scada_frame.remote_channel() == self.tmp_cfg.SVR_Channel and packet.scada_frame.protocol() == PROTOCOL.SCADA_MGMT then
         if packet.type == MGMT_TYPE.ESTABLISH then
             if packet.length == 2 then
@@ -101,37 +101,37 @@ local function handle_packet(packet)
                         end
 
                         if not count_ok then
-                            error_msg = "Error: supervisor unit count out of range."
+                            error_msg = "Erro: qtd. de unidades do supervisor fora da faixa."
                         elseif not cool_ok then
-                            error_msg = "Error: supervisor cooling configuration malformed."
+                            error_msg = "Erro: config. de resfriamento do supervisor malformada."
                             self.tool_ctl.unit_bt_cnt = nil
                         end
 
                         self.sv_addr = packet.scada_frame.src_addr()
                         send_sv(MGMT_TYPE.CLOSE, {})
                     else
-                        error_msg = "Error: invalid cooling configuration from supervisor."
+                        error_msg = "Erro: config. de resfriamento inválida do supervisor."
                     end
                 else
-                    error_msg = "Error: invalid allow reply length from supervisor."
+                    error_msg = "Erro: tamanho inválido de resposta do supervisor."
                 end
             elseif packet.length == 1 then
                 local est_ack = packet.data[1]
 
                 if est_ack == ESTABLISH_ACK.DENY then
-                    error_msg = "Error: supervisor connection denied."
+                    error_msg = "Erro: conexão negada pelo supervisor."
                 elseif est_ack == ESTABLISH_ACK.COLLISION then
-                    error_msg = "Error: a coordinator is already/still connected. Please try again."
+                    error_msg = "Erro: um coordenador já está conectado. Tente novamente."
                 elseif est_ack == ESTABLISH_ACK.BAD_VERSION then
-                    error_msg = "Error: coordinator comms version does not match supervisor comms version."
+                    error_msg = "Erro: versão de comunic. do coordenador incompatível."
                 else
-                    error_msg = "Error: invalid reply from supervisor."
+                    error_msg = "Erro: resposta inválida do supervisor."
                 end
             else
-                error_msg = "Error: invalid reply length from supervisor."
+                error_msg = "Erro: tamanho inválido de resposta do supervisor."
             end
         else
-            error_msg = "Error: didn't get an establish reply from supervisor."
+            error_msg = "Erro: sem resposta de estabelecimento do supervisor."
         end
     end
 
@@ -142,22 +142,22 @@ local function handle_packet(packet)
         self.sv_conn_detail.set_value(error_msg)
         self.sv_conn_button.enable()
     else
-        self.sv_conn_status.set_value("Connected!")
-        self.sv_conn_detail.set_value("Data received successfully, press 'Next' to continue.")
+        self.sv_conn_status.set_value("Conectado!")
+        self.sv_conn_detail.set_value("Dados recebidos com sucesso, aperte 'Avançar'.")
         self.sv_skip.hide()
         self.sv_next.show()
     end
 end
 
--- handle supervisor connection failure
+-- processa falha na conexão ao supervisor
 local function handle_timeout()
     self.net_listen = false
     self.sv_conn_button.enable()
-    self.sv_conn_status.set_value("Timed out.")
-    self.sv_conn_detail.set_value("Supervisor did not reply. Ensure startup app is running on the supervisor.")
+    self.sv_conn_status.set_value("Tempo esgotado.")
+    self.sv_conn_detail.set_value("O supervisor não respondeu. Verifique se o app está ativo nele.")
 end
 
--- attempt a connection to the supervisor to get cooling info
+-- tenta uma conexão ao supervisor para obter informações de resfriamento
 ---@param cfg crd_config current configuration for modem settings
 local function sv_connect(cfg)
     self.sv_conn_button.disable()
@@ -186,9 +186,9 @@ local function sv_connect(cfg)
     end
 
     if modem == nil then
-        self.sv_conn_status.set_value("Could not find configured modem(s).")
+        self.sv_conn_status.set_value("Modem(ns) configurado(s) não encontrado(s).")
     else
-        self.sv_conn_status.set_value("Modem found, connecting...")
+        self.sv_conn_status.set_value("Modem encontrado, conectando...")
 
         self.nic = network.nic(modem)
         self.nic.open(self.tmp_cfg.CRD_Channel)
@@ -204,7 +204,7 @@ end
 
 local facility = {}
 
--- create the facility configuration view
+-- cria a visão de configuração da instalação
 ---@param tool_ctl _crd_cfg_tool_ctl
 ---@param main_pane MultiPane
 ---@param cfg_sys [ crd_config, crd_config, crd_config, { [1]: string, [2]: string, [3]: any }[], function ]
@@ -231,15 +231,15 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
 
     local fac_pane = MultiPane{parent=fac_cfg,y=4,panes={fac_c_1,fac_c_2,fac_c_3}}
 
-    TextBox{parent=fac_cfg,y=2,text=" Facility Configuration",fg_bg=cpair(colors.black,colors.yellow)}
+    TextBox{parent=fac_cfg,y=2,text=" Configuração da Instalação",fg_bg=cpair(colors.black,colors.yellow)}
 
-    TextBox{parent=fac_c_1,y=1,height=3,text="This tool can attempt to connect to your Supervisor computer. This would load facility properties to help with monitor setup."}
-    TextBox{parent=fac_c_1,y=5,height=3,text="The Supervisor startup app must be running and fully configured on your Supervisor computer before attempting to connect here."}
+    TextBox{parent=fac_c_1,y=1,height=3,text="Esta ferramenta pode conectar ao computador Supervisor para carregar propriedades da instalação e ajudar a configurar monitores."}
+    TextBox{parent=fac_c_1,y=5,height=3,text="O aplicativo de inicialização do Supervisor deve estar em execução e configurado no Supervisor antes de conectar aqui."}
 
-    self.sv_conn_status = TextBox{parent=fac_c_1,x=11,y=9,text=""}
+    self.sv_conn_status = TextBox{parent=fac_c_1,x=12,y=9,text=""}
     self.sv_conn_detail = TextBox{parent=fac_c_1,y=11,height=2,text=""}
 
-    self.sv_conn_button = PushButton{parent=fac_c_1,y=9,text="Connect",min_width=9,callback=function()sv_connect(tmp_cfg)end,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    self.sv_conn_button = PushButton{parent=fac_c_1,y=9,text="Conectar",min_width=10,callback=function()sv_connect(tmp_cfg)end,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
 
     local function sv_skip()
         tcd.abort(handle_timeout)
@@ -254,17 +254,17 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         fac_pane.set_value(3)
     end
 
-    PushButton{parent=fac_c_1,y=14,text="\x1b Back",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    self.sv_skip = PushButton{parent=fac_c_1,x=44,y=14,text="Skip \x1a",callback=sv_skip,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    self.sv_next = PushButton{parent=fac_c_1,x=44,y=14,text="Next \x1a",callback=sv_next,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,hidden=true}
+    PushButton{parent=fac_c_1,y=14,text="\x1b Voltar",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    self.sv_skip = PushButton{parent=fac_c_1,x=43,y=14,text="Pular \x1a",callback=sv_skip,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    self.sv_next = PushButton{parent=fac_c_1,x=41,y=14,text="Avançar \x1a",callback=sv_next,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,hidden=true}
 
-    TextBox{parent=fac_c_2,y=1,height=3,text="Please enter the number of reactors you have, also referred to as reactor units or 'units' for short. A maximum of 4 is currently supported."}
+    TextBox{parent=fac_c_2,y=1,height=3,text="Insira a quantidade de reatores que você possui, também chamados de unidades de reator ou 'unidades'. O máximo suportado é 4."}
     tool_ctl.num_units = NumberField{parent=fac_c_2,y=5,width=5,max_chars=2,default=ini_cfg.UnitCount,min=1,max=4,fg_bg=bw_fg_bg}
-    TextBox{parent=fac_c_2,x=7,y=5,text="reactors"}
-    TextBox{parent=fac_c_2,y=7,height=3,text="This will decide how many monitors you need. If this does not match the supervisor's number of reactor units, the coordinator will not connect.",fg_bg=cpair(colors.yellow,colors._INHERIT)}
-    TextBox{parent=fac_c_2,y=10,height=3,text="Since you skipped supervisor sync, the main monitor minimum height can't be determined precisely. It is marked with * on the next page.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_2,x=7,y=5,text="reatores"}
+    TextBox{parent=fac_c_2,y=7,height=3,text="Isso definirá quantos monitores você precisa. Se não corresponder ao número de unidades do supervisor, não conectará.",fg_bg=cpair(colors.yellow,colors._INHERIT)}
+    TextBox{parent=fac_c_2,y=10,height=3,text="Como você pulou a sinc. do supervisor, a altura mín. do monitor principal não é exata e está marcada com * na próxima página.",fg_bg=g_lg_fg_bg}
 
-    local nu_error = TextBox{parent=fac_c_2,x=8,y=14,width=35,text="Please set the number of reactors.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local nu_error = TextBox{parent=fac_c_2,x=9,y=14,width=31,text="Defina o número de reatores.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_num_units()
         local count = tonumber(tool_ctl.num_units.get_value())
@@ -276,15 +276,15 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         else nu_error.show() end
     end
 
-    PushButton{parent=fac_c_2,y=14,text="\x1b Back",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_2,x=44,y=14,text="Next \x1a",callback=submit_num_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_2,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_2,x=41,y=14,text="Avançar \x1a",callback=submit_num_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=fac_c_3,y=1,height=2,text="The following facility configuration was fetched from your supervisor computer."}
+    TextBox{parent=fac_c_3,y=1,height=2,text="A seguinte configuração da instalação foi obtida do computador supervisor."}
 
     local fac_config_list = ListBox{parent=fac_c_3,y=4,height=9,width=49,scroll_height=100,fg_bg=bw_fg_bg,nav_fg_bg=g_lg_fg_bg,nav_active=cpair(colors.black,colors.gray)}
 
-    PushButton{parent=fac_c_3,y=14,text="\x1b Back",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_3,x=44,y=14,text="Next \x1a",callback=function()main_pane.set_value(4)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_3,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_3,x=41,y=14,text="Avançar \x1a",callback=function()main_pane.set_value(4)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 
@@ -292,7 +292,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
 
     tool_ctl.is_int_min_max = is_int_min_max
 
-    -- reset the connection display for a new attempt
+    -- redefine a tela de conexão para uma nova tentativa
     function tool_ctl.init_sv_connect_ui()
         self.sv_next.hide()
         self.sv_skip.disable()
@@ -301,21 +301,21 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         self.sv_conn_status.set_value("")
         self.sv_conn_detail.set_value("")
 
-        -- the user needs to wait a few seconds, encouraging the to connect
+        -- o usuário precisa aguardar alguns segundos, incentivando-o a conectar
         tcd.dispatch_unique(2, function () self.sv_skip.enable() end)
     end
 
-    -- show the facility's unit count and cooling configuration data
+    -- mostra a contagem de unidades e dados de configuração de resfriamento da instalação
     function self.show_sv_cfg()
         local conf = tool_ctl.unit_bt_cnt
         fac_config_list.remove_all()
 
-        local str = util.sprintf("Facility has %d reactor unit%s:", #conf, tri(#conf==1,"","s"))
+        local str = util.sprintf("A instalação possui %d unidade%s de reator:", #conf, tri(#conf==1,"","s"))
         TextBox{parent=fac_config_list,text=str,fg_bg=cpair(colors.gray,colors.white)}
 
         for i = 1, #conf do
             local num_b, num_t = conf[i][1], conf[i][2]
-            str = util.sprintf("\x07 Unit %d has %d boiler%s and %d turbine%s", i, num_b, tri(num_b == 1, "", "s"), num_t, tri(num_t == 1, "", "s"))
+            str = util.sprintf("\x07 Unidade %d tem %d caldeira%s e %d turbina%s", i, num_b, tri(num_b == 1, "", "s"), num_t, tri(num_t == 1, "", "s"))
             TextBox{parent=fac_config_list,text=str,fg_bg=cpair(colors.gray,colors.white)}
         end
     end
@@ -325,7 +325,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
     return fac_pane
 end
 
--- handle incoming modem messages
+-- processa mensagens recebidas do modem
 ---@param side string
 ---@param sender integer
 ---@param reply_to integer

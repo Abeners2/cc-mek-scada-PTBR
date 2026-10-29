@@ -1,5 +1,5 @@
 --
--- RTU ID Check Failure Entry
+-- Entrada de Falha na Verificação de ID da RTU
 --
 
 local types   = require("scada-common.types")
@@ -15,28 +15,28 @@ local ALIGN = core.ALIGN
 
 local cpair = core.cpair
 
--- create an ID check list entry
----@param parent ListBox parent
----@param fail_code integer failure code
----@param msg string message
----@param details string? details
+-- criar uma entrada da lista de verificação de ID
+---@param parent ListBox pai
+---@param fail_code integer código de falha
+---@param msg string mensagem
+---@param details string? detalhes
 local function init(parent, fail_code, msg, details)
-    -- root div
+    -- div raiz
     local root = Div{parent=parent,x=2,y=2,height=4,width=parent.get_width()-2}
     local entry = Div{parent=root,x=2,y=1,height=3,fg_bg=style.theme.highlight_box_bright}
 
     local fg_bg = cpair(colors.black, colors.yellow)
-    local tag = "MISSING"
+    local tag = "AUSENTE"
 
     if fail_code == types.RTU_LINK_FAIL.OUT_OF_RANGE then
         fg_bg = cpair(colors.black, colors.orange)
-        tag = "BAD INDEX"
+        tag = "ÍND. INVÁL."
     elseif fail_code == types.RTU_LINK_FAIL.DUPLICATE then
         fg_bg = cpair(colors.black, colors.red)
-        tag = "DUPLICATE"
+        tag = "DUPLICADO"
     elseif fail_code == types.RTU_LINK_FAIL.MISMATCH then
         fg_bg = cpair(colors.black, colors.red)
-        tag = "MISMATCH"
+        tag = "INCOMPAT."
     end
 
     TextBox{parent=entry,y=1,text="",width=11,fg_bg=fg_bg}

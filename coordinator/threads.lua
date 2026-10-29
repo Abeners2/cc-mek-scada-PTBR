@@ -24,29 +24,29 @@ local threads = {}
 local MAIN_CLOCK   = 0.5 -- 2Hz,   10 ticks
 local RENDER_SLEEP = 100 -- 100ms, 2 ticks
 
--- main thread
+-- thread principal
 ---@nodiscard
 ---@param smem crd_shared_memory
 function threads.thread__main(smem)
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         ioctl.fp_rt_status("main", true)
         log.debug("OS: main thread start")
 
         local loop_clock = util.new_clock(MAIN_CLOCK)
 
-        -- start clock
+        -- inicia o relógio
         loop_clock.start()
 
-        log_sys("system started successfully")
+        log_sys("sistema iniciado com sucesso")
 
-        ioctl.sys_splash_main_msg(nil, "Connecting to the Supervisor...")
-        ioctl.sys_splash_disp_msg(true, "Connecting...")
+        ioctl.sys_splash_main_msg(nil, "Conectando ao Supervisor...")
+        ioctl.sys_splash_disp_msg(true, "Conectando...")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local crd_state       = smem.crd_state
         local coord_comms     = smem.crd_sys.coord_comms
         local conn_watchdog   = smem.crd_sys.conn_watchdog
@@ -54,90 +54,90 @@ function threads.thread__main(smem)
         local MQ__RENDER_CMD  = smem.q_types.MQ__RENDER_CMD
         local MQ__RENDER_DATA = smem.q_types.MQ__RENDER_DATA
 
-        -- main loop periodic tasks
+        -- tarefas periódicas do loop principal
         ---@return boolean exit if the application should exit
         local function loop_tick()
-            -- toggle heartbeat
+            -- alterna o pulso (heartbeat)
             ioctl.heartbeat()
 
-            -- periodic hardware tasks
+            -- tarefas periódicas de hardware
             backplane.periodic()
 
-            -- maintain connection
+            -- mantém a conexão
             local ok, start_ui = coord_comms.manage_link()
             if not ok then
                 crd_state.link_fail = true
                 crd_state.shutdown = true
-                log_sys("supervisor connection failed, shutting down...")
+                log_sys("falha na conexão ao supervisor, desligando...")
                 log.fatal("failed to connect to supervisor")
                 return true
             elseif start_ui then
-                log_sys("supervisor connected, dispatching main UI start")
+                log_sys("supervisor conectado, iniciando interface principal")
                 smem.q.mq_render.push_command(MQ__RENDER_CMD.START_MAIN_UI)
             end
 
-            -- iterate sessions and free any closed ones
+            -- itera sessões e libera as fechadas
             apisessions.iterate_all()
             apisessions.free_all_closed()
 
-            -- clear timed out process commands
+            -- limpa comandos de processo com tempo esgotado
             process.clear_timed_out()
 
             if renderer.ui_ready() then
-                -- update clock used on main and flow monitors
+                -- atualiza o relógio usado nos monitores principal e de fluxo
                 ioctl.get_db().os_ps.publish("date_time", os.date(smem.date_format))
             end
 
-            -- start next clock timer
+            -- inicia o próximo temporizador do relógio
             loop_clock.start()
 
             return false
         end
 
-        -- event loop
+        -- loop de eventos
         while true do
             local event, param1, param2, param3, param4, param5 = util.pull_event()
 
-            -- handle event
+            -- processa o evento
             if event == "modem_message" then
-                -- got a packet
+                -- pacote recebido
                 local packet = coord_comms.parse_packet(param1, param2, param3, param4, param5)
 
-                -- handle then check if it was a disconnect
+                -- processa e verifica se houve desconexão
                 if coord_comms.handle_packet(packet) then
-                    log_comms("supervisor closed connection")
+                    log_comms("supervisor fechou a conexão")
 
-                    ioctl.sys_splash_main_msg("Connection Lost", "Reconnecting...")
-                    ioctl.sys_splash_disp_msg(true, "Reconnecting...")
+                    ioctl.sys_splash_main_msg("Conexão Perdida", "Reconectando...")
+                    ioctl.sys_splash_disp_msg(true, "Reconectando...")
 
-                    -- close main UI, connection, and stop sounder
+                    -- fecha a UI principal, a conexão e para o alarme sonoro
                     smem.q.mq_render.push_command(MQ__RENDER_CMD.CLOSE_MAIN_UI)
                     coord_comms.close()
                     sounder.stop()
                 end
             elseif event == "timer" then
-                -- pass this timer event onto the right handler
+                -- repassa este evento de temporizador para o manipulador correto
                 if loop_clock.is_clock(param1) then
-                    -- main loop tick
+                    -- tick do loop principal
                     if loop_tick() then break end
                 elseif conn_watchdog.is_timer(param1) then
-                    -- supervisor connection timed out
-                    log_comms("supervisor server timeout")
+                    -- tempo limite da conexão ao supervisor esgotado
+                    log_comms("tempo limite do servidor supervisor esgotado")
 
-                    -- close main UI, connection, and stop sounder
+                    -- fecha a UI principal, a conexão e para o alarme sonoro
                     smem.q.mq_render.push_command(MQ__RENDER_CMD.CLOSE_MAIN_UI)
                     coord_comms.close()
                     sounder.stop()
-                elseif not apisessions.check_all_watchdogs(param1) then -- check API watchdogs
-                    -- notify timer callback dispatcher, no other handler claimed this event
+                elseif not apisessions.check_all_watchdogs(param1) then -- verifica watchdogs da API
+                    -- notifica o despachante de callback de temporizador, nenhum outro manipulador reivindicou este evento
                     tcd.handle(param1)
                 end
             elseif event == "speaker_audio_empty" then
-                -- handle speaker buffer emptied
+                -- processa esvaziamento do buffer do alto-falante
                 sounder.continue()
             elseif event == "monitor_touch" or event == "mouse_click" or event == "mouse_up" or
                    event == "mouse_drag" or event == "mouse_scroll" or event == "double_click" then
-                -- handle a mouse event
+                -- processa um evento de mouse
                 renderer.handle_mouse(core.events.new_mouse_event(event, param1, param2, param3))
             elseif event == "monitor_resize" then
                 smem.q.mq_render.push_data(MQ__RENDER_DATA.MON_RESIZE, param1)
@@ -153,7 +153,7 @@ function threads.thread__main(smem)
                 end
             end
 
-            -- check for termination request or UI crash
+            -- verifica solicitação de encerramento ou falha da UI
             if event == "terminate" or ppm.should_terminate() then
                 crd_state.shutdown = true
                 log.info("OS: terminate requested, main thread exiting")
@@ -163,26 +163,26 @@ function threads.thread__main(smem)
             end
 
             if crd_state.shutdown then
-                -- handle closing supervisor connection
+                -- gerencia o fechamento da conexão ao supervisor
                 coord_comms.manage_link(true)
 
                 if coord_comms.is_linked() then
-                    log_comms("closing supervisor connection...")
+                    log_comms("fechando conexão com o supervisor...")
                 else crd_state.link_fail = true end
 
                 coord_comms.close()
-                log_comms("supervisor connection closed")
+                log_comms("conexão com o supervisor fechada")
 
-                -- handle API sessions
-                log_comms("closing api sessions...")
+                -- gerencia sessões de API
+                log_comms("fechando sessões de api...")
                 apisessions.close_all()
-                log_comms("api sessions closed")
+                log_comms("sessões de api fechadas")
                 break
             end
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local crd_state = smem.crd_state
 
@@ -194,8 +194,8 @@ function threads.thread__main(smem)
 
             ioctl.fp_rt_status("main", false)
 
-            -- if status is true, then we are probably exiting, so this won't matter
-            -- this thread cannot be slept because it will miss events (namely "terminate")
+            -- se status for true, provavelmente estamos saindo, então isso não importará
+            -- esta thread não pode dormir pois perderá eventos (especialmente "terminate")
             if not crd_state.shutdown then
                 log.info("OS: main thread restarting now...")
             end
@@ -205,19 +205,19 @@ function threads.thread__main(smem)
     return public
 end
 
--- coordinator renderer thread, tasked with long duration draws
+-- thread renderizadora do coordenador, encarregada de desenhos de longa duração
 ---@nodiscard
 ---@param smem crd_shared_memory
 function threads.thread__render(smem)
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         ioctl.fp_rt_status("render", true)
         log.debug("OS: render thread start")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local crd_state       = smem.crd_state
         local render_queue    = smem.q.mq_render
 
@@ -226,83 +226,83 @@ function threads.thread__render(smem)
 
         local last_update = util.time()
 
-        -- thread loop
+        -- loop da thread
         while true do
-            -- check for messages in the message queue
+            -- verifica mensagens na fila de mensagens
             while render_queue.ready() and not crd_state.shutdown do
                 local msg = render_queue.pop()
 
                 if msg ~= nil then
                     if msg.qtype == mqueue.TYPE.COMMAND then
-                        -- received a command
+                        -- comando recebido
                         if msg.message == MQ__RENDER_CMD.START_MAIN_UI then
-                            -- stop the UI if it was already started
-                            -- this may occur on a quick supervisor disconnect -> connect
+                            -- para a UI se já tiver sido iniciada
+                            -- isso pode ocorrer em uma rápida desconexão -> conexão do supervisor
                             if renderer.ui_ready() then
-                                log_render("closing main UI before executing new request to start")
+                                log_render("fechando a UI principal antes de executar nova solicitação de início")
                                 renderer.close_ui()
                             end
 
-                            -- start up the main UI
-                            log_render("starting main UI...")
+                            -- inicia a UI principal
+                            log_render("iniciando UI principal...")
 
-                            ioctl.sys_splash_main_msg("Preparing the Interface", "Starting the SCADA UI...")
-                            ioctl.sys_splash_disp_msg(true, "Initializing...")
+                            ioctl.sys_splash_main_msg("Preparando a Interface", "Iniciando a interface SCADA...")
+                            ioctl.sys_splash_disp_msg(true, "Inicializando...")
 
                             local draw_start = util.time_ms()
 
                             local ui_message
                             crd_state.ui_ok, ui_message = renderer.try_start_ui()
                             if not crd_state.ui_ok then
-                                log_render(util.c("main UI error: ", ui_message))
+                                log_render(util.c("erro na UI principal: ", ui_message))
                                 log.fatal(util.c("main GUI render failed with error ", ui_message))
                             else
-                                log_render("main UI draw took " .. (util.time_ms() - draw_start) .. "ms")
+                                log_render("desenho da UI principal levou " .. (util.time_ms() - draw_start) .. "ms")
                             end
                         elseif msg.message == MQ__RENDER_CMD.CLOSE_MAIN_UI then
-                            -- close the main UI if it has been drawn
+                            -- fecha a UI principal se tiver sido desenhada
                             if renderer.ui_ready() then
-                                log_render("closing main UI...")
+                                log_render("fechando UI principal...")
                                 renderer.close_ui()
-                                log_render("main UI closed")
+                                log_render("UI principal fechada")
                             end
                         end
                     elseif msg.qtype == mqueue.TYPE.DATA then
-                        -- received data
+                        -- dados recebidos
                         local cmd = msg.message ---@type queue_data
 
                         if cmd.key == MQ__RENDER_DATA.MON_CONNECT then
-                            -- monitor connected
+                            -- monitor conectado
                             renderer.handle_reconnect(cmd.val)
                         elseif cmd.key == MQ__RENDER_DATA.MON_DISCONNECT then
-                            -- monitor disconnected
+                            -- monitor desconectado
                             renderer.handle_disconnect(cmd.val)
                         elseif cmd.key == MQ__RENDER_DATA.MON_RESIZE then
-                            -- monitor resized
+                            -- monitor redimensionado
                             local is_used, is_ok = renderer.handle_resize(cmd.val)
                             if is_used then
-                                log_sys(util.c("configured monitor ", cmd.val, " resized, ", util.trinary(is_ok, "display fits", "display does not fit")))
+                                log_sys(util.c("monitor configurado ", cmd.val, " redimensionado, ", util.trinary(is_ok, "a tela cabe", "a tela não cabe")))
                             end
                         end
                     end
                 end
 
-                -- quick yield
+                -- yield rápido
                 util.nop()
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if crd_state.shutdown then
                 log.info("OS: render thread exiting")
                 break
             end
 
-            -- delay before next check
+            -- atraso antes da próxima verificação
             last_update = util.adaptive_delay(RENDER_SLEEP, last_update)
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local crd_state = smem.crd_state
 

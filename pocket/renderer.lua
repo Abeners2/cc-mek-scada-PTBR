@@ -1,5 +1,5 @@
 --
--- Graphics Rendering Control
+-- Controle de Renderizacao Grafica
 --
 
 local main_view  = require("pocket.ui.main")
@@ -17,34 +17,34 @@ local ui = {
     display = nil
 }
 
--- try to start the pocket GUI
+-- tenta iniciar a GUI do pocket
 ---@return boolean success, any error_msg
 function renderer.try_start_ui()
     local status, msg = true, nil
 
     if ui.display == nil then
-        -- reset screen
+        -- redefine a tela
         term.setTextColor(colors.white)
         term.setBackgroundColor(colors.black)
         term.clear()
         term.setCursorPos(1, 1)
 
-        -- set overridden colors
+        -- define as cores substituidas
         for i = 1, #style.colors do
             term.setPaletteColor(style.colors[i].c, style.colors[i].hex)
         end
 
-        -- init front panel view
+        -- inicializa a visualizacao do painel frontal
         status, msg = pcall(function ()
             ui.display = DisplayBox{window=term.current(),fg_bg=style.root}
             main_view(ui.display)
         end)
 
         if status then
-            -- start flasher callback task
+            -- inicia a tarefa de retorno de chamada do pisca-pisca
             flasher.run()
         else
-            -- report fail and close ui
+            -- relata falha e fecha a interface
             msg = core.extract_assert_msg(msg)
             renderer.close_ui()
         end
@@ -53,25 +53,25 @@ function renderer.try_start_ui()
     return status, msg
 end
 
--- close out the UI
+-- encerra a interface
 function renderer.close_ui()
     if ui.display ~= nil then
-        -- stop blinking indicators
+        -- para os indicadores piscantes
         flasher.clear()
 
-        -- hide to stop animation callbacks
+        -- oculta para parar os retornos de chamada de animacao
         ui.display.hide()
 
-        -- clear root UI elements
+        -- limpa os elementos raiz da interface
         ui.display = nil
 
-        -- restore colors
+        -- restaura as cores
         for i = 1, #style.colors do
             local r, g, b = term.nativePaletteColor(style.colors[i].c)
             term.setPaletteColor(style.colors[i].c, r, g, b)
         end
 
-        -- reset terminal
+        -- redefine o terminal
         term.setTextColor(colors.white)
         term.setBackgroundColor(colors.black)
         term.clear()
@@ -79,12 +79,12 @@ function renderer.close_ui()
     end
 end
 
--- is the UI ready?
+-- a interface esta pronta?
 ---@nodiscard
 ---@return boolean ready
 function renderer.ui_ready() return ui.display ~= nil end
 
--- handle a mouse event
+-- processa um evento de mouse
 ---@param event mouse_interaction|nil
 function renderer.handle_mouse(event)
     if ui.display ~= nil and event ~= nil then
@@ -92,7 +92,7 @@ function renderer.handle_mouse(event)
     end
 end
 
--- handle a keyboard event
+-- processa um evento de teclado
 ---@param event key_interaction|nil
 function renderer.handle_key(event)
     if ui.display ~= nil and event ~= nil then
@@ -100,7 +100,7 @@ function renderer.handle_key(event)
     end
 end
 
--- handle a paste event
+-- processa um evento de colagem
 ---@param text string
 function renderer.handle_paste(text)
     if ui.display ~= nil then

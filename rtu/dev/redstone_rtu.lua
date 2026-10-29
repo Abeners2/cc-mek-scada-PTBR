@@ -9,20 +9,20 @@ local IO_LVL = rsio.IO_LVL
 local digital_read = rsio.digital_read
 local digital_write = rsio.digital_write
 
--- create new redstone device
+-- criar novo dispositivo de redstone
 ---@nodiscard
----@param relay? RedstoneRelay|ppm_generic optional redstone relay to use instead of the computer's redstone interface
+---@param relay? RedstoneRelay|ppm_generic relé de redstone opcional para usar em vez da interface de redstone do computador
 ---@return rtu_rs_device interface, boolean faulted
 function redstone_rtu.new(relay)
     local unit = rtu.init_unit()
 
-    -- physical interface to use
+    -- interface física a ser usada
     local phy = relay or rs
 
-    -- get RTU interface
+    -- obter interface da RTU
     local interface = unit.interface()
 
-    -- extends rtu_device; fields added manually to please Lua diagnostics
+    -- estende rtu_device; campos adicionados manualmente para agradar diagnósticos do Lua
     ---@class rtu_rs_device
     local public = {
         io_count = interface.io_count,
@@ -34,17 +34,17 @@ function redstone_rtu.new(relay)
         write_holding_reg = interface.write_holding_reg
     }
 
-    -- change the phy in use (a relay or rs)
+    -- alterar a interface física em uso (um relé ou rs)
     ---@param new_phy RedstoneRelay|ppm_generic
     function public.remount_phy(new_phy) phy = new_phy end
 
-    -- NOTE: for runtime speed, inversion logic results in extra code here but less code when functions are called
+    -- NOTA: para velocidade em tempo de execução, a lógica de inversão resulta em código extra aqui, mas menos código quando as funções são chamadas
 
-    -- link digital input
+    -- vincular entrada digital
     ---@param side string
     ---@param color integer
     ---@param invert boolean|nil
-    ---@return integer count count of digital inputs
+    ---@return integer count quantidade de entradas digitais
     function public.link_di(side, color, invert)
         local f_read ---@type function
 
@@ -65,11 +65,11 @@ function redstone_rtu.new(relay)
         return unit.connect_di(f_read)
     end
 
-    -- link digital output
+    -- vincular saída digital
     ---@param side string
     ---@param color integer
     ---@param invert boolean|nil
-    ---@return integer count count of digital outputs
+    ---@return integer count quantidade de saídas digitais
     function public.link_do(side, color, invert)
         local f_read  ---@type function
         local f_write ---@type function
@@ -82,7 +82,7 @@ function redstone_rtu.new(relay)
                     if level ~= IO_LVL.FLOATING and level ~= IO_LVL.DISCONNECT then
                         local output = phy.getBundledOutput(side)
 
-                        -- inverted conditions
+                        -- condições invertidas
                         if digital_write(level) then
                             output = colors.subtract(output, color)
                         else output = colors.combine(output, color) end
@@ -128,16 +128,16 @@ function redstone_rtu.new(relay)
         return unit.connect_coil(f_read, f_write)
     end
 
-    -- link analog input
+    -- vincular entrada analógica
     ---@param side string
-    ---@return integer count count of analog inputs
+    ---@return integer count quantidade de entradas analógicas
     function public.link_ai(side)
         return unit.connect_input_reg(function () return phy.getAnalogInput(side) end)
     end
 
-    -- link analog output
+    -- vincular saída analógica
     ---@param side string
-    ---@return integer count count of analog outputs
+    ---@return integer count quantidade de saídas analógicas
     function public.link_ao(side)
         return unit.connect_holding_reg(
             function () return phy.getAnalogOutput(side) end,

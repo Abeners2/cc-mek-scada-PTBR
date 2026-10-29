@@ -1,5 +1,5 @@
 --
--- SCADA System Access on a Pocket Computer
+-- Acesso ao Sistema SCADA em um Pocket Computer
 --
 
 ---@diagnostic disable-next-line: lowercase-global
@@ -27,26 +27,26 @@ local POCKET_VERSION = "1.5.1"
 local println = util.println
 local println_ts = util.println_ts
 
--- check environment (allows Pocket or CraftOS-PC)
+-- verifica o ambiente (permite Pocket ou CraftOS-PC)
 if not _is_pocket_env then
-    println("You can only use this application on a pocket computer.")
+    println("Voce so pode usar este aplicativo em um pocket computer.")
     return
 end
 
 ----------------------------------------
--- get configuration
+-- obtem a configuracao
 ----------------------------------------
 
 if not pocket.load_config() then
-    -- try to reconfigure (user action)
+    -- tenta reconfigurar (acao do usuario)
     local success, error = configure.configure(true)
     if success then
         if not pocket.load_config() then
-            println("failed to load a valid configuration, please reconfigure")
+            println("falha ao carregar uma configuracao valida, por favor reconfigure")
             return
         end
     else
-        println("configuration error: " .. error)
+        println("erro de configuracao: " .. error)
         return
     end
 end
@@ -54,41 +54,41 @@ end
 local config = pocket.config
 
 ----------------------------------------
--- log init
+-- inicializacao do log
 ----------------------------------------
 
 log.init(config.LogPath, config.LogMode, config.LogDebug)
 
 log.info("========================================")
-log.info("BOOTING pocket.startup v" .. POCKET_VERSION)
+log.info("INICIANDO pocket.startup v" .. POCKET_VERSION)
 log.info("========================================")
 
 crash.set_env("pocket", POCKET_VERSION)
 crash.dbg_log_env()
 
 ----------------------------------------
--- main application
+-- aplicacao principal
 ----------------------------------------
 
 local function main()
     ----------------------------------------
-    -- system startup
+    -- inicializacao do sistema
     ----------------------------------------
 
-    -- mount connected devices
+    -- monta dispositivos conectados
     ppm.mount_all()
 
-    -- record version for GUI
+    -- registra a versao para a GUI
     ioctl.get_db().version = POCKET_VERSION
 
     ----------------------------------------
-    -- memory allocation
+    -- alocacao de memoria
     ----------------------------------------
 
-    -- shared memory across threads
+    -- memoria compartilhada entre threads
     ---@class pkt_shared_memory
     local __shared_memory = {
-        -- pocket system state flags
+        -- flags de estado do sistema pocket
         ---@class pkt_state
         pkt_state = {
             ui_ok = false,
@@ -96,12 +96,12 @@ local function main()
             shutdown = false
         },
 
-        -- core pocket devices
+        -- dispositivos principais do pocket
         pkt_dev = {
             modem = ppm.get_wireless_modem()
         },
 
-        -- system objects
+        -- objetos do sistema
         pkt_sys = {
             nic = nil,          ---@type nic
             pocket_comms = nil, ---@type pocket_comms
@@ -110,7 +110,7 @@ local function main()
             nav = nil           ---@type pocket_nav
         },
 
-        -- message queues
+        -- filas de mensagens
         q = {
             mq_render = mqueue.new()
         }
@@ -122,75 +122,75 @@ local function main()
     local pkt_state = __shared_memory.pkt_state
 
     ----------------------------------------
-    -- setup system
+    -- configura o sistema
     ----------------------------------------
 
     smem_sys.nav = pocket.init_nav(__shared_memory)
 
-    -- message authentication init
+    -- inicializacao de autenticacao de mensagens
     if type(config.AuthKey) == "string" and string.len(config.AuthKey) > 0 then
         network.init_mac(config.AuthKey)
     end
 
     ioctl.report_link_state(ioctl.LINK_STATE.UNLINKED)
 
-    -- get the communications modem
+    -- obtem o modem de comunicacao
     if smem_dev.modem == nil then
-        println("startup> wireless modem not found: please craft the pocket computer with a wireless modem")
+        println("inicializacao> modem sem fio nao encontrado: crie o pocket computer com um modem sem fio")
         log.fatal("startup> no wireless modem on startup")
         return
     end
 
-    -- create connection watchdogs
+    -- cria watchdogs de conexao
     smem_sys.sv_wd = util.new_watchdog(config.ConnTimeout)
     smem_sys.sv_wd.cancel()
     smem_sys.api_wd = util.new_watchdog(config.ConnTimeout)
     smem_sys.api_wd.cancel()
     log.debug("startup> conn watchdogs created")
 
-    -- create network interface then setup comms
+    -- cria interface de rede e configura comunicacoes
     smem_sys.nic = network.nic(smem_dev.modem)
     smem_sys.pocket_comms = pocket.comms(POCKET_VERSION, smem_sys.nic, smem_sys.sv_wd, smem_sys.api_wd, smem_sys.nav)
     log.debug("startup> comms init")
 
-    -- init I/O control
+    -- inicializa controle de E/S
     ioctl.init_core(smem_sys.pocket_comms, smem_sys.nav, config)
 
     ----------------------------------------
-    -- start the UI
+    -- inicia a UI
     ----------------------------------------
 
     local ui_message
     pkt_state.ui_ok, ui_message = renderer.try_start_ui()
     if not pkt_state.ui_ok then
-        println(util.c("UI error: ", ui_message))
+        println(util.c("Erro de UI: ", ui_message))
         log.error(util.c("startup> GUI render failed with error ", ui_message))
     end
 
     ----------------------------------------
-    -- start system
+    -- inicia o sistema
     ----------------------------------------
 
     if pkt_state.ui_ok then
-        -- init threads
+        -- inicializa as threads
         local main_thread   = threads.thread__main(__shared_memory)
         local render_thread = threads.thread__render(__shared_memory)
 
         log.info("startup> completed")
 
-        -- run threads
+        -- executa as threads
         parallel.waitForAll(main_thread.p_exec, render_thread.p_exec)
 
         renderer.close_ui()
 
         if not pkt_state.ui_ok then
-            println(util.c("UI crashed with error: ", pkt_state.ui_error))
+            println(util.c("UI travou com erro: ", pkt_state.ui_error))
         end
     else
-        println_ts("UI creation failed")
+        println_ts("Falha na criacao da UI")
     end
 
-    println_ts("exited")
+    println_ts("encerrado")
     log.info("exited")
 end
 

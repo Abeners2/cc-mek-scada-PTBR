@@ -1,5 +1,5 @@
 --
--- Alarm Sounder
+-- Alarme Sonoro
 --
 
 local audio = require("scada-common.audio")
@@ -14,7 +14,7 @@ local alarm_ctl = {
     stream = audio.new_stream()
 }
 
--- start audio or continue audio on buffer empty
+-- inicia o áudio ou continua o áudio quando o buffer esvaziar
 ---@return boolean success successfully added buffer to audio output
 local function play()
     if not alarm_ctl.playing then
@@ -23,7 +23,7 @@ local function play()
     else return true end
 end
 
--- initialize the annunciator alarm system
+-- inicializa o sistema de alarme do anunciador
 ---@param speaker Speaker speaker peripheral
 ---@param volume number speaker volume
 function sounder.init(speaker, volume)
@@ -35,7 +35,7 @@ function sounder.init(speaker, volume)
     audio.generate_tones()
 end
 
--- reconnect the speaker peripheral
+-- reconecta o periférico de alto-falante
 ---@param speaker Speaker speaker peripheral
 function sounder.reconnect(speaker)
     alarm_ctl.speaker = speaker
@@ -43,25 +43,25 @@ function sounder.reconnect(speaker)
     alarm_ctl.stream.stop()
 end
 
--- set alarm tones
+-- define os tons de alarme
 ---@param states { [TONE]: boolean } alarm tone commands from supervisor
 function sounder.set(states)
-    -- set tone states
+    -- define estados dos tons
     for id = 1, #states do alarm_ctl.stream.set_active(id, states[id]) end
 
-    -- re-compute output if needed, then play audio if available
+    -- recalcula a saída se necessário, então reproduz o áudio se disponível
     if alarm_ctl.stream.is_recompute_needed() then alarm_ctl.stream.compute_buffer() end
     if alarm_ctl.stream.any_active() then play() else sounder.stop() end
 end
 
--- stop all audio and clear output buffer
+-- para todo o áudio e limpa o buffer de saída
 function sounder.stop()
     alarm_ctl.playing = false
     alarm_ctl.speaker.stop()
     alarm_ctl.stream.stop()
 end
 
--- continue audio on buffer empty
+-- continua o áudio quando o buffer esvaziar
 ---@return boolean success successfully added buffer to audio output
 function sounder.continue()
     local success = false

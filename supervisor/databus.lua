@@ -1,5 +1,5 @@
 --
--- Data Bus - Central Communication Linking for Supervisor Front Panel
+-- Barramento de Dados - Vinculação Central de Comunicação para o Painel Frontal do Supervisor
 --
 
 local const = require("scada-common.constants")
@@ -15,26 +15,26 @@ local _dbus = {
     wl_modem = true
 }
 
--- evaluate and publish system health status
+-- avaliar e publicar o status de integridade do sistema
 local function eval_status()
     databus.ps.publish("status", _dbus.wd_modem and _dbus.wl_modem)
 end
 
--- databus PSIL
+-- PSIL do barramento de dados
 databus.ps = psil.create()
 
--- call to toggle heartbeat signal
+-- chamar para alternar o sinal de pulso (heartbeat)
 function databus.heartbeat() databus.ps.toggle("heartbeat") end
 
--- transmit firmware versions
----@param sv_v string supervisor version
----@param comms_v string comms version
+-- transmitir versões de firmware
+---@param sv_v string versão do supervisor
+---@param comms_v string versão de comms
 function databus.tx_versions(sv_v, comms_v)
     databus.ps.publish("version", sv_v)
     databus.ps.publish("comms_version", comms_v)
 end
 
--- transmit hardware status for the wired comms modem
+-- transmitir status de hardware para o modem de comunicações cabeado
 ---@param has_modem boolean
 function databus.tx_hw_wd_modem(has_modem)
     databus.ps.publish("has_wd_modem", has_modem)
@@ -43,7 +43,7 @@ function databus.tx_hw_wd_modem(has_modem)
     eval_status()
 end
 
--- transmit hardware status for the wireless comms modem
+-- transmitir status de hardware para o modem de comunicações sem fio
 ---@param has_modem boolean
 function databus.tx_hw_wl_modem(has_modem)
     databus.ps.publish("has_wl_modem", has_modem)
@@ -52,24 +52,24 @@ function databus.tx_hw_wl_modem(has_modem)
     eval_status()
 end
 
--- transmit energy mismatch condition
+-- transmitir condição de incompatibilidade de energia
 ---@param mismatch boolean
 function databus.tx_energy_mismatch(mismatch)
     databus.ps.publish("energy_mismatch", mismatch)
 end
 
--- transmit PLC firmware version and session connection state
----@param reactor_id integer reactor unit ID
----@param fw string firmware version
----@param s_addr integer PLC computer ID
+-- transmitir versão de firmware do CLP e estado de conexão da sessão
+---@param reactor_id integer ID da unidade do reator
+---@param fw string versão do firmware
+---@param s_addr integer ID do computador do CLP
 function databus.tx_plc_connected(reactor_id, fw, s_addr)
     databus.ps.publish("plc_" .. reactor_id .. "_fw", fw)
     databus.ps.publish("plc_" .. reactor_id .. "_conn", true)
     databus.ps.publish("plc_" .. reactor_id .. "_addr", util.sprintf("@% 4d", s_addr))
 end
 
--- transmit PLC disconnected
----@param reactor_id integer reactor unit ID
+-- transmitir CLP desconectado
+---@param reactor_id integer ID da unidade do reator
 function databus.tx_plc_disconnected(reactor_id)
     databus.ps.publish("plc_" .. reactor_id .. "_fw", " ------- ")
     databus.ps.publish("plc_" .. reactor_id .. "_conn", false)
@@ -78,9 +78,9 @@ function databus.tx_plc_disconnected(reactor_id)
     databus.ps.publish("plc_" .. reactor_id .. "_rtt_color", colors.lightGray)
 end
 
--- transmit PLC session RTT
----@param reactor_id integer reactor unit ID
----@param rtt integer round trip time
+-- transmitir RTT da sessão do CLP
+---@param reactor_id integer ID da unidade do reator
+---@param rtt integer tempo de ida e volta (RTT)
 function databus.tx_plc_rtt(reactor_id, rtt)
     databus.ps.publish("plc_" .. reactor_id .. "_rtt", rtt)
 
@@ -93,25 +93,25 @@ function databus.tx_plc_rtt(reactor_id, rtt)
     end
 end
 
--- transmit RTU firmware version and session connection state
----@param session_id integer RTU session
----@param fw string firmware version
----@param s_addr integer RTU computer ID
+-- transmitir versão de firmware da RTU e estado de conexão da sessão
+---@param session_id integer sessão da RTU
+---@param fw string versão do firmware
+---@param s_addr integer ID do computador da RTU
 function databus.tx_rtu_connected(session_id, fw, s_addr)
     databus.ps.publish("rtu_" .. session_id .. "_fw", fw)
     databus.ps.publish("rtu_" .. session_id .. "_addr", util.sprintf("@ C% 3d", s_addr))
     pgi.create_rtu_entry(session_id)
 end
 
--- transmit RTU disconnected
----@param session_id integer RTU session
+-- transmitir RTU desconectada
+---@param session_id integer sessão da RTU
 function databus.tx_rtu_disconnected(session_id)
     pgi.delete_rtu_entry(session_id)
 end
 
--- transmit RTU session RTT
----@param session_id integer RTU session
----@param rtt integer round trip time
+-- transmitir RTT da sessão da RTU
+---@param session_id integer sessão da RTU
+---@param rtt integer tempo de ida e volta (RTT)
 function databus.tx_rtu_rtt(session_id, rtt)
     databus.ps.publish("rtu_" .. session_id .. "_rtt", rtt)
 
@@ -124,23 +124,23 @@ function databus.tx_rtu_rtt(session_id, rtt)
     end
 end
 
--- transmit RTU session unit count
----@param session_id integer RTU session
----@param units integer unit count
+-- transmitir contagem de unidades da sessão da RTU
+---@param session_id integer sessão da RTU
+---@param units integer contagem de unidades
 function databus.tx_rtu_units(session_id, units)
     databus.ps.publish("rtu_" .. session_id .. "_units", units)
 end
 
--- transmit coordinator firmware version and session connection state
----@param fw string firmware version
----@param s_addr integer coordinator computer ID
+-- transmitir versão de firmware do coordenador e estado de conexão da sessão
+---@param fw string versão do firmware
+---@param s_addr integer ID do computador do coordenador
 function databus.tx_crd_connected(fw, s_addr)
     databus.ps.publish("crd_fw", fw)
     databus.ps.publish("crd_conn", true)
     databus.ps.publish("crd_addr", tostring(s_addr))
 end
 
--- transmit coordinator disconnected
+-- transmitir coordenador desconectado
 function databus.tx_crd_disconnected()
     databus.ps.publish("crd_fw", " ------- ")
     databus.ps.publish("crd_conn", false)
@@ -149,8 +149,8 @@ function databus.tx_crd_disconnected()
     databus.ps.publish("crd_rtt_color", colors.lightGray)
 end
 
--- transmit coordinator session RTT
----@param rtt integer round trip time
+-- transmitir RTT da sessão do coordenador
+---@param rtt integer tempo de ida e volta (RTT)
 function databus.tx_crd_rtt(rtt)
     databus.ps.publish("crd_rtt", rtt)
 
@@ -163,25 +163,25 @@ function databus.tx_crd_rtt(rtt)
     end
 end
 
--- transmit PKT firmware version and PDG session connection state
----@param session_id integer PDG session
----@param fw string firmware version
----@param s_addr integer PDG computer ID
+-- transmitir versão de firmware do PKT e estado de conexão da sessão PDG
+---@param session_id integer sessão PDG
+---@param fw string versão do firmware
+---@param s_addr integer ID do computador PDG
 function databus.tx_pdg_connected(session_id, fw, s_addr)
     databus.ps.publish("pdg_" .. session_id .. "_fw", fw)
     databus.ps.publish("pdg_" .. session_id .. "_addr", util.sprintf("@ C% 3d", s_addr))
     pgi.create_pdg_entry(session_id)
 end
 
--- transmit PDG session disconnected
----@param session_id integer PDG session
+-- transmitir sessão PDG desconectada
+---@param session_id integer sessão PDG
 function databus.tx_pdg_disconnected(session_id)
     pgi.delete_pdg_entry(session_id)
 end
 
--- transmit PDG session RTT
----@param session_id integer PDG session
----@param rtt integer round trip time
+-- transmitir RTT da sessão PDG
+---@param session_id integer sessão PDG
+---@param rtt integer tempo de ida e volta (RTT)
 function databus.tx_pdg_rtt(session_id, rtt)
     databus.ps.publish("pdg_" .. session_id .. "_rtt", rtt)
 

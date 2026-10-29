@@ -1,5 +1,5 @@
 --
--- Supervisor Front Panel GUI
+-- GUI do Painel Frontal do Supervisor
 --
 
 local util          = require("scada-common.util")
@@ -35,9 +35,9 @@ local border = core.border
 
 local ind_grn = style.ind_grn
 
--- create new front panel view
----@param panel DisplayBox main displaybox
----@param config svr_config configuraiton
+-- criar nova visualização do painel frontal
+---@param panel DisplayBox displaybox principal
+---@param config svr_config configuração
 local function init(panel, config)
     local s_hi_box = style.theme.highlight_box
     local s_hi_bright = style.theme.highlight_box_bright
@@ -47,12 +47,12 @@ local function init(panel, config)
 
     local term_w, term_h = term.getSize()
 
-    TextBox{parent=panel,y=1,text="SCADA SUPERVISOR",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
+    TextBox{parent=panel,y=1,text="SUPERVISOR SCADA",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
 
     local page_div = Div{parent=panel,y=3}
 
     --
-    -- system indicators
+    -- indicadores do sistema
     --
 
     local main_page = Div{parent=page_div,y=1}
@@ -60,15 +60,15 @@ local function init(panel, config)
     local system = Div{parent=main_page,width=18,height=17,x=2,y=2}
 
     local status = LED{parent=system,label="STATUS",colors=cpair(colors.green,colors.red)}
-    local heartbeat = LED{parent=system,label="HEARTBEAT",colors=ind_grn}
+    local heartbeat = LED{parent=system,label="PULSO",colors=ind_grn}
     system.line_break()
 
     status.register(databus.ps, "status", status.update)
     heartbeat.register(databus.ps, "heartbeat", heartbeat.update)
 
     if config.WirelessModem and config.WiredModem then
-        local wd_modem = LED{parent=system,label="WD MODEM",colors=ind_grn}
-        local wl_modem = LED{parent=system,label="WL MODEM",colors=ind_grn}
+        local wd_modem = LED{parent=system,label="MODEM CAB",colors=ind_grn}
+        local wl_modem = LED{parent=system,label="MODEM S/F",colors=ind_grn}
         wd_modem.register(databus.ps, "has_wd_modem", wd_modem.update)
         wl_modem.register(databus.ps, "has_wl_modem", wl_modem.update)
     else
@@ -77,18 +77,18 @@ local function init(panel, config)
     end
 
     --
-    -- warnings
+    -- avisos
     --
 
     local warning_box = Rectangle{parent=main_page,x=20,y=2,width=28,height=11,border=border(1,s_hi_box.bkg,true),thin=true,even_inner=true,hidden=true}
 
-    TextBox{parent=warning_box,text="One or more units have a heating rate that deviates from the configured Joules per mB of fuel. Check the Supervisor's Mekanism configuration against Mekanism's configuration.",fg_bg=cpair(colors.red,colors._INHERIT)}
-    PushButton{parent=warning_box,x=18,y=9,min_width=9,text="DISMISS",callback=function()warning_box.hide(true)end,fg_bg=s_hi_box,active_fg_bg=s_hi_bright}
+    TextBox{parent=warning_box,text="Uma ou mais unidades têm taxa de aquec. que desvia dos Joules por mB de comb. configurados. Verifique a config. do Mekanism no Supervisor.",fg_bg=cpair(colors.red,colors._INHERIT)}
+    PushButton{parent=warning_box,x=18,y=9,min_width=9,text="IGNORAR",callback=function()warning_box.hide(true)end,fg_bg=s_hi_box,active_fg_bg=s_hi_bright}
 
     warning_box.register(databus.ps, "energy_mismatch", function (x) if x then warning_box.show() else warning_box.hide(true) end end)
 
     --
-    -- hardware labeling
+    -- rotulagem de hardware
     --
 
     local hw_labels = Rectangle{parent=main_page,x=2,y=term_h-7,width=14,height=5,border=border(1,s_hi_box.bkg,true),even_inner=true}
@@ -100,10 +100,10 @@ local function init(panel, config)
     TextBox{parent=hw_labels,text="SN "..comp_id.."-SVR",fg_bg=s_hi_box}
 
     --
-    -- page handling
+    -- manipulação de páginas
     --
 
-    -- plc sessions page
+    -- página de sessões de clp
 
     local plc_page = Div{parent=page_div,y=1,hidden=true}
     local plc_list = Div{parent=plc_page,x=2,y=2,width=term_w-2}
@@ -113,7 +113,7 @@ local function init(panel, config)
         local plc_entry = Div{parent=plc_list,height=3,fg_bg=s_hi_bright}
 
         TextBox{parent=plc_entry,y=1,text="",width=8,fg_bg=s_hi_box}
-        TextBox{parent=plc_entry,y=2,text="UNIT "..i,alignment=ALIGN.CENTER,width=8,fg_bg=s_hi_box}
+        TextBox{parent=plc_entry,y=2,text="UNID "..i,alignment=ALIGN.CENTER,width=8,fg_bg=s_hi_box}
         TextBox{parent=plc_entry,y=3,text="",width=8,fg_bg=s_hi_box}
 
         local conn = LED{parent=plc_entry,x=10,y=2,label="LINK",colors=cpair(colors.green_hc,colors.green_off)}
@@ -135,21 +135,21 @@ local function init(panel, config)
         plc_list.line_break()
     end
 
-    -- rtu sessions page
+    -- página de sessões de rtu
 
     local rtu_page = Div{parent=page_div,y=1,hidden=true}
     local rtu_list = ListBox{parent=rtu_page,y=1,height=term_h-2,width=term_w,scroll_height=1000,nav_fg_bg=cpair(colors.gray,colors.lightGray),nav_active=cpair(colors.black,colors.gray)}
-    local _ = Div{parent=rtu_list,height=1} -- padding
+    local _ = Div{parent=rtu_list,height=1} -- preenchimento
 
-    -- coordinator session page
+    -- página de sessão do coordenador
 
     local crd_page = Div{parent=page_div,y=1,hidden=true}
     local crd_box = Div{parent=crd_page,x=2,y=2,width=term_w-2,height=4,fg_bg=s_hi_bright}
 
-    local crd_conn = LED{parent=crd_box,x=2,y=2,label="CONNECTION",colors=cpair(colors.green_hc,colors.green_off)}
+    local crd_conn = LED{parent=crd_box,x=2,y=2,label="CONEXÃO",colors=cpair(colors.green_hc,colors.green_off)}
     crd_conn.register(databus.ps, "crd_conn", crd_conn.update)
 
-    TextBox{parent=crd_box,x=4,y=3,text="COMPUTER",width=8,fg_bg=label_d_fg}
+    TextBox{parent=crd_box,x=4,y=3,text="COMPUT.",width=8,fg_bg=label_d_fg}
     local crd_addr = TextBox{parent=crd_box,x=13,y=3,text="---",width=5,fg_bg=label_d_fg}
     crd_addr.register(databus.ps, "crd_addr", crd_addr.set_value)
 
@@ -163,35 +163,35 @@ local function init(panel, config)
     crd_rtt.register(databus.ps, "crd_rtt", crd_rtt.update)
     crd_rtt.register(databus.ps, "crd_rtt_color", crd_rtt.recolor)
 
-    -- pocket sessions page
+    -- página de sessões pocket
 
     local pkt_page = Div{parent=page_div,y=1,hidden=true}
     local pdg_list = ListBox{parent=pkt_page,y=1,height=term_h-2,width=term_w,scroll_height=1000,fg_bg=style.fp.text_fg,nav_fg_bg=cpair(colors.gray,colors.lightGray),nav_active=cpair(colors.black,colors.gray)}
-    local _ = Div{parent=pdg_list,height=1} -- padding
+    local _ = Div{parent=pdg_list,height=1} -- preenchimento
 
-    -- RTU device ID check/diagnostics page
+    -- página de verificação de ID de dispositivo RTU/diagnóstico
 
     local chk_page = Div{parent=page_div,y=1,hidden=true}
     local chk_list = ListBox{parent=chk_page,y=1,height=term_h-2,width=term_w,scroll_height=1000,fg_bg=style.fp.text_fg,nav_fg_bg=cpair(colors.gray,colors.lightGray),nav_active=cpair(colors.black,colors.gray)}
-    local _ = Div{parent=chk_list,height=1} -- padding
+    local _ = Div{parent=chk_list,height=1} -- preenchimento
 
-    -- info page
+    -- página de informações
 
     local info_page = Div{parent=page_div,y=1,hidden=true}
     local info = Div{parent=info_page,height=6,x=2,y=2}
 
-    TextBox{parent=info,text="SVR \x1a Supervisor Status"}
-    TextBox{parent=info,text="PLC \x1a Reactor PLC Connections"}
-    TextBox{parent=info,text="RTU \x1a RTU Gateway Connections"}
-    TextBox{parent=info,text="CRD \x1a Coordinator Connection"}
-    TextBox{parent=info,text="PKT \x1a Pocket Connections"}
-    TextBox{parent=info,text="DEV \x1a RTU Device/Configuration Alerts"}
+    TextBox{parent=info,text="SVR \x1a Status do Supervisor"}
+    TextBox{parent=info,text="PLC \x1a Conexões de CLP do Reator"}
+    TextBox{parent=info,text="RTU \x1a Conexões de Gateway RTU"}
+    TextBox{parent=info,text="CRD \x1a Conexão do Coordenador"}
+    TextBox{parent=info,text="PKT \x1a Conexões Pocket"}
+    TextBox{parent=info,text="DEV \x1a Alertas de Disp./Config. de RTU"}
 
     local notes = Div{parent=info_page,width=term_w-2,height=8,x=2,y=9,fg_bg=style.fp.disabled_fg}
 
-    TextBox{parent=notes,text="The DEV tab will show missing devices and devices that connected with incorrect information. Missing entries will indicate how the configuration should be, duplicate entries will indicate what is a duplicate, and out-of-range entries will indicate the invalid entry. An out-of-range example is a #2 turbine when you should only have 1 turbine for that unit."}
+    TextBox{parent=notes,text="A aba DEV mostrará dispositivos ausentes e dispositivos que conectaram com informações incorretas. Entradas ausentes indicarão como deve ser a config., duplicadas indicarão o que está duplicado, e fora do intervalo indicarão a entrada inválida. Ex: turbina #2 quando só deveria ter 1 na unidade."}
 
-    -- assemble page panes
+    -- montar painéis de páginas
 
     local panes = { main_page, plc_page, rtu_page, crd_page, pkt_page, chk_page, info_page }
 
@@ -209,7 +209,7 @@ local function init(panel, config)
 
     TabBar{parent=panel,y=2,tabs=tabs,min_width=7,callback=page_pane.set_value,fg_bg=style.theme.highlight_box_bright}
 
-    -- link RTU/PDG/CHK list management to PGI
+    -- vincular gerenciamento de listas RTU/PDG/CHK ao PGI
     pgi.link_elements(rtu_list, rtu_entry, pdg_list, pdg_entry, chk_list, chk_entry)
 end
 

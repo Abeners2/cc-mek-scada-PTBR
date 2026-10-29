@@ -65,7 +65,7 @@ end
 
 table.insert(profile_names, "Custom")
 
--- create the mekanism configuration view
+-- criar a visualização de configuração do mekanism
 ---@param tool_ctl _svr_cfg_tool_ctl
 ---@param main_pane MultiPane
 ---@param cfg_sys [ svr_config, svr_config, svr_config, table, function ]
@@ -80,7 +80,7 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
     local nav_fg_bg     = style.nav_fg_bg
     local btn_act_fg_bg = style.btn_act_fg_bg
 
-    --#region Mekanism Configuration
+    --#region Configuração do Mekanism
 
     local mek_c_1 = Div{parent=mek_cfg,x=2,y=4,width=49}
     local mek_c_2 = Div{parent=mek_cfg,x=2,y=4,width=49}
@@ -88,10 +88,10 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
 
     local mek_pane = MultiPane{parent=mek_cfg,y=4,panes={mek_c_1,mek_c_2,mek_c_3}}
 
-    TextBox{parent=mek_cfg,y=2,text=" Mekanism Configuration",fg_bg=cpair(colors.white,colors.brown)}
+    TextBox{parent=mek_cfg,y=2,text=" Configuração do Mekanism",fg_bg=cpair(colors.white,colors.brown)}
 
-    TextBox{parent=mek_c_1,y=1,height=3,text="To ensure calculations and behavior are correct, please select your Mekanism configuration. In most cases, you should use the default."}
-    TextBox{parent=mek_c_1,y=5,height=3,text="If your modpack is listed, select it. If you or your pack creator manually changed Mekanism settings, please select Custom."}
+    TextBox{parent=mek_c_1,y=1,height=3,text="Para garantir que os cálculos e o comportamento estejam corretos, selecione sua configuração do Mekanism. Na maioria dos casos, use o padrão (Default)."}
+    TextBox{parent=mek_c_1,y=5,height=3,text="Se o seu modpack estiver listado, selecione-o. Se você ou o criador do pacote alterou as configurações do Mekanism manualmente, selecione Custom."}
 
     local initial = #profile_names
 
@@ -107,7 +107,7 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
     local function submit_profile()
         tmp_cfg.MekanismProfile = profile_names[profile.get_value()] or "Custom"
 
-        -- apply if not custom, otherwise go to the custom config page
+        -- aplicar se não for personalizado, caso contrário ir para a página de config personalizada
         if profile.get_value() < #profile_names then
             tmp_cfg.MekanismConfig = mekanism.profiles[profile.get_value()].fields
 
@@ -124,10 +124,10 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
 
     tool_ctl.mek_profile = profile
 
-    PushButton{parent=mek_c_1,y=14,text="\x1b Back",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=mek_c_1,x=44,y=14,text="Next \x1a",callback=submit_profile,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_1,y=14,text="\x1b Voltar",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_1,x=42,y=14,text="Avançar \x1a",callback=submit_profile,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=mek_c_2,y=1,height=4,text="For Custom, check config/Mekanism/generators.toml on your server/world and fill in the following fields. This path or config names may vary by Mekanism version (e.g. gas instead of chemical)."}
+    TextBox{parent=mek_c_2,y=1,height=4,text="Para Custom, verifique config/Mekanism/generators.toml no seu servidor/mundo e preencha os campos a seguir. Este caminho ou nomes podem variar conforme a versão do Mekanism."}
 
     local last_section = ""
 
@@ -144,7 +144,7 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
         tool_ctl.custom_configs[key[1]] = NumberField{parent=mek_c_2,y=field.get_y(),x=string.len(key[3])+6,width=10,default=ini_cfg.MekanismConfig[key[1]],allow_decimal=true,fg_bg=bw_fg_bg}
     end
 
-    local cfg_err = TextBox{parent=mek_c_2,x=8,y=14,width=35,text="Please fill out all fields.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local cfg_err = TextBox{parent=mek_c_2,x=10,y=14,width=31,text="Preencha todos os campos.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_custom_profile()
         for _, key in ipairs(mekanism.ordered_keys) do
@@ -162,22 +162,22 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
         mek_pane.set_value(3)
     end
 
-    PushButton{parent=mek_c_2,y=14,text="\x1b Back",callback=function()mek_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=mek_c_2,x=44,y=14,text="Next \x1a",callback=submit_custom_profile,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_2,y=14,text="\x1b Voltar",callback=function()mek_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_2,x=42,y=14,text="Avançar \x1a",callback=submit_custom_profile,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=mek_c_3,y=1,height=3,text="Some modpacks also change the nuclear waste to product ratios. These are usually 10:1, where 10mB waste makes 1mB plutonium or polonium."}
+    TextBox{parent=mek_c_3,y=1,height=3,text="Alguns modpacks também alteram a proporção de resíduo nuclear para produto. Geralmente é 10:1, onde 10mB de resíduo gera 1mB de plutônio ou polônio."}
 
-    TextBox{parent=mek_c_3,y=5,text="Nuclear Waste to Plutonium     :"}
+    TextBox{parent=mek_c_3,y=5,text="Resíduo Nuclear p/ Plutônio    :"}
     tool_ctl.waste_ratios[1] = NumberField{parent=mek_c_3,y=5,x=28,width=4,default=ini_cfg.MekanismWasteToPu[1],min=1,max=99,allow_decimal=false,align_right=true,fg_bg=bw_fg_bg}
     tool_ctl.waste_ratios[2] = NumberField{parent=mek_c_3,y=5,x=33,width=4,default=ini_cfg.MekanismWasteToPu[2],min=1,max=99,allow_decimal=false,fg_bg=bw_fg_bg}
 
-    TextBox{parent=mek_c_3,y=6,text="Nuclear Waste to Polonium      :"}
+    TextBox{parent=mek_c_3,y=6,text="Resíduo Nuclear p/ Polônio     :"}
     tool_ctl.waste_ratios[3] = NumberField{parent=mek_c_3,y=6,x=28,width=4,default=ini_cfg.MekanismWasteToPo[1],min=1,max=99,allow_decimal=false,align_right=true,fg_bg=bw_fg_bg}
     tool_ctl.waste_ratios[4] = NumberField{parent=mek_c_3,y=6,x=33,width=4,default=ini_cfg.MekanismWasteToPo[2],min=1,max=99,allow_decimal=false,fg_bg=bw_fg_bg}
 
-    TextBox{parent=mek_c_3,y=8,height=2,text="Tip: the easist way to check these are their receipes in JEI.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=mek_c_3,y=8,height=2,text="Dica: a maneira mais fácil de verificar isso são as receitas no JEI.",fg_bg=g_lg_fg_bg}
 
-    local ratio_err = TextBox{parent=mek_c_3,x=8,y=14,width=35,text="Please fill out all fields.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local ratio_err = TextBox{parent=mek_c_3,x=10,y=14,width=31,text="Preencha todos os campos.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_waste_ratios()
         local values = {}
@@ -200,8 +200,8 @@ function mekanism.create(tool_ctl, main_pane, cfg_sys, mek_cfg, style)
         main_pane.set_value(4)
     end
 
-    PushButton{parent=mek_c_3,y=14,text="\x1b Back",callback=function()mek_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=mek_c_3,x=44,y=14,text="Next \x1a",callback=submit_waste_ratios,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_3,y=14,text="\x1b Voltar",callback=function()mek_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=mek_c_3,x=42,y=14,text="Avançar \x1a",callback=submit_waste_ratios,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 

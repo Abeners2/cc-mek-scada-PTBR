@@ -1,10 +1,10 @@
 --
--- SCADA Network Communications Objects
+-- Objetos de Comunicações de Rede SCADA
 --
 
 local log = require("scada-common.log")
 
--- basic acceleration aliases
+-- apelidos básicos de aceleração
 
 local type     = type
 local insert   = table.insert
@@ -13,7 +13,7 @@ local TYPE_NUM = "number"
 local TYPE_STR = "string"
 local TYPE_TBL = "table"
 
--- comms settings/attributes
+-- configurações/atributos de comunicação
 
 local COMPUTER_ID = os.getComputerID()
 
@@ -23,7 +23,7 @@ local max_distance = nil
 ---@class comms
 local comms = {}
 
--- protocol/data versions (protocol/data independent changes tracked by util.lua version)
+-- versões de protocolo/dados (alterações independentes de protocolo/dados são rastreadas pela versão do util.lua)
 comms.version = "3.4.2"
 comms.api_version = "0.1.6"
 
@@ -35,73 +35,73 @@ comms.api_version = "0.1.6"
 
 ---@enum PROTOCOL
 local PROTOCOL = {
-    MODBUS_TCP = 0,      -- the "MODBUS TCP"-esque protocol
-    RPLC = 1,            -- reactor PLC protocol
-    SCADA_MGMT = 2,      -- SCADA supervisor management, device advertisements, etc
-    SCADA_CRDN = 3       -- data/control packets for coordinators to/from supervisory controllers
+    MODBUS_TCP = 0,      -- protocolo estilo "MODBUS TCP"
+    RPLC = 1,            -- protocolo de PLC do reator
+    SCADA_MGMT = 2,      -- gerenciamento de supervisor SCADA, anúncios de dispositivos, etc
+    SCADA_CRDN = 3       -- pacotes de dados/controle para coordenadores de/para controladores supervisórios
 }
 
 ---@enum RPLC_TYPE
 local RPLC_TYPE = {
-    STATUS = 0,          -- reactor/system status
-    MEK_STRUCT = 1,      -- mekanism build structure
-    MEK_BURN_RATE = 2,   -- set burn rate
-    RPS_ENABLE = 3,      -- enable reactor
-    RPS_DISABLE = 4,     -- disable the reactor
-    RPS_SCRAM = 5,       -- SCRAM reactor (manual request)
-    RPS_ASCRAM = 6,      -- SCRAM reactor (automatic request)
-    RPS_STATUS = 7,      -- RPS status
-    RPS_ALARM = 8,       -- RPS alarm broadcast
-    RPS_RESET = 9,       -- clear RPS trip (if in bad state, will trip immediately)
-    RPS_AUTO_RESET = 10, -- clear RPS trip if it is just a timeout or auto scram
-    AUTO_BURN_RATE = 11  -- set an automatic burn rate, PLC will respond with status, enable toggle speed limited
+    STATUS = 0,          -- status do reator/sistema
+    MEK_STRUCT = 1,      -- estrutura de construção do mekanism
+    MEK_BURN_RATE = 2,   -- definir taxa de queima
+    RPS_ENABLE = 3,      -- ativar reator
+    RPS_DISABLE = 4,     -- desativar o reator
+    RPS_SCRAM = 5,       -- SCRAM do reator (solicitação manual)
+    RPS_ASCRAM = 6,      -- SCRAM do reator (solicitação automática)
+    RPS_STATUS = 7,      -- status do RPS
+    RPS_ALARM = 8,       -- transmissão de alarme do RPS
+    RPS_RESET = 9,       -- limpar desarme do RPS (se estiver em estado ruim, desarmará imediatamente)
+    RPS_AUTO_RESET = 10, -- limpar desarme do RPS se for apenas um tempo esgotado ou scram automático
+    AUTO_BURN_RATE = 11  -- definir uma taxa de queima automática, o PLC responderá com status, velocidade de alternância de ativação limitada
 }
 
 ---@enum MGMT_TYPE
 local MGMT_TYPE = {
-    -- connection
-    ESTABLISH = 0,       -- establish new connection
-    KEEP_ALIVE = 1,      -- keep alive packet w/ RTT
-    CLOSE = 2,           -- close a connection
+    -- conexão
+    ESTABLISH = 0,       -- estabelecer nova conexão
+    KEEP_ALIVE = 1,      -- pacote keep alive c/ RTT
+    CLOSE = 2,           -- fechar uma conexão
     SWITCH_NET = 3,
     -- RTU
-    RTU_ADVERT = 4,      -- RTU capability advertisement
-    RTU_DEV_REMOUNT = 5, -- RTU multiblock possbily changed (formed, unformed) due to PPM remount
-    RTU_TONE_ALARM = 6,  -- instruct RTUs to play specified alarm tones
+    RTU_ADVERT = 4,      -- anúncio de capacidade da RTU
+    RTU_DEV_REMOUNT = 5, -- multibloco da RTU possivelmente alterado (formado, não formado) devido a remontagem do PPM
+    RTU_TONE_ALARM = 6,  -- instruir RTUs a reproduzir tons de alarme especificados
     -- API
-    DIAG_TONE_GET = 7,   -- diagnostic - get alarm tones
-    DIAG_TONE_SET = 8,   -- diagnostic - set alarm tones
-    DIAG_ALARM_SET = 9,  -- diagnostic - set alarm to simulate audio for
-    INFO_LIST_CMP = 10   -- info - list all computers on the network
+    DIAG_TONE_GET = 7,   -- diagnóstico - obter tons de alarme
+    DIAG_TONE_SET = 8,   -- diagnóstico - definir tons de alarme
+    DIAG_ALARM_SET = 9,  -- diagnóstico - definir alarme para simular áudio
+    INFO_LIST_CMP = 10   -- info - listar todos os computadores na rede
 }
 
 ---@enum CRDN_TYPE
 local CRDN_TYPE = {
-    INITIAL_BUILDS = 0,  -- initial, complete builds packet to the coordinator
-    PROCESS_READY = 1,   -- process init is complete + last set of info for supervisor startup recovery
-    FAC_BUILDS = 2,      -- facility RTU builds
-    FAC_STATUS = 3,      -- state of facility and facility devices
-    FAC_CMD = 4,         -- faility command
-    UNIT_BUILDS = 5,     -- build of each reactor unit (reactor + RTUs)
-    UNIT_STATUSES = 6,   -- state of each of the reactor units
-    UNIT_CMD = 7,        -- command a reactor unit
-    API_GET_FAC = 8,     -- API: get the facility general data
-    API_GET_FAC_DTL = 9, -- API: get (detailed) data for the facility app
-    API_GET_UNIT = 10,   -- API: get reactor unit data
-    API_GET_BUILD = 11,  -- API: get data for the build app
-    API_GET_CTRL = 12,   -- API: get data for the control app
-    API_GET_PROC = 13,   -- API: get data for the process app
-    API_GET_WASTE = 14,  -- API: get data for the waste app
-    API_GET_RAD = 15     -- API: get data for the radiation monitor app
+    INITIAL_BUILDS = 0,  -- pacote inicial e completo de construções para o coordenador
+    PROCESS_READY = 1,   -- inicialização de processo concluída + último conjunto de informações para recuperação de inicialização do supervisor
+    FAC_BUILDS = 2,      -- construções de RTU da instalação
+    FAC_STATUS = 3,      -- estado da instalação e dispositivos da instalação
+    FAC_CMD = 4,         -- comando da instalação
+    UNIT_BUILDS = 5,     -- construção de cada unidade de reator (reator + RTUs)
+    UNIT_STATUSES = 6,   -- estado de cada uma das unidades de reator
+    UNIT_CMD = 7,        -- comandar uma unidade de reator
+    API_GET_FAC = 8,     -- API: obter dados gerais da instalação
+    API_GET_FAC_DTL = 9, -- API: obter dados (detalhados) para o aplicativo da instalação
+    API_GET_UNIT = 10,   -- API: obter dados da unidade de reator
+    API_GET_BUILD = 11,  -- API: obter dados para o aplicativo de construção
+    API_GET_CTRL = 12,   -- API: obter dados para o aplicativo de controle
+    API_GET_PROC = 13,   -- API: obter dados para o aplicativo de processo
+    API_GET_WASTE = 14,  -- API: obter dados para o aplicativo de resíduos
+    API_GET_RAD = 15     -- API: obter dados para o aplicativo de monitor de radiação
 }
 
 ---@enum ESTABLISH_ACK
 local ESTABLISH_ACK = {
-    ALLOW = 0,           -- link approved
-    DENY = 1,            -- link denied
-    COLLISION = 2,       -- link denied due to existing active link
-    BAD_VERSION = 3,     -- link denied due to comms version mismatch
-    BAD_API_VERSION = 4  -- link denied due to api version mismatch
+    ALLOW = 0,           -- link aprovado
+    DENY = 1,            -- link negado
+    COLLISION = 2,       -- link negado devido a link ativo existente
+    BAD_VERSION = 3,     -- link negado devido a incompatibilidade de versão de comunicação
+    BAD_API_VERSION = 4  -- link negado devido a incompatibilidade de versão da API
 }
 
 ---@enum DEVICE_TYPE device types for establish messages
@@ -109,34 +109,34 @@ local DEVICE_TYPE = { PLC = 0, RTU = 1, SVR = 2, CRD = 3, PKT = 4 }
 
 ---@enum PLC_AUTO_ACK
 local PLC_AUTO_ACK = {
-    FAIL = 0,            -- failed to set burn rate/burn rate invalid
-    DIRECT_SET_OK = 1,   -- successfully set burn rate
-    RAMP_SET_OK = 2,     -- successfully started burn rate ramping
-    ZERO_DIS_OK = 3      -- successfully disabled reactor with < 0.01 burn rate
+    FAIL = 0,            -- falha ao definir taxa de queima/taxa de queima inválida
+    DIRECT_SET_OK = 1,   -- taxa de queima definida com sucesso
+    RAMP_SET_OK = 2,     -- rampa de taxa de queima iniciada com sucesso
+    ZERO_DIS_OK = 3      -- reator desativado com sucesso com taxa de queima < 0.01
 }
 
 ---@enum FAC_COMMAND
 local FAC_COMMAND = {
-    SCRAM_ALL = 0,       -- SCRAM all reactors
-    STOP = 1,            -- stop automatic process control
-    START = 2,           -- start automatic process control
-    ACK_ALL_ALARMS = 3,  -- acknowledge all alarms on all units
-    SET_WASTE_MODE = 4,  -- set automatic waste processing mode
-    SET_PU_FB = 5,       -- set plutonium fallback mode
-    SET_SPS_LP = 6       -- set SPS at low power mode
+    SCRAM_ALL = 0,       -- SCRAM em todos os reatores
+    STOP = 1,            -- parar controle automático de processo
+    START = 2,           -- iniciar controle automático de processo
+    ACK_ALL_ALARMS = 3,  -- reconhecer todos os alarmes em todas as unidades
+    SET_WASTE_MODE = 4,  -- definir modo automático de processamento de resíduos
+    SET_PU_FB = 5,       -- definir modo de retorno (fallback) para plutônio
+    SET_SPS_LP = 6       -- definir SPS em modo de baixa energia
 }
 
 ---@enum UNIT_COMMAND
 local UNIT_COMMAND = {
-    SCRAM = 0,           -- SCRAM the reactor
-    START = 1,           -- start the reactor
-    RESET_RPS = 2,       -- reset the RPS
-    SET_BURN = 3,        -- set the burn rate
-    SET_WASTE = 4,       -- set the waste processing mode
-    ACK_ALL_ALARMS = 5,  -- ack all active alarms
-    ACK_ALARM = 6,       -- ack a particular alarm
-    RESET_ALARM = 7,     -- reset a particular alarm
-    SET_GROUP = 8        -- assign this unit to a group
+    SCRAM = 0,           -- SCRAM no reator
+    START = 1,           -- iniciar o reator
+    RESET_RPS = 2,       -- redefinir o RPS
+    SET_BURN = 3,        -- definir a taxa de queima
+    SET_WASTE = 4,       -- definir o modo de processamento de resíduos
+    ACK_ALL_ALARMS = 5,  -- reconhecer todos os alarmes ativos
+    ACK_ALARM = 6,       -- reconhecer um alarme específico
+    RESET_ALARM = 7,     -- redefinir um alarme específico
+    SET_GROUP = 8        -- atribuir esta unidade a um grupo
 }
 
 comms.PROTOCOL = PROTOCOL
@@ -155,14 +155,14 @@ comms.FAC_COMMAND = FAC_COMMAND
 
 --#endregion
 
--- destination broadcast address (to all devices)
+-- endereço de transmissão de destino (para todos os dispositivos)
 comms.BROADCAST = -1
 
--- firmware version used to indicate an establish packet is a connection test
+-- versão de firmware usada para indicar que um pacote de estabelecimento é um teste de conexão
 comms.CONN_TEST_FWV = "CONN_TEST"
 
--- configure the maximum allowable message receive distance<br>
--- packets received with distances greater than this will be silently discarded
+-- configura a distância máxima permitida para recebimento de mensagens<br>
+-- pacotes recebidos com distâncias maiores que esta serão descartados silenciosamente
 ---@param distance integer max modem message distance (0 disables the limit)
 function comms.set_trusted_range(distance)
     if distance == 0 then max_distance = nil else max_distance = distance end
@@ -170,7 +170,7 @@ end
 
 --#region Network Frames (Layer 2)
 
--- SCADA link-layer discovery frame
+-- quadro de descoberta da camada de enlace SCADA
 ---@nodiscard
 function comms.lld_frame()
     local self = {
@@ -188,7 +188,7 @@ function comms.lld_frame()
     ---@class lld_frame
     local public = {}
 
-    -- make a link-layer discovery frame
+    -- cria um quadro de descoberta da camada de enlace
     ---@param dest_addr integer destination computer address (ID)
     ---@param ack boolean if this is an acknowledgement
     function public.make(dest_addr, ack)
@@ -201,7 +201,7 @@ function comms.lld_frame()
         self.raw = { COMPUTER_ID, dest_addr, ack }
     end
 
-    -- parse in modem frame fields as a link-layer discovery frame
+    -- analisa os campos do quadro do modem como um quadro de descoberta da camada de enlace
     ---@param side string modem side
     ---@param sender integer sender channel
     ---@param reply_to integer reply channel
@@ -218,14 +218,14 @@ function comms.lld_frame()
         self.raw   = self.modem_frame.data
 
         if (type(max_distance) == TYPE_NUM) and (type(distance) == TYPE_NUM) and (distance > max_distance) then
-            -- outside of maximum allowable transmission distance
-            -- log.debug("COMMS: lld_frame.receive(): discarding frame with distance " .. distance .. " (outside trusted range)")
+            -- fora da distância máxima de transmissão permitida
+            -- log.debug("COMMS: lld_frame.receive(): descartando quadro com distancia " .. distance .. " (fora do alcance confiavel)")
         elseif type(self.raw) == TYPE_TBL then
             self.src_addr  = self.raw[1]
             self.dest_addr = self.raw[2]
             self.ack       = self.raw[3] == true
 
-            -- check if this frame is destined for this device, otherwise discard ASAP
+            -- verifica se este quadro é destinado a este dispositivo, caso contrário descarta o mais rápido possível
             if (self.dest_addr == COMPUTER_ID) or (self.dest_addr == comms.BROADCAST) then
                 self.valid = type(self.src_addr) == TYPE_NUM and type(self.dest_addr) == TYPE_NUM
             end
@@ -234,7 +234,7 @@ function comms.lld_frame()
         return self.valid
     end
 
-    -- public accessors --
+    -- acessores públicos --
 
     ---@nodiscard
     function public.modem_event() return self.modem_frame end
@@ -261,7 +261,7 @@ function comms.lld_frame()
     return public
 end
 
--- SCADA network frame
+-- quadro de rede SCADA
 ---@nodiscard
 function comms.scada_frame()
     local self = {
@@ -283,7 +283,7 @@ function comms.scada_frame()
     ---@class scada_frame
     local public = {}
 
-    -- make a SCADA frame
+    -- cria um quadro SCADA
     ---@param dest_addr integer destination computer address (ID)
     ---@param seq_num integer sequence number
     ---@param protocol PROTOCOL
@@ -301,7 +301,7 @@ function comms.scada_frame()
         self.raw = { COMPUTER_ID, dest_addr, seq_num, protocol, payload }
     end
 
-    -- parse in modem frame fields as a SCADA frame
+    -- analisa os campos do quadro do modem como um quadro SCADA
     ---@param side string modem side
     ---@param sender integer sender channel
     ---@param reply_to integer reply channel
@@ -318,14 +318,14 @@ function comms.scada_frame()
         self.raw   = self.modem_frame.data
 
         if (type(max_distance) == TYPE_NUM) and (type(distance) == TYPE_NUM) and (distance > max_distance) then
-            -- outside of maximum allowable transmission distance
-            -- log.debug("COMMS: scada_frame.receive(): discarding frame with distance " .. distance .. " (outside trusted range)")
+            -- fora da distância máxima de transmissão permitida
+            -- log.debug("COMMS: scada_frame.receive(): descartando quadro com distancia " .. distance .. " (fora do alcance confiavel)")
         elseif type(self.raw) == TYPE_TBL then
             self.src_addr  = self.raw[1]
             self.dest_addr = self.raw[2]
 
-            -- check if this frame is destined for this device, otherwise discard ASAP
-            -- if it is, check that the payload is a table and continue
+            -- verifica se este quadro é destinado a este dispositivo, caso contrário descarta o mais rápido possível
+            -- se for, verifica se a carga útil (payload) é uma tabela e continua
             if ((self.dest_addr == COMPUTER_ID) or (self.dest_addr == comms.BROADCAST)) and (type(self.raw[5]) == TYPE_TBL) then
                 self.seq_num  = self.raw[3]
                 self.protocol = self.raw[4]
@@ -340,10 +340,10 @@ function comms.scada_frame()
         return self.valid
     end
 
-    -- report that this packet has been authenticated (was received with a valid HMAC)
+    -- reporta que este pacote foi autenticado (foi recebido com um HMAC válido)
     function public.stamp_authenticated() self.authenticated = true end
 
-    -- public accessors --
+    -- acessores públicos --
 
     ---@nodiscard
     function public.modem_event() return self.modem_frame end
@@ -380,7 +380,7 @@ function comms.scada_frame()
     return public
 end
 
--- authenticated SCADA frame
+-- quadro SCADA autenticado
 ---@nodiscard
 function comms.authd_frame()
     local self = {
@@ -399,7 +399,7 @@ function comms.authd_frame()
     ---@class authd_frame
     local public = {}
 
-    -- make an authenticated SCADA frame
+    -- cria um quadro SCADA autenticado
     ---@param s_frame scada_frame scada frame to authenticate
     ---@param mac function message authentication hash function
     function public.make(s_frame, mac)
@@ -412,7 +412,7 @@ function comms.authd_frame()
         self.raw = { self.src_addr, self.dest_addr, self.mac, s_frame.raw_frame() }
     end
 
-    -- parse in modem frame fields as an authenticated SCADA frame
+    -- analisa os campos do quadro do modem como um quadro SCADA autenticado
     ---@param side string modem side
     ---@param sender integer sender channel
     ---@param reply_to integer reply channel
@@ -429,13 +429,13 @@ function comms.authd_frame()
         self.raw   = self.modem_frame.data
 
         if (type(max_distance) == TYPE_NUM) and ((type(distance) ~= TYPE_NUM) or (distance > max_distance)) then
-            -- outside of maximum allowable transmission distance
-            -- log.debug("COMMS: authd_frame.receive(): discarding frame with distance " .. distance .. " (outside trusted range)")
+            -- fora da distância máxima de transmissão permitida
+            -- log.debug("COMMS: authd_frame.receive(): descartando quadro com distancia " .. distance .. " (fora do alcance confiavel)")
         elseif type(self.raw) == TYPE_TBL then
             self.src_addr  = self.raw[1]
             self.dest_addr = self.raw[2]
 
-            -- check if this packet is destined for this device, otherwise discard ASAP
+            -- verifica se este pacote é destinado a este dispositivo, caso contrário descarta o mais rápido possível
             if (self.dest_addr == COMPUTER_ID) or (self.dest_addr == comms.BROADCAST) then
                 self.mac     = self.raw[3]
                 self.payload = self.raw[4]
@@ -448,7 +448,7 @@ function comms.authd_frame()
         return self.valid
     end
 
-    -- public accessors --
+    -- acessores públicos --
 
     ---@nodiscard
     function public.modem_event() return self.modem_frame end
@@ -479,7 +479,7 @@ end
 
 --#region Network Packets (Layer 3)
 
--- MODBUS packet container, modeled after MODBUS TCP
+-- contêiner de pacote MODBUS, modelado a partir do MODBUS TCP
 ---@nodiscard
 function comms.modbus_container()
     local self = {
@@ -497,7 +497,7 @@ function comms.modbus_container()
     ---@class modbus_container
     local public = {}
 
-    -- make a MODBUS packet
+    -- cria um pacote MODBUS
     ---@param txn_id integer
     ---@param unit_id integer
     ---@param func_code MODBUS_FCODE
@@ -511,18 +511,18 @@ function comms.modbus_container()
             self.func_code = func_code
             self.data      = data
 
-            -- populate raw array
+            -- preenche o array bruto
             self.raw = { self.txn_id, self.unit_id, self.func_code }
             for i = 1, self.length do insert(self.raw, data[i]) end
 
             return true
         end
 
-        log.error("COMMS: [modbus_make] data not a table")
+        log.error("COMMS: [modbus_make] dados nao sao uma tabela")
         return false
     end
 
-    -- decode a MODBUS packet from a SCADA frame
+    -- decodifica um pacote MODBUS a partir de um quadro SCADA
     ---@param frame scada_frame
     ---@return modbus_adu|nil packet the decoded packet, if valid
     function public.decode(frame)
@@ -542,17 +542,17 @@ function comms.modbus_container()
                 if type(self.txn_id) == TYPE_NUM and type(self.unit_id) == TYPE_NUM and type(self.func_code) == TYPE_NUM then
                     return public.get()
                 end
-            else log.debug("COMMS: [modbus_decode] attempted parse of incorrect protocol " .. frame.protocol(), true) end
-        else log.debug("COMMS: [modbus_decode] discarding nil frame", true) end
+            else log.debug("COMMS: [modbus_decode] tentativa de analise de protocolo incorreto " .. frame.protocol(), true) end
+        else log.debug("COMMS: [modbus_decode] descartando quadro nil", true) end
 
         return nil
     end
 
-    -- get the raw packet table for transmission
+    -- obtém a tabela de pacote bruto para transmissão
     ---@nodiscard
     function public.raw_packet() return self.raw end
 
-    -- create a new packet (ADU) from this container's contents
+    -- cria um novo pacote (ADU) a partir do conteúdo deste contêiner
     ---@nodiscard
     function public.get()
         ---@class modbus_adu
@@ -571,7 +571,7 @@ function comms.modbus_container()
     return public
 end
 
--- reactor PLC packet container
+-- contêiner de pacote do PLC do reator
 ---@nodiscard
 function comms.rplc_container()
     local self = {
@@ -588,31 +588,31 @@ function comms.rplc_container()
     ---@class rplc_container
     local public = {}
 
-    -- make an RPLC packet
+    -- cria um pacote RPLC
     ---@param id integer
     ---@param packet_type RPLC_TYPE
     ---@param data table
     ---@return boolean success
     function public.make(id, packet_type, data)
         if type(data) == TYPE_TBL then
-            -- packet accessor properties
+            -- propriedades acessoras do pacote
             self.id     = id
             self.type   = packet_type
             self.length = #data
             self.data   = data
 
-            -- populate raw array
+            -- preenche o array bruto
             self.raw = { self.id, self.type }
             for i = 1, #data do insert(self.raw, data[i]) end
 
             return true
         end
 
-        log.error("COMMS: [rplc_make] data not a table")
+        log.error("COMMS: [rplc_make] dados nao sao uma tabela")
         return false
     end
 
-    -- decode an RPLC packet from a SCADA frame
+    -- decodifica um pacote RPLC a partir de um quadro SCADA
     ---@param frame scada_frame
     ---@return rplc_packet|nil packet the decoded packet, if valid
     function public.decode(frame)
@@ -631,17 +631,17 @@ function comms.rplc_container()
                 if type(self.id) == TYPE_NUM and type(self.type) == TYPE_NUM then
                     return public.get()
                 end
-            else log.debug("COMMS: [rplc_decode] attempted parse of incorrect protocol " .. frame.protocol(), true) end
-        else log.debug("COMMS: [rplc_decode] nil frame encountered", true) end
+            else log.debug("COMMS: [rplc_decode] tentativa de analise de protocolo incorreto " .. frame.protocol(), true) end
+        else log.debug("COMMS: [rplc_decode] quadro nil encontrado", true) end
 
         return nil
     end
 
-    -- get the raw packet table for transmission
+    -- obtém a tabela de pacote bruto para transmissão
     ---@nodiscard
     function public.raw_packet() return self.raw end
 
-    -- create a new packet from this container's contents
+    -- cria um novo pacote a partir do conteúdo deste contêiner
     ---@nodiscard
     function public.get()
         ---@class rplc_packet
@@ -659,7 +659,7 @@ function comms.rplc_container()
     return public
 end
 
--- SCADA management packet container
+-- contêiner de pacote de gerenciamento SCADA
 ---@nodiscard
 function comms.mgmt_container()
     local self = {
@@ -675,29 +675,29 @@ function comms.mgmt_container()
     ---@class mgmt_container
     local public = {}
 
-    -- make a SCADA management packet
+    -- cria um pacote de gerenciamento SCADA
     ---@param packet_type MGMT_TYPE
     ---@param data table
     ---@return boolean success
     function public.make(packet_type, data)
         if type(data) == TYPE_TBL then
-            -- packet accessor properties
+            -- propriedades acessoras do pacote
             self.type   = packet_type
             self.length = #data
             self.data   = data
 
-            -- populate raw array
+            -- preenche o array bruto
             self.raw = { self.type }
             for i = 1, #data do insert(self.raw, data[i]) end
 
             return true
         end
 
-        log.error("COMMS: [mgmt_make] data not a table")
+        log.error("COMMS: [mgmt_make] dados nao sao uma tabela")
         return false
     end
 
-    -- decode a SCADA management packet from a SCADA frame
+    -- decodifica um pacote de gerenciamento SCADA a partir de um quadro SCADA
     ---@param frame scada_frame
     ---@return mgmt_packet|nil packet the decoded packet, if valid
     function public.decode(frame)
@@ -715,17 +715,17 @@ function comms.mgmt_container()
                 if type(self.type) == TYPE_NUM then
                     return public.get()
                 end
-            else log.debug("COMMS: [mgmt_decode] attempted parse of incorrect protocol " .. frame.protocol(), true) end
-        else log.debug("COMMS: [mgmt_decode] nil frame encountered", true) end
+            else log.debug("COMMS: [mgmt_decode] tentativa de analise de protocolo incorreto " .. frame.protocol(), true) end
+        else log.debug("COMMS: [mgmt_decode] quadro nil encontrado", true) end
 
         return nil
     end
 
-    -- get the raw packet table for transmission
+    -- obtém a tabela de pacote bruto para transmissão
     ---@nodiscard
     function public.raw_packet() return self.raw end
 
-    -- create a new packet from this container's contents
+    -- cria um novo pacote a partir do conteúdo deste contêiner
     ---@nodiscard
     function public.get()
         ---@class mgmt_packet
@@ -742,7 +742,7 @@ function comms.mgmt_container()
     return public
 end
 
--- SCADA coordinator packet container
+-- contêiner de pacote de coordenador SCADA
 ---@nodiscard
 function comms.crdn_container()
     local self = {
@@ -758,29 +758,29 @@ function comms.crdn_container()
     ---@class crdn_container
     local public = {}
 
-    -- make a coordinator packet
+    -- cria um pacote de coordenador
     ---@param packet_type CRDN_TYPE
     ---@param data table
     ---@return boolean success
     function public.make(packet_type, data)
         if type(data) == TYPE_TBL then
-            -- packet accessor properties
+            -- propriedades acessoras do pacote
             self.type   = packet_type
             self.length = #data
             self.data   = data
 
-            -- populate raw array
+            -- preenche o array bruto
             self.raw = { self.type }
             for i = 1, #data do insert(self.raw, data[i]) end
 
             return true
         end
 
-        log.error("COMMS: [crdn_make] data not a table")
+        log.error("COMMS: [crdn_make] dados nao sao uma tabela")
         return false
     end
 
-    -- decode a coordinator packet from a SCADA frame
+    -- decodifica um pacote de coordenador a partir de um quadro SCADA
     ---@param frame scada_frame
     ---@return crdn_packet|nil packet the decoded packet, if valid
     function public.decode(frame)
@@ -798,17 +798,17 @@ function comms.crdn_container()
                 if type(self.type) == TYPE_NUM then
                     return public.get()
                 end
-            else log.debug("COMMS: [crdn_decode] attempted parse of incorrect protocol " .. frame.protocol(), true) end
-        else log.debug("COMMS: [crdn_decode] nil frame encountered", true) end
+            else log.debug("COMMS: [crdn_decode] tentativa de analise de protocolo incorreto " .. frame.protocol(), true) end
+        else log.debug("COMMS: [crdn_decode] quadro nil encontrado", true) end
 
         return nil
     end
 
-    -- get the raw packet table for transmission
+    -- obtém a tabela de pacote bruto para transmissão
     ---@nodiscard
     function public.raw_packet() return self.raw end
 
-    -- create a new packet from this container's contents
+    -- cria um novo pacote a partir do conteúdo deste contêiner
     ---@nodiscard
     function public.get()
         ---@class crdn_packet

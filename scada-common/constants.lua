@@ -1,5 +1,5 @@
 --
--- System and Safety Constants
+-- Constantes de Sistema e Segurança
 --
 
 ---@class scada_constants
@@ -10,11 +10,11 @@ local constants = {}
 ---@class _rps_constants
 local rps = {}
 
-rps.MAX_DAMAGE_PERCENT      = 90   -- damage >= 90%
+rps.MAX_DAMAGE_PERCENT      = 90   -- dano >= 90%
 rps.MAX_DAMAGE_TEMPERATURE  = 1200 -- temp >= 1200K
-rps.MIN_COOLANT_FILL        = 0.10 -- fill < 10%
-rps.MAX_WASTE_FILL          = 0.95 -- fill > 95%
-rps.MAX_HEATED_COOLANT_FILL = 0.95 -- fill > 95%
+rps.MIN_COOLANT_FILL        = 0.10 -- nível < 10%
+rps.MAX_WASTE_FILL          = 0.95 -- nível > 95%
+rps.MAX_HEATED_COOLANT_FILL = 0.95 -- nível > 95%
 
 constants.RPS_LIMITS = rps
 
@@ -25,19 +25,19 @@ constants.RPS_LIMITS = rps
 ---@class _annunciator_constants
 local annunc = {}
 
-annunc.RCSFlowLow_H2O     = -3.2    -- flow < -3.2 mB/s
-annunc.RCSFlowLow_NA      = -2.0    -- flow < -2.0 mB/s
-annunc.CoolantLevelLow    = 0.4     -- fill < 40%
-annunc.OpTempTolerance    = 5       -- high temp if >= operational temp + X
-annunc.ReactorHighDeltaT  = 50      -- rate > 50K/s
-annunc.FuelLevelLow       = 0.05    -- fill <= 5%
-annunc.WasteLevelHigh     = 0.80    -- fill >= 80%
-annunc.WaterLevelLow      = 0.4     -- fill < 40%
-annunc.SteamFeedMismatch  = 10      -- ±10mB difference between total coolant flow and total steam input rate
-annunc.SFM_MaxSteamDT_H20 = 2.0     -- flow > 2.0 mB/s
-annunc.SFM_MinWaterDT_H20 = -3.0    -- flow < -3.0 mB/s
-annunc.SFM_MaxSteamDT_NA  = 2.0     -- flow > 2.0 mB/s
-annunc.SFM_MinWaterDT_NA  = -2.0    -- flow < -2.0 mB/s
+annunc.RCSFlowLow_H2O     = -3.2    -- fluxo < -3.2 mB/s
+annunc.RCSFlowLow_NA      = -2.0    -- fluxo < -2.0 mB/s
+annunc.CoolantLevelLow    = 0.4     -- nível < 40%
+annunc.OpTempTolerance    = 5       -- temp alta se >= temp operacional + X
+annunc.ReactorHighDeltaT  = 50      -- taxa > 50K/s
+annunc.FuelLevelLow       = 0.05    -- nível <= 5%
+annunc.WasteLevelHigh     = 0.80    -- nível >= 80%
+annunc.WaterLevelLow      = 0.4     -- nível < 40%
+annunc.SteamFeedMismatch  = 10      -- diferença de ±10mB entre o fluxo total de refrigerante e a taxa total de entrada de vapor
+annunc.SFM_MaxSteamDT_H20 = 2.0     -- fluxo > 2.0 mB/s
+annunc.SFM_MinWaterDT_H20 = -3.0    -- fluxo < -3.0 mB/s
+annunc.SFM_MaxSteamDT_NA  = 2.0     -- fluxo > 2.0 mB/s
+annunc.SFM_MinWaterDT_NA  = -2.0    -- fluxo < -2.0 mB/s
 annunc.RadiationWarning   = 0.00001 -- 10 uSv/h
 
 constants.ANNUNCIATOR_LIMITS = annunc
@@ -49,15 +49,15 @@ constants.ANNUNCIATOR_LIMITS = annunc
 ---@class _alarm_constants
 local alarms = {}
 
--- unit alarms
+-- alarmes da unidade
 
-alarms.HIGH_WASTE     = 0.85      -- fill > 85%
-alarms.HIGH_RADIATION = 0.00005   -- 50 uSv/h, not yet damaging but this isn't good
+alarms.HIGH_WASTE     = 0.85      -- nível > 85%
+alarms.HIGH_RADIATION = 0.00005   -- 50 uSv/h, ainda não causa dano, mas não é bom
 
--- facility alarms
+-- alarmes da instalação
 
-alarms.CHARGE_HIGH      = 1.0     -- once at or above 100% charge
-alarms.CHARGE_RE_ENABLE = 0.95    -- once below 95% charge
+alarms.CHARGE_HIGH      = 1.0     -- quando atingir ou ultrapassar 100% de carga
+alarms.CHARGE_RE_ENABLE = 0.95    -- quando ficar abaixo de 95% de carga
 alarms.FAC_HIGH_RAD     = 0.00001 -- 10 uSv/h
 
 constants.ALARM_LIMITS = alarms
@@ -69,10 +69,10 @@ constants.ALARM_LIMITS = alarms
 ---@class _rs_threshold_constants
 local rs = {}
 
-rs.ENERGY_CHARGE_LOW  = 0.05 -- activation threshold (less than) for F_CHARGE_LOW
-rs.ENERGY_CHARGE_HIGH = 0.95 -- activation threshold (greater than) for F_CHARGE_HIGH
-rs.AUX_COOL_ENABLE    = 0.85 -- actiation threshold (less than or equal) for U_AUX_COOL
-rs.AUX_COOL_DISABLE   = 1.00 -- deactivation threshold (greater than or equal) for U_AUX_COOL
+rs.ENERGY_CHARGE_LOW  = 0.05 -- limite de ativação (menor que) para F_CHARGE_LOW
+rs.ENERGY_CHARGE_HIGH = 0.95 -- limite de ativação (maior que) para F_CHARGE_HIGH
+rs.AUX_COOL_ENABLE    = 0.85 -- limite de ativação (menor ou igual a) para U_AUX_COOL
+rs.AUX_COOL_DISABLE   = 1.00 -- limite de desativação (maior ou igual a) para U_AUX_COOL
 
 constants.RS_THRESHOLDS = rs
 
@@ -82,20 +82,20 @@ constants.RS_THRESHOLDS = rs
 
 constants.ENERGY_MISMATCH_TOL = 0.01
 
--- minimum 3 seconds of falling back to Pu production
+-- mínimo de 3 segundos de retorno para produção de Pu
 constants.PU_FALLBACK_MIN_TIME_MS = 3000
 
--- milliseconds until coolant flow is assumed to be stable enough to enable certain coolant checks
+-- milissegundos até que o fluxo de refrigerante seja considerado estável o suficiente para ativar certas verificações de refrigerante
 constants.FLOW_STABILITY_DELAY_MS = 10000
 
--- assume an energy core is unformed/unactivated if this amount of generated energy (from turbines)
--- is exceeded while the energy core reports zero FE stored, zero input, and zero output
+-- assume que um núcleo de energia não está formado/ativado se esta quantidade de energia gerada (das turbinas)
+-- for excedida enquanto o núcleo de energia reporta zero FE armazenado, zero entrada e zero saída
 constants.ENERGY_CORE_UNFORMED_LIM_FE = 5
 
--- Notes on Radiation
--- - background radiation 0.0000001 Sv/h (99.99 nSv/h)
--- - "green tint" radiation 0.00001 Sv/h (10 uSv/h)
--- - damaging radiation 0.00006 Sv/h (60 uSv/h)
+-- Notas sobre Radiação
+-- - radiação de fundo 0.0000001 Sv/h (99.99 nSv/h)
+-- - radiação de "tom verde" 0.00001 Sv/h (10 uSv/h)
+-- - radiação danosa 0.00006 Sv/h (60 uSv/h)
 
 constants.LOW_RADIATION       = 0.00001
 constants.HAZARD_RADIATION    = 0.00006
@@ -104,10 +104,10 @@ constants.VERY_HIGH_RADIATION = 0.1
 constants.SEVERE_RADIATION    = 8.0
 constants.EXTREME_RADIATION   = 100.0
 
--- nominal RTT is ping (0ms to 10ms usually) + 150ms for SV main loop tick
+-- RTT nominal é o ping (0ms a 10ms normalmente) + 150ms para o tick do loop principal do SV
 
-constants.WARN_RTT = 300 -- 2x as long as expected w/ 0 ping
-constants.HIGH_RTT = 500 -- 3.33x as long as expected w/ 0 ping
+constants.WARN_RTT = 300 -- 2x mais longo que o esperado c/ 0 de ping
+constants.HIGH_RTT = 500 -- 3.33x mais longo que o esperado c/ 0 de ping
 
 --#endregion
 
@@ -116,14 +116,14 @@ constants.HIGH_RTT = 500 -- 3.33x as long as expected w/ 0 ping
 ---@class _mek_constants
 local mek = {}
 
--- controller tuning references
--- DO NOT MODIFY, this is the reference system, not your system
+-- referências de ajuste do controlador
+-- NÃO MODIFIQUE, este é o sistema de referência, não o seu sistema
 
 mek.STANDARD_FE_PER_MB = 80000
 mek.REF_TURBINE_FLOW   = 4896000
 mek.REF_TURBINE_CAP    = 108416000
 
--- hard-coded Mekanism constants (not configurable)
+-- constantes fixas do Mekanism (não configuráveis)
 
 mek.BASE_BOIL_TEMP          = 373.15 -- HeatUtils.BASE_BOIL_TEMP
 mek.STEAM_ENERGY_EFF        = 0.2    -- HeatUtils.getSteamEnergyEfficiency
@@ -133,11 +133,11 @@ mek.BOILER_CASING_HEAT_CAP  = 50     -- BoilerMultiblockData.CASING_HEAT_CAPACIT
 mek.SODIUM_CONDUCTIVITY     = 1
 mek.SODIUM_THERMAL_ENTHALPY = 5
 
--- configurable Mekanism constants
+-- constantes configuráveis do Mekanism
 
 mek.WATER_THERMAL_ENTHALPY = 10 -- maxEnergyPerSteam
 
--- WARNING: the following values are overridden by the Mekanism configuration on the Supervisor
+-- AVISO: os valores a seguir são sobrescritos pela configuração do Mekanism no Supervisor
 
 mek.JOULES_PER_MB          = 1000000 -- energyPerFissionFuel
 mek.TURBINE_GAS_PER_TANK   = 64000   -- turbineGasPerTank

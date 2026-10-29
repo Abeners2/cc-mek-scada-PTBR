@@ -1,5 +1,5 @@
 --
--- Pocket Diagnostics Connection Entry
+-- Entrada de Conexão de Diagnósticos Pocket
 --
 
 local databus       = require("supervisor.databus")
@@ -17,9 +17,9 @@ local ALIGN = core.ALIGN
 
 local cpair = core.cpair
 
--- create a pocket diagnostics list entry
----@param parent ListBox parent
----@param id integer PDG session ID
+-- criar uma entrada da lista de diagnósticos pocket
+---@param parent ListBox pai
+---@param id integer ID da sessão PDG
 local function init(parent, id)
     local s_hi_box = style.theme.highlight_box
 
@@ -27,7 +27,7 @@ local function init(parent, id)
 
     local term_w, _ = term.getSize()
 
-    -- root div
+    -- div raiz
     local root = Div{parent=parent,x=2,y=2,height=4,width=parent.get_width()-2}
     local entry = Div{parent=root,x=2,y=1,height=3,fg_bg=style.theme.highlight_box_bright}
 

@@ -1,18 +1,18 @@
 --
--- Publisher-Subscriber Interconnect Layer
+-- Camada de Interconexão Publicador-Assinante (PSIL)
 --
 
 local util = require("scada-common.util")
 
 local psil = {}
 
--- instantiate a new interconnect layer
+-- instancia uma nova camada de interconexão
 ---@nodiscard
 function psil.create()
     ---@type { [string]: { subscribers: { notify: fun(param: any) }[], value: any } } interconnect table
     local ic = {}
 
-    -- allocate a new interconnect field
+    -- aloca um novo campo de interconexão
     ---@key string data key
     local function alloc(key)
         ic[key] = { subscribers = {}, value = nil }
@@ -21,23 +21,23 @@ function psil.create()
     ---@class psil
     local public = {}
 
-    -- subscribe to a data object in the interconnect<br>
-    -- will call func() right away if a value is already avaliable
+    -- inscreve-se em um objeto de dados na interconexão<br>
+    -- chamará func() imediatamente se um valor já estiver disponível
     ---@param key string data key
     ---@param func function function to call on change
     function public.subscribe(key, func)
-        -- allocate new key if not found or notify if value is found
+        -- aloca nova chave se não encontrada ou notifica se o valor for encontrado
         if ic[key] == nil then
             alloc(key)
         elseif ic[key].value ~= nil then
             func(ic[key].value)
         end
 
-        -- subscribe to key
+        -- inscreve-se na chave
         table.insert(ic[key].subscribers, { notify = func })
     end
 
-    -- unsubscribe a function from a given key
+    -- cancela a inscrição de uma função de uma determinada chave
     ---@param key string data key
     ---@param func function function to unsubscribe
     function public.unsubscribe(key, func)
@@ -46,7 +46,7 @@ function psil.create()
         end
     end
 
-    -- publish data to a given key, passing it to all subscribers if it has changed
+    -- publica dados em uma determinada chave, repassando a todos os assinantes se tiver mudado
     ---@param key string data key
     ---@param value any data value
     function public.publish(key, value)
@@ -61,8 +61,8 @@ function psil.create()
         end
     end
 
-    -- publish a toggled boolean value to a given key, passing it to all subscribers if it has changed<br>
-    -- this is intended to be used to toggle boolean indicators such as heartbeats without extra state variables
+    -- publica um valor booleano alternado em uma determinada chave, repassando a todos os assinantes se tiver mudado<br>
+    -- destinado a ser usado para alternar indicadores booleanos como heartbeats sem variáveis de estado extras
     ---@param key string data key
     function public.toggle(key)
         if ic[key] == nil then alloc(key) end
@@ -74,14 +74,14 @@ function psil.create()
         end
     end
 
-    -- get the currently stored value for a key, or nil if not set
+    -- obtém o valor atualmente armazenado para uma chave, ou nil se não definido
     ---@param key string data key
     ---@return any
     function public.get(key)
         if ic[key] ~= nil then return ic[key].value else return nil end
     end
 
-    -- clear the contents of the interconnect
+    -- limpa o conteúdo da interconexão
     function public.purge() ic = {} end
 
     return public

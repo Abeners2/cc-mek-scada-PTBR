@@ -1,5 +1,5 @@
 --
--- Graphics Style Options
+-- Opcoes de Estilo Grafico
 --
 
 local util   = require("scada-common.util")
@@ -98,107 +98,107 @@ states.wht_ind_s = {
 
 style.icon_states = states
 
--- MAIN LAYOUT --
+-- LAYOUT PRINCIPAL --
 
 style.reactor = {
-    -- reactor states<br>
+    -- estados do reator<br>
     ---@see REACTOR_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "PLC  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "DISABLED" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" },
-        { color = cpair(colors.black, colors.red),    text = "SCRAMMED" },
-        { color = cpair(colors.black, colors.red),    text = "FORCE DSBL" }
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  CLP" },
+        { color = cpair(colors.white, colors.gray),   text = "DESATIVADO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" },
+        { color = cpair(colors.black, colors.red),    text = "SCRAM" },
+        { color = cpair(colors.black, colors.red),    text = "DESAT. FORC." }
     }
 }
 
 style.boiler = {
-    -- boiler states<br>
+    -- estados da caldeira<br>
     ---@see BOILER_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" }
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  RTU" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" }
     }
 }
 
 style.turbine = {
-    -- turbine states<br>
+    -- estados da turbina<br>
     ---@see TURBINE_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  RTU" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" },
         { color = cpair(colors.black, colors.red),    text = "TRIP" }
     }
 }
 
 style.dtank = {
-    -- dynamic tank states<br>
+    -- estados do tanque dinamico<br>
     ---@see TANK_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  RTU" },
         { color = cpair(colors.black, colors.green),  text = "ONLINE" },
-        { color = cpair(colors.black, colors.yellow), text = "LOW FILL" },
-        { color = cpair(colors.black, colors.green),  text = "FILLED" }
+        { color = cpair(colors.black, colors.yellow), text = "NIVEL BAIXO" },
+        { color = cpair(colors.black, colors.green),  text = "CHEIO" }
     }
 }
 
 style.ess = {
-    -- induction matrix and energy core states<br>
+    -- estados da matriz de inducao e do nucleo de energia<br>
     ---@see ESS_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  RTU" },
         { color = cpair(colors.black, colors.green),  text = "ONLINE" },
-        { color = cpair(colors.black, colors.yellow), text = "LOW CHARGE" },
-        { color = cpair(colors.black, colors.yellow), text = "HIGH  CHARGE" }
+        { color = cpair(colors.black, colors.yellow), text = "CARGA BAIXA" },
+        { color = cpair(colors.black, colors.yellow), text = "CARGA  ALTA" }
     }
 }
 
 style.sps = {
-    -- SPS states<br>
+    -- estados da SPS<br>
     ---@see SPS_STATE
     states = {
         { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" }
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "FALHA  RTU" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" }
     }
 }
 
--- get waste styling, which depends on the configuration
+-- obtem o estilo de rejeito, que depende da configuracao
 ---@return { states: { color: color, text: string }, states_abbrv: { color: color, text: string }, options: string[], unit_opts: string[] }
 function style.get_waste()
     local pu_color = util.trinary(config.GreenPuPellet, colors.green, colors.cyan)
     local po_color = util.trinary(config.GreenPuPellet, colors.cyan, colors.green)
 
     return {
-        -- auto waste processing states
+        -- estados de processamento automatico de rejeito
         states = {
-            { color = cpair(colors.black, pu_color),      text = "PLUTONIUM" },
-            { color = cpair(colors.black, po_color),      text = "POLONIUM" },
-            { color = cpair(colors.black, colors.purple), text = "ANTI MATTER" }
+            { color = cpair(colors.black, pu_color),      text = "PLUTONIO" },
+            { color = cpair(colors.black, po_color),      text = "POLONIO" },
+            { color = cpair(colors.black, colors.purple), text = "ANTIMATERIA" }
         },
         states_abbrv = {
             { color = cpair(colors.black, pu_color),      text = "Pu" },
             { color = cpair(colors.black, po_color),      text = "Po" },
             { color = cpair(colors.black, colors.purple), text = "AM" }
         },
-        -- process radio button options
-        options = { "Plutonium", "Polonium", "Antimatter" },
-        -- unit waste selection
-        unit_opts = { "Auto", "Plutonium", "Polonium", "Antimatter" }
+        -- opcoes de botao de radio do processo
+        options = { "Plutonio", "Polonio", "Antimateria" },
+        -- selecao de rejeito da unidade
+        unit_opts = { "Auto", "Plutonio", "Polonio", "Antimateria" }
     }
 end
 

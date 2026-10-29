@@ -20,8 +20,8 @@ local FAC_COMMAND = comms.FAC_COMMAND
 
 local LINK_TIMEOUT = 60.0
 
--- wait 5 seconds after initializing a network switch request before being allowed to send more,
--- which avoids repeat duplicate requests
+-- aguarda 5 segundos após iniciar uma solicitação de troca de rede antes de permitir o envio de outras,
+-- o que evita solicitações duplicadas repetidas
 local FAILOVER_GRACE_PERIOD_MS = 5000
 
 local coordinator = {}
@@ -32,7 +32,7 @@ local config = {}
 
 coordinator.config = config
 
--- load the coordinator configuration
+-- carrega a configuração do coordenador
 function coordinator.load_config()
     if not settings.load("/coordinator.settings") then return false end
 
@@ -129,7 +129,7 @@ function coordinator.load_config()
     return cfv.valid()
 end
 
--- dmesg print wrapper
+-- wrapper de impressão do dmesg
 ---@param message string message
 ---@param dmesg_tag string tag
 ---@param working? boolean to use dmesg_working
@@ -156,7 +156,7 @@ function coordinator.log_boot(message) log_dmesg(message, "BOOT") end
 function coordinator.log_comms(message) log_dmesg(message, "COMMS") end
 function coordinator.log_crypto(message) log_dmesg(message, "CRYPTO") end
 
--- log a message for communications connecting, providing access to progress indication control functions
+-- registra uma mensagem de conexão de comunicações, fornecendo acesso às funções de controle de indicação de progresso
 ---@nodiscard
 ---@param message string
 ---@return function update, function done
@@ -167,7 +167,7 @@ function coordinator.log_comms_connecting(message)
     return update, done
 end
 
--- coordinator communications
+-- comunicações do coordenador
 ---@nodiscard
 ---@param version string coordinator version
 ---@param backplane crd_backplane coordinator backplane
@@ -176,7 +176,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
     local self = {
         sv_linked = false,
         sv_addr = comms.BROADCAST,
-        sv_seq_num = util.time_ms() * 10, -- unique per peer, restarting will not re-use seq nums due to message rate
+        sv_seq_num = util.time_ms() * 10, -- único por par, reiniciar não reutilizará seq nums devido à taxa de mensagens
         sv_r_seq_num = nil,               ---@type nil|integer
         sv_config_err = false,
         failover_init = 0,
@@ -195,14 +195,14 @@ function coordinator.comms(version, backplane, sv_watchdog)
         comms.set_trusted_range(config.TrustedRange)
     end
 
-    -- pass config to apisessions
+    -- passa a config para apisessions
     if config.API_Enabled and wl_nic then
         apisessions.init(wl_nic, config)
     end
 
     --#region PRIVATE FUNCTIONS --
 
-    -- send a packet to the supervisor
+    -- envia um pacote ao supervisor
     ---@param msg_type MGMT_TYPE|CRDN_TYPE
     ---@param msg table
     local function _send_sv(protocol, msg_type, msg)
@@ -222,7 +222,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         self.sv_seq_num = self.sv_seq_num + 1
     end
 
-    -- send an API establish request response
+    -- envia uma resposta à solicitação de estabelecimento de API
     ---@param rx_frame scada_frame
     ---@param ack ESTABLISH_ACK
     ---@param data any?
@@ -237,7 +237,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         self.last_api_est_acks[rx_frame.src_addr()] = ack
     end
 
-    -- send establish request
+    -- envia solicitação de estabelecimento
     ---@param nic nic nic to transmit on
     local function _send_establish(nic)
         local ini_nic = tx_nic
@@ -249,7 +249,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         tx_nic = ini_nic
     end
 
-    -- keep alive ack
+    -- confirmação de keep alive
     ---@param srv_time integer
     local function _send_keep_alive_ack(srv_time)
         _send_sv(PROTOCOL.SCADA_MGMT, MGMT_TYPE.KEEP_ALIVE, { srv_time, util.time() })
@@ -262,17 +262,17 @@ function coordinator.comms(version, backplane, sv_watchdog)
     ---@class coord_comms
     local public = {}
 
-    -- switch the current active NIC
+    -- alterna a NIC ativa atual
     ---@param new_nic nic
     function public.switch_nic(new_nic)
         if tx_nic.is_connected() then
-            -- try to gracefully switch, we have an intact continuous connection
+            -- tenta alternar graciosamente, temos uma conexão contínua intacta
             log.info(util.c("switching link to reconnected interface ", new_nic.phy_name(), " from ", tx_nic.phy_name()))
 
             tx_nic = new_nic
             _send_sv(PROTOCOL.SCADA_MGMT, MGMT_TYPE.SWITCH_NET, {})
         else
-            -- can't gracefully switch, the other NIC was lost
+            -- não é possível alternar graciosamente, a outra NIC foi perdida
             log.info(util.c("closing link on ", tx_nic.phy_name(), ", switching to ", new_nic.phy_name()))
 
             tx_nic = new_nic
@@ -281,14 +281,14 @@ function coordinator.comms(version, backplane, sv_watchdog)
         end
     end
 
-    -- maintain the supervisor connection, which consists of establishing it and handling link failover
+    -- mantém a conexão com o supervisor, o que consiste em estabelecê-la e gerenciar failover de link
     ---@param abort boolean? true to print out cancel info if not linked (use on program terminate)
     ---@return boolean ok, boolean start_ui
     function public.manage_link(abort)
         local ok, start_ui = true, false
 
         if self.sv_linked then
-            -- handle connection failover
+            -- gerencia failover de conexão
             local act_nic = backplane.active_nic()
             if (act_nic ~= tx_nic) and act_nic.is_network_up() and ((util.time_ms() - self.failover_init) > FAILOVER_GRACE_PERIOD_MS) then
                 log.info(util.c("primary interface ", act_nic.phy_name(), " is up, requesting link switch"))
@@ -299,13 +299,13 @@ function coordinator.comms(version, backplane, sv_watchdog)
                 self.failover_init = util.time_ms()
             end
 
-            -- handle UI
+            -- gerencia UI
             if self.est_tick_waiting ~= nil then
                 self.est_task_done(true)
                 self.est_tick_waiting = nil
                 self.est_task_done = nil
 
-                ioctl.sys_splash_main_msg(nil, "Connection successful!")
+                ioctl.sys_splash_main_msg(nil, "Conexão bem-sucedida!")
 
                 start_ui = true
             end
@@ -324,7 +324,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
                 self.est_last = self.est_start
 
                 self.est_tick_waiting, self.est_task_done =
-                    coordinator.log_comms_connecting("attempting to connect to configured supervisor on channel " .. config.SVR_Channel)
+                    coordinator.log_comms_connecting("tentando conectar ao supervisor configurado no canal " .. config.SVR_Channel)
 
                 if e_nic then _send_establish(e_nic) end
             else
@@ -335,32 +335,32 @@ function coordinator.comms(version, backplane, sv_watchdog)
                 self.est_task_done(false)
 
                 if abort then
-                    coordinator.log_comms("supervisor connection attempt cancelled by user")
-                    ioctl.sys_splash_main_msg("Connection Failed", "Connection attempt cancelled.")
+                    coordinator.log_comms("tentativa de conexão ao supervisor cancelada pelo usuário")
+                    ioctl.sys_splash_main_msg("Falha na Conexão", "Tentativa de conexão cancelada.")
                 elseif self.sv_config_err then
-                    coordinator.log_comms("supervisor unit count does not match coordinator unit count, check configs")
-                    ioctl.sys_splash_main_msg("Connection Failed", "Supervisor and Coordinator configured unit counts do not match.")
+                    coordinator.log_comms("qtd. de unidades do supervisor difere da do coordenador, verifique as configs")
+                    ioctl.sys_splash_main_msg("Falha na Conexão", "As contagens de unidades configuradas no Supervisor e no Coordenador não coincidem.")
                 elseif not self.sv_linked then
                     if self.last_est_ack == ESTABLISH_ACK.DENY then
-                        coordinator.log_comms("supervisor connection attempt denied")
-                        ioctl.sys_splash_main_msg("Connection Failed", "Supervisor denied connection.")
+                        coordinator.log_comms("tentativa de conexão ao supervisor negada")
+                        ioctl.sys_splash_main_msg("Falha na Conexão", "O Supervisor negou a conexão.")
                     elseif self.last_est_ack == ESTABLISH_ACK.COLLISION then
-                        coordinator.log_comms("supervisor connection failed due to collision")
-                        ioctl.sys_splash_main_msg("Connection Failed", "Supervisor denied connection due to already being connected to another Coordinator.")
+                        coordinator.log_comms("conexão ao supervisor falhou devido a colisão")
+                        ioctl.sys_splash_main_msg("Falha na Conexão", "O Supervisor negou a conexão por já estar conectado a outro Coordenador.")
                     elseif self.last_est_ack == ESTABLISH_ACK.BAD_VERSION then
-                        coordinator.log_comms("supervisor connection failed due to version mismatch")
-                        ioctl.sys_splash_main_msg("Connection Failed", "Communications version mismatch.")
+                        coordinator.log_comms("conexão ao supervisor falhou devido a incompatibilidade de versão")
+                        ioctl.sys_splash_main_msg("Falha na Conexão", "Incompatibilidade de versão de comunicação.")
                     else
-                        coordinator.log_comms("supervisor connection failed with no valid response")
-                        ioctl.sys_splash_main_msg("Connection Failed", "Connection timed out with no response.")
+                        coordinator.log_comms("conexão ao supervisor falhou sem resposta válida")
+                        ioctl.sys_splash_main_msg("Falha na Conexão", "Tempo de conexão esgotado sem resposta.")
                     end
                 end
 
                 ok = false
             elseif self.sv_config_err then
                 self.est_task_done(false)
-                coordinator.log_comms("supervisor unit count does not match coordinator unit count, check configs")
-                ioctl.sys_splash_main_msg("Connection Failed", "Supervisor and Coordinator configured unit counts do not match.")
+                coordinator.log_comms("qtd. de unidades do supervisor difere da do coordenador, verifique as configs")
+                ioctl.sys_splash_main_msg("Falha na Conexão", "As contagens de unidades configuradas no Supervisor e no Coordenador não coincidem.")
                 ok = false
             elseif (os.clock() - self.est_last) > 1.0 then
                 if e_nic then _send_establish(e_nic) end
@@ -371,7 +371,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         return ok, start_ui
     end
 
-    -- unlink from the server
+    -- desvincula do servidor
     function public.unlink()
         self.sv_addr = comms.BROADCAST
         self.sv_linked = false
@@ -379,33 +379,33 @@ function coordinator.comms(version, backplane, sv_watchdog)
         ioctl.fp_link_state(types.PANEL_LINK_STATE.DISCONNECTED)
     end
 
-    -- close the connection to the server
+    -- fecha a conexão com o servidor
     function public.close()
         sv_watchdog.cancel()
         _send_sv(PROTOCOL.SCADA_MGMT, MGMT_TYPE.CLOSE, {})
         public.unlink()
     end
 
-    -- send the resume ready state to the supervisor
+    -- envia o estado de pronto para retomada ao supervisor
     ---@param settings auto_ctl_cfg auto control settings
     function public.send_ready(settings)
         _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.PROCESS_READY, settings)
     end
 
-    -- send a facility command
+    -- envia um comando da instalação
     ---@param cmd FAC_COMMAND command
     ---@param option any? optional option options for the optional options (like waste mode)
     function public.send_fac_command(cmd, option)
         _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.FAC_CMD, { cmd, option })
     end
 
-    -- send the auto process control configuration with a start command
+    -- envia a configuração de controle de processo automático com um comando de início
     ---@param settings auto_ctl_cfg auto control settings
     function public.send_auto_start(settings)
         _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.FAC_CMD, { FAC_COMMAND.START, table.unpack(settings) })
     end
 
-    -- send a unit command
+    -- envia um comando de unidade
     ---@param cmd UNIT_COMMAND command
     ---@param unit integer unit ID
     ---@param option any? optional option options for the optional options (like burn rate)
@@ -413,7 +413,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.UNIT_CMD, { cmd, unit, option })
     end
 
-    -- parse a packet
+    -- analisa um pacote
     ---@param side string
     ---@param sender integer
     ---@param reply_to integer
@@ -442,7 +442,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         return pkt
     end
 
-    -- handle a packet
+    -- processa um pacote
     ---@param packet mgmt_packet|crdn_packet|nil
     ---@return boolean close_ui
     function public.handle_packet(packet)
@@ -463,29 +463,29 @@ function coordinator.comms(version, backplane, sv_watchdog)
                     log.debug("discarding pocket API packet before linked to supervisor")
                 elseif protocol == PROTOCOL.SCADA_CRDN then
                     ---@cast packet crdn_packet
-                    -- look for an associated session
+                    -- procura uma sessão associada
                     local session = apisessions.find_session(src_addr)
 
-                    -- coordinator packet
+                    -- pacote do coordenador
                     if session ~= nil then
-                        -- pass the packet onto the session handler
+                        -- repassa o pacote para o manipulador de sessão
                         session.in_queue.push_network(packet)
                     else
-                        -- any other packet should be session related, discard it
+                        -- qualquer outro pacote deve ser relacionado à sessão, descarta-o
                         log.debug("discarding SCADA_CRDN packet without a known session")
                     end
                 elseif protocol == PROTOCOL.SCADA_MGMT then
                     ---@cast packet mgmt_packet
-                    -- look for an associated session
+                    -- procura uma sessão associada
                     local session = apisessions.find_session(src_addr)
 
-                    -- SCADA management packet
+                    -- pacote de gerenciamento SCADA
                     if session ~= nil then
-                        -- pass the packet onto the session handler
+                        -- repassa o pacote para o manipulador de sessão
                         session.in_queue.push_network(packet)
                     elseif packet.type == MGMT_TYPE.ESTABLISH then
-                        -- establish a new session
-                        -- validate packet and continue
+                        -- estabelece uma nova sessão
+                        -- valida o pacote e continua
                         if packet.length == 4 then
                             local comms_v = util.strval(packet.data[1])
                             local firmware_v = util.strval(packet.data[2])
@@ -505,9 +505,9 @@ function coordinator.comms(version, backplane, sv_watchdog)
 
                                 _send_api_establish_ack(packet.scada_frame, ESTABLISH_ACK.BAD_API_VERSION)
                             elseif dev_type == DEVICE_TYPE.PKT then
-                                -- pocket linking request
+                                -- solicitação de vínculo do pocket
                                 local id = apisessions.establish_session(src_addr, packet.scada_frame.seq_num(), firmware_v)
-                                coordinator.log_comms(util.c("API_ESTABLISH: pocket (", firmware_v, ") [@", src_addr, "] connected with session ID ", id))
+                                coordinator.log_comms(util.c("API_ESTABLISH: pocket (", firmware_v, ") [@", src_addr, "] conectado com ID de sessão ", id))
 
                                 local conf = ioctl.get_db().facility.conf
                                 _send_api_establish_ack(packet.scada_frame, ESTABLISH_ACK.ALLOW, { conf.num_units, conf.cooling, conf.com_waste, conf.ess })
@@ -520,14 +520,14 @@ function coordinator.comms(version, backplane, sv_watchdog)
                             _send_api_establish_ack(packet.scada_frame, ESTABLISH_ACK.DENY)
                         end
                     else
-                        -- any other packet should be session related, discard it
+                        -- qualquer outro pacote deve ser relacionado à sessão, descarta-o
                         log.debug(util.c("discarding pocket SCADA_MGMT packet without a known session from computer ", src_addr))
                     end
                 else
                     log.debug("illegal packet type " .. protocol .. " on pocket channel", true)
                 end
             elseif r_chan == config.SVR_Channel then
-                -- check sequence number
+                -- verifica o número de sequência
                 if self.sv_r_seq_num == nil then
                     self.sv_r_seq_num = packet.scada_frame.seq_num() + 1
                 elseif self.sv_r_seq_num ~= packet.scada_frame.seq_num() then
@@ -540,21 +540,21 @@ function coordinator.comms(version, backplane, sv_watchdog)
                     self.sv_r_seq_num = packet.scada_frame.seq_num() + 1
                 end
 
-                -- feed watchdog on valid sequence number
+                -- alimenta o watchdog com número de sequência válido
                 sv_watchdog.feed()
 
-                -- handle packet
+                -- processa o pacote
                 if protocol == PROTOCOL.SCADA_CRDN then
                     ---@cast packet crdn_packet
                     if self.sv_linked then
                         if packet.type == CRDN_TYPE.INITIAL_BUILDS then
                             if packet.length == 2 then
-                                -- record builds
+                                -- registra estruturas
                                 local fac_builds  = ioctl.record_facility_builds(packet.data[1])
                                 local unit_builds = ioctl.record_unit_builds(packet.data[2])
 
                                 if fac_builds and unit_builds then
-                                    -- acknowledge receipt of builds
+                                    -- confirma recebimento das estruturas
                                     _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.INITIAL_BUILDS, {})
                                 else
                                     log.debug("received invalid INITIAL_BUILDS packet")
@@ -564,9 +564,9 @@ function coordinator.comms(version, backplane, sv_watchdog)
                             end
                         elseif packet.type == CRDN_TYPE.FAC_BUILDS then
                             if packet.length == 1 then
-                                -- record facility builds
+                                -- registra estruturas da instalação
                                 if ioctl.record_facility_builds(packet.data[1]) then
-                                    -- acknowledge receipt of builds
+                                    -- confirma recebimento das estruturas
                                     _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.FAC_BUILDS, {})
                                 else
                                     log.debug("received invalid FAC_BUILDS packet")
@@ -575,12 +575,12 @@ function coordinator.comms(version, backplane, sv_watchdog)
                                 log.debug("FAC_BUILDS packet length mismatch")
                             end
                         elseif packet.type == CRDN_TYPE.FAC_STATUS then
-                            -- update facility status
+                            -- atualiza o status da instalação
                             if not ioctl.update_facility_status(packet.data) then
                                 log.debug("received invalid FAC_STATUS packet")
                             end
                         elseif packet.type == CRDN_TYPE.FAC_CMD then
-                            -- facility command acknowledgement
+                            -- confirmação de comando da instalação
                             if packet.length >= 2 then
                                 local cmd = packet.data[1]
                                 local ack = packet.data[2] == true
@@ -610,10 +610,10 @@ function coordinator.comms(version, backplane, sv_watchdog)
                                 log.debug("SCADA_CRDN facility command ack packet length mismatch")
                             end
                         elseif packet.type == CRDN_TYPE.UNIT_BUILDS then
-                            -- record builds
+                            -- registra estruturas
                             if packet.length == 1 then
                                 if ioctl.record_unit_builds(packet.data[1]) then
-                                    -- acknowledge receipt of builds
+                                    -- confirma recebimento das estruturas
                                     _send_sv(PROTOCOL.SCADA_CRDN, CRDN_TYPE.UNIT_BUILDS, {})
                                 else
                                     log.debug("received invalid UNIT_BUILDS packet")
@@ -622,12 +622,12 @@ function coordinator.comms(version, backplane, sv_watchdog)
                                 log.debug("UNIT_BUILDS packet length mismatch")
                             end
                         elseif packet.type == CRDN_TYPE.UNIT_STATUSES then
-                            -- update statuses
+                            -- atualiza os status
                             if not ioctl.update_unit_statuses(packet.data) then
                                 log.debug("received invalid UNIT_STATUSES packet")
                             end
                         elseif packet.type == CRDN_TYPE.UNIT_CMD then
-                            -- unit command acknowledgement
+                            -- confirmação de comando de unidade
                             if packet.length == 3 then
                                 local cmd = packet.data[1]
                                 local unit_id = packet.data[2]
@@ -663,7 +663,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
                     ---@cast packet mgmt_packet
                     if self.sv_linked then
                         if packet.type == MGMT_TYPE.KEEP_ALIVE then
-                            -- keep alive request received, echo back
+                            -- solicitação de keep alive recebida, ecoa de volta
                             if packet.length == 1 then
                                 local timestamp = packet.data[1]
                                 local trip_time = util.time() - timestamp
@@ -681,7 +681,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
                                 log.debug("SCADA keep alive packet length mismatch")
                             end
                         elseif packet.type == MGMT_TYPE.CLOSE then
-                            -- handle session close
+                            -- gerencia o fechamento da sessão
                             sv_watchdog.cancel()
                             public.unlink()
                             log.info("server connection closed by remote host")
@@ -689,17 +689,17 @@ function coordinator.comms(version, backplane, sv_watchdog)
                             log.debug("received unknown SCADA_MGMT packet type " .. packet.type)
                         end
                     elseif packet.type == MGMT_TYPE.ESTABLISH then
-                        -- connection with supervisor established
+                        -- conexão com o supervisor estabelecida
                         if packet.length == 2 then
                             local est_ack = packet.data[1]
                             local sv_config = packet.data[2]
 
                             if est_ack == ESTABLISH_ACK.ALLOW then
-                                -- reset to disconnected before validating
+                                -- redefine para desconectado antes de validar
                                 ioctl.fp_link_state(types.PANEL_LINK_STATE.DISCONNECTED)
 
                                 if type(sv_config) == "table" and #sv_config == 5 then
-                                    -- get configuration
+                                    -- obtém a configuração
 
                                     ---@class facility_conf
                                     local conf = {
@@ -716,7 +716,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
 
                                         log.info(util.c("supervisor establish request approved, linked to SV (CID#", src_addr, ") on ", tx_nic.phy_name()))
 
-                                        -- init io controller
+                                        -- inicializa o controlador de E/S
                                         ioctl.init(conf, public, config.TempScale, config.EnergyScale, config.FlowDetailView, config.FlowViewSwitcher)
 
                                         self.sv_addr = src_addr
@@ -776,7 +776,7 @@ function coordinator.comms(version, backplane, sv_watchdog)
         return was_linked and not self.sv_linked
     end
 
-    -- check if the coordinator is still linked to the supervisor
+    -- verifica se o coordenador ainda está vinculado ao supervisor
     ---@nodiscard
     function public.is_linked() return self.sv_linked end
 

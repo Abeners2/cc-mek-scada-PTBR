@@ -33,7 +33,7 @@ local self = {
 
 local system = {}
 
--- create the system configuration view
+-- cria a visualizacao de configuracao do sistema
 ---@param tool_ctl _pkt_cfg_tool_ctl
 ---@param main_pane MultiPane
 ---@param cfg_sys [ pkt_config, pkt_config, pkt_config, { [1]: string, [2]: string, [3]: any }[], function ]
@@ -58,29 +58,29 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
 
     local ui_pane = MultiPane{parent=net_cfg,y=4,panes={ui_c_1,ui_c_2}}
 
-    TextBox{parent=ui_cfg,y=2,text=" Pocket UI",fg_bg=cpair(colors.black,colors.lime)}
+    TextBox{parent=ui_cfg,y=2,text=" Interface do Pocket",fg_bg=cpair(colors.black,colors.lime)}
 
-    TextBox{parent=ui_c_1,y=1,height=3,text="You may customize UI options below."}
+    TextBox{parent=ui_c_1,y=1,height=3,text="Personalize as opcoes da interface abaixo."}
 
-    TextBox{parent=ui_c_1,y=4,text="Po/Pu Pellet Color"}
-    local pellet_color = RadioButton{parent=ui_c_1,y=5,default=util.trinary(ini_cfg.GreenPuPellet,1,2),options={"Green Pu/Cyan Po","Cyan Pu/Green Po"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.lime}
+    TextBox{parent=ui_c_1,y=4,text="Cor Pastilha Po/Pu"}
+    local pellet_color = RadioButton{parent=ui_c_1,y=5,default=util.trinary(ini_cfg.GreenPuPellet,1,2),options={"Pu Verde/Po Ciano","Pu Ciano/Po Verde"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.lime}
 
-    TextBox{parent=ui_c_1,y=8,height=4,text="In Mekanism 10.4 and later, pellet colors now match gas colors (Cyan Pu/Green Po).",fg_bg=g_lg_fg_bg}
+    TextBox{parent=ui_c_1,y=8,height=4,text="No Mekanism 10.4+, as cores das pastilhas seguem os gases (Pu Ciano/Po Verde).",fg_bg=g_lg_fg_bg}
 
     local function submit_ui_opts()
         tmp_cfg.GreenPuPellet = pellet_color.get_value() == 1
         ui_pane.set_value(2)
     end
 
-    PushButton{parent=ui_c_1,y=15,text="\x1b Back",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=ui_c_1,x=19,y=15,text="Next \x1a",callback=submit_ui_opts,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=ui_c_1,y=15,text="\x1b Voltar",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=ui_c_1,x=19,y=15,text="Prox \x1a",callback=submit_ui_opts,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=ui_c_2,y=1,height=3,text="You may customize units below."}
+    TextBox{parent=ui_c_2,y=1,height=3,text="Personalize as unidades abaixo."}
 
-    TextBox{parent=ui_c_2,y=4,text="Temperature Scale"}
+    TextBox{parent=ui_c_2,y=4,text="Escala de Temperatura"}
     local temp_scale = RadioButton{parent=ui_c_2,y=5,default=ini_cfg.TempScale,options=types.TEMP_SCALE_NAMES,radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.lime}
 
-    TextBox{parent=ui_c_2,y=10,text="Energy Scale"}
+    TextBox{parent=ui_c_2,y=10,text="Escala de Energia"}
     local energy_scale = RadioButton{parent=ui_c_2,y=11,default=ini_cfg.EnergyScale,options=types.ENERGY_SCALE_NAMES,radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.lime}
 
     local function submit_ui_units()
@@ -89,8 +89,8 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         main_pane.set_value(3)
     end
 
-    PushButton{parent=ui_c_2,y=15,text="\x1b Back",callback=function()ui_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=ui_c_2,x=19,y=15,text="Next \x1a",callback=submit_ui_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=ui_c_2,y=15,text="\x1b Voltar",callback=function()ui_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=ui_c_2,x=19,y=15,text="Prox \x1a",callback=submit_ui_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 
@@ -103,24 +103,24 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
 
     local net_pane = MultiPane{parent=net_cfg,y=4,panes={net_c_1,net_c_2,net_c_3,net_c_4}}
 
-    TextBox{parent=net_cfg,y=2,text=" Network Configuration",fg_bg=cpair(colors.black,colors.lightBlue)}
+    TextBox{parent=net_cfg,y=2,text=" Configuracao de Rede",fg_bg=cpair(colors.black,colors.lightBlue)}
 
-    TextBox{parent=net_c_1,y=1,text="Set network channels."}
-    TextBox{parent=net_c_1,y=3,height=4,text="Each of the named channels must be the same within a particular SCADA network.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_1,y=1,text="Defina os canais de rede."}
+    TextBox{parent=net_c_1,y=3,height=4,text="Cada canal nomeado deve ser igual dentro de uma mesma rede SCADA.",fg_bg=g_lg_fg_bg}
 
-    TextBox{parent=net_c_1,y=8,width=18,text="Supervisor Channel"}
+    TextBox{parent=net_c_1,y=8,width=20,text="Canal do Supervisor"}
     local svr_chan = NumberField{parent=net_c_1,y=9,width=7,default=ini_cfg.SVR_Channel,min=1,max=65535,fg_bg=bw_fg_bg}
     TextBox{parent=net_c_1,x=9,y=9,height=4,text="[SVR_CHANNEL]",fg_bg=g_lg_fg_bg}
 
-    TextBox{parent=net_c_1,y=10,width=19,text="Coordinator Channel"}
+    TextBox{parent=net_c_1,y=10,width=21,text="Canal do Coordenador"}
     local crd_chan = NumberField{parent=net_c_1,y=11,width=7,default=ini_cfg.CRD_Channel,min=1,max=65535,fg_bg=bw_fg_bg}
     TextBox{parent=net_c_1,x=9,y=11,height=4,text="[CRD_CHANNEL]",fg_bg=g_lg_fg_bg}
 
-    TextBox{parent=net_c_1,y=12,width=14,text="Pocket Channel"}
+    TextBox{parent=net_c_1,y=12,width=16,text="Canal do Pocket"}
     local pkt_chan = NumberField{parent=net_c_1,y=13,width=7,default=ini_cfg.PKT_Channel,min=1,max=65535,fg_bg=bw_fg_bg}
     TextBox{parent=net_c_1,x=9,y=13,height=4,text="[PKT_CHANNEL]",fg_bg=g_lg_fg_bg}
 
-    local chan_err = TextBox{parent=net_c_1,y=14,width=24,text="Please set all channels.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local chan_err = TextBox{parent=net_c_1,y=14,width=24,text="Defina todos os canais.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_channels()
         local svr_c, crd_c, pkt_c = tonumber(svr_chan.get_value()), tonumber(crd_chan.get_value()), tonumber(pkt_chan.get_value())
@@ -131,18 +131,18 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         else chan_err.show() end
     end
 
-    PushButton{parent=net_c_1,y=15,text="\x1b Back",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=net_c_1,x=19,y=15,text="Next \x1a",callback=submit_channels,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_1,y=15,text="\x1b Voltar",callback=function()main_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_1,x=19,y=15,text="Prox \x1a",callback=submit_channels,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=net_c_2,y=1,text="Set connection timeout."}
-    TextBox{parent=net_c_2,y=3,height=7,text="You generally should not need to modify this. On slow servers, you can try to increase this to make the system wait longer before assuming a disconnection.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_2,y=1,text="Defina o tempo limite."}
+    TextBox{parent=net_c_2,y=3,height=7,text="Geralmente nao e preciso alterar isso. Em servidores lentos, aumente para esperar mais antes de assumir desconexao.",fg_bg=g_lg_fg_bg}
 
-    TextBox{parent=net_c_2,y=11,width=19,text="Connection Timeout"}
+    TextBox{parent=net_c_2,y=11,width=23,text="Tempo Limite de Conexao"}
     local timeout = NumberField{parent=net_c_2,y=12,width=7,default=ini_cfg.ConnTimeout,min=2,max=25,max_chars=6,max_frac_digits=2,allow_decimal=true,fg_bg=bw_fg_bg}
 
-    TextBox{parent=net_c_2,x=9,y=12,height=2,text="seconds\n(default 5)",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_2,x=9,y=12,height=2,text="segundos\n(padrao 5)",fg_bg=g_lg_fg_bg}
 
-    local ct_err = TextBox{parent=net_c_2,y=14,width=24,text="Please set timeout.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local ct_err = TextBox{parent=net_c_2,y=14,width=24,text="Defina o tempo limite.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_timeouts()
         local timeout_val = tonumber(timeout.get_value())
@@ -153,16 +153,16 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         else ct_err.show() end
     end
 
-    PushButton{parent=net_c_2,y=15,text="\x1b Back",callback=function()net_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=net_c_2,x=19,y=15,text="Next \x1a",callback=submit_timeouts,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_2,y=15,text="\x1b Voltar",callback=function()net_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_2,x=19,y=15,text="Prox \x1a",callback=submit_timeouts,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=net_c_3,y=1,text="Set the trusted range."}
-    TextBox{parent=net_c_3,y=3,height=4,text="Setting this to a value larger than 0 prevents connections with devices that many blocks away.",fg_bg=g_lg_fg_bg}
-    TextBox{parent=net_c_3,y=8,height=4,text="This is optional. You can disable this functionality by setting the value to 0.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_3,y=1,text="Defina o alcance conf."}
+    TextBox{parent=net_c_3,y=3,height=4,text="Um valor maior que 0 impede conexoes com dispositivos alem dessa distancia em blocos.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_3,y=8,height=4,text="Isso e opcional. Voce pode desativar definindo o valor como 0.",fg_bg=g_lg_fg_bg}
 
     local range = NumberField{parent=net_c_3,y=13,width=10,default=ini_cfg.TrustedRange,min=0,max_chars=20,allow_decimal=true,fg_bg=bw_fg_bg}
 
-    local tr_err = TextBox{parent=net_c_3,y=14,width=24,text="Set the trusted range.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local tr_err = TextBox{parent=net_c_3,y=14,width=24,text="Defina o alcance conf.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_tr()
         local range_val = tonumber(range.get_value())
@@ -173,26 +173,26 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         else tr_err.show() end
     end
 
-    PushButton{parent=net_c_3,y=15,text="\x1b Back",callback=function()net_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=net_c_3,x=19,y=15,text="Next \x1a",callback=submit_tr,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_3,y=15,text="\x1b Voltar",callback=function()net_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_3,x=19,y=15,text="Prox \x1a",callback=submit_tr,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=net_c_4,y=1,height=4,text="Optionally, set the facility authentication key. Do NOT use one of your passwords."}
-    TextBox{parent=net_c_4,y=6,height=6,text="This enables verifying that messages are authentic, so it is intended for security on multiplayer servers.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=net_c_4,y=1,height=4,text="Opcionalmente, defina a chave de autenticacao. NAO use suas senhas."}
+    TextBox{parent=net_c_4,y=6,height=6,text="Isso verifica se as mensagens sao autenticas, voltado para seguranca em servidores multiplayer.",fg_bg=g_lg_fg_bg}
 
-    TextBox{parent=net_c_4,y=12,text="Facility Auth Key"}
+    TextBox{parent=net_c_4,y=12,text="Chave de Autenticacao"}
     local key, _ = TextField{parent=net_c_4,y=13,max_len=64,value=ini_cfg.AuthKey,width=24,height=1,fg_bg=bw_fg_bg}
 
     local function censor_key(enable) key.censor(tri(enable, "*", nil)) end
 
-    -- declare back first so tabbing makes sense visually
-    PushButton{parent=net_c_4,y=15,text="\x1b Back",callback=function()net_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    -- declara voltar primeiro para que o tab faca sentido visualmente
+    PushButton{parent=net_c_4,y=15,text="\x1b Voltar",callback=function()net_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    local hide_key = Checkbox{parent=net_c_4,x=8,y=15,label="Hide Key",box_fg_bg=cpair(colors.lightBlue,colors.black),callback=censor_key}
+    local hide_key = Checkbox{parent=net_c_4,x=9,y=15,label="Ocultar",box_fg_bg=cpair(colors.lightBlue,colors.black),callback=censor_key}
 
     hide_key.set_value(true)
     censor_key(true)
 
-    local key_err = TextBox{parent=net_c_4,y=14,width=24,text="Length must be > 7.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local key_err = TextBox{parent=net_c_4,y=14,width=24,text="Tamanho deve ser > 7.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_auth()
         local v = key.get_value()
@@ -203,7 +203,7 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         else key_err.show() end
     end
 
-    PushButton{parent=net_c_4,x=19,y=15,text="Next \x1a",callback=submit_auth,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=net_c_4,x=19,y=15,text="Prox \x1a",callback=submit_auth,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 
@@ -211,20 +211,20 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
 
     local log_c_1 = Div{parent=log_cfg,x=2,y=4,width=24}
 
-    TextBox{parent=log_cfg,y=2,text=" Logging Configuration",fg_bg=cpair(colors.black,colors.pink)}
+    TextBox{parent=log_cfg,y=2,text=" Configuracao de Log",fg_bg=cpair(colors.black,colors.pink)}
 
-    TextBox{parent=log_c_1,y=1,text="Configure logging below."}
+    TextBox{parent=log_c_1,y=1,text="Configure o log abaixo."}
 
-    TextBox{parent=log_c_1,y=3,text="Log File Mode"}
-    local mode = RadioButton{parent=log_c_1,y=4,default=ini_cfg.LogMode+1,options={"Append on Startup","Replace on Startup"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.pink}
+    TextBox{parent=log_c_1,y=3,text="Modo do Arquivo de Log"}
+    local mode = RadioButton{parent=log_c_1,y=4,default=ini_cfg.LogMode+1,options={"Anexar ao Iniciar","Substituir ao Inic."},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.pink}
 
-    TextBox{parent=log_c_1,y=7,text="Log File Path"}
+    TextBox{parent=log_c_1,y=7,text="Caminho do Arq. de Log"}
     local path = TextField{parent=log_c_1,y=8,width=24,height=1,value=ini_cfg.LogPath,max_len=128,fg_bg=bw_fg_bg}
 
-    local en_dbg = Checkbox{parent=log_c_1,y=10,default=ini_cfg.LogDebug,label="Enable Debug Messages",box_fg_bg=cpair(colors.pink,colors.black)}
-    TextBox{parent=log_c_1,x=3,y=11,height=4,text="This results in much larger log files. Use only as needed.",fg_bg=g_lg_fg_bg}
+    local en_dbg = Checkbox{parent=log_c_1,y=10,default=ini_cfg.LogDebug,label="Ativar Msgs de Debug",box_fg_bg=cpair(colors.pink,colors.black)}
+    TextBox{parent=log_c_1,x=3,y=11,height=4,text="Isso gera arquivos de log muito maiores. Use apenas se necessario.",fg_bg=g_lg_fg_bg}
 
-    local path_err = TextBox{parent=log_c_1,y=14,width=24,text="Provide a log file path.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local path_err = TextBox{parent=log_c_1,y=14,width=24,text="Informe um caminho.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_log()
         if path.get_value() ~= "" then
@@ -240,8 +240,8 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         else path_err.show() end
     end
 
-    PushButton{parent=log_c_1,y=15,text="\x1b Back",callback=function()main_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=log_c_1,x=19,y=15,text="Next \x1a",callback=submit_log,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=log_c_1,y=15,text="\x1b Voltar",callback=function()main_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=log_c_1,x=19,y=15,text="Prox \x1a",callback=submit_log,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 
@@ -254,7 +254,7 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
 
     local sum_pane = MultiPane{parent=summary,y=4,panes={sum_c_1,sum_c_2,sum_c_3,sum_c_4}}
 
-    TextBox{parent=summary,y=2,text=" Summary",fg_bg=cpair(colors.black,colors.green)}
+    TextBox{parent=summary,y=2,text=" Resumo",fg_bg=cpair(colors.black,colors.green)}
 
     local setting_list = ListBox{parent=sum_c_1,y=1,height=11,width=24,scroll_height=100,fg_bg=bw_fg_bg,nav_fg_bg=g_lg_fg_bg,nav_active=cpair(colors.black,colors.gray)}
 
@@ -311,11 +311,11 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         end
     end
 
-    PushButton{parent=sum_c_1,y=15,text="\x1b Back",callback=back_from_summary,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    self.show_key_btn = PushButton{parent=sum_c_1,y=13,min_width=17,text="Unhide Auth Key",callback=function()self.show_auth_key()end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    tool_ctl.settings_apply = PushButton{parent=sum_c_1,x=18,y=15,min_width=7,text="Apply",callback=save_and_continue,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=sum_c_1,y=15,text="\x1b Voltar",callback=back_from_summary,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    self.show_key_btn = PushButton{parent=sum_c_1,y=13,min_width=17,text="Exibir Chave",callback=function()self.show_auth_key()end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    tool_ctl.settings_apply = PushButton{parent=sum_c_1,x=18,y=15,min_width=7,text="Aplicar",callback=save_and_continue,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
 
-    TextBox{parent=sum_c_2,y=1,text="Settings saved!"}
+    TextBox{parent=sum_c_2,y=1,text="Configuracoes salvas!"}
 
     local function go_home()
         main_pane.set_value(1)
@@ -323,33 +323,33 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         sum_pane.set_value(1)
     end
 
-    PushButton{parent=sum_c_2,y=15,min_width=6,text="Home",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=sum_c_2,y=15,min_width=6,text="Inicio",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     if tool_ctl.ask_config then
-        PushButton{parent=sum_c_2,x=17,y=15,min_width=8,text="Resume",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=sum_c_2,x=17,y=15,min_width=8,text="Retomar",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
     else
-        PushButton{parent=sum_c_2,x=16,y=15,min_width=9,text="Startup",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=sum_c_2,x=16,y=15,min_width=9,text="Iniciar",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
     end
 
-    TextBox{parent=sum_c_3,y=1,height=4,text="The old config.lua file will now be deleted, then the configurator will exit."}
+    TextBox{parent=sum_c_3,y=1,height=4,text="O antigo arquivo config.lua sera excluido e o configurador sera encerrado."}
 
     local function delete_legacy()
         fs.delete("/pocket/config.lua")
         exit()
     end
 
-    PushButton{parent=sum_c_3,y=15,min_width=8,text="Cancel",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=sum_c_3,y=15,min_width=8,text="Cancelar",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
     PushButton{parent=sum_c_3,x=19,y=15,min_width=6,text="OK",callback=delete_legacy,fg_bg=cpair(colors.black,colors.green),active_fg_bg=cpair(colors.white,colors.gray)}
 
-    TextBox{parent=sum_c_4,y=1,height=8,text="Failed to save the settings file.\n\nThere may not be enough space for the modification or server file permissions may be denying writes."}
-    PushButton{parent=sum_c_4,y=15,min_width=6,text="Home",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=sum_c_4,x=19,y=15,min_width=6,text="Exit",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=cpair(colors.white,colors.gray)}
+    TextBox{parent=sum_c_4,y=1,height=8,text="Falha ao salvar o arquivo de configuracoes.\n\nPode nao haver espaco suficiente ou as permissoes do servidor estao negando escrita."}
+    PushButton{parent=sum_c_4,y=15,min_width=6,text="Inicio",callback=go_home,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=sum_c_4,x=19,y=15,min_width=6,text="Sair",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=cpair(colors.white,colors.gray)}
 
     --#endregion
 
     --#region Tool Functions
 
-    -- load a legacy config file
+    -- carrega um arquivo de configuracao legado
     function tool_ctl.load_legacy()
         local config = require("pocket.config")
 
@@ -370,13 +370,13 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         self.importing_legacy = true
     end
 
-    -- expose the auth key on the summary page
+    -- expoe a chave de autenticacao na pagina de resumo
     function self.show_auth_key()
         self.show_key_btn.disable()
         self.auth_key_textbox.set_value(self.auth_key_value)
     end
 
-    -- generate the summary list
+    -- gera a lista de resumo
     ---@param cfg pkt_config
     function tool_ctl.gen_summary(cfg)
         setting_list.remove_all()
@@ -385,7 +385,7 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
         local inner_width = setting_list.get_width() - 1
 
         self.show_key_btn.enable()
-        self.auth_key_value = cfg.AuthKey or "" -- to show auth key
+        self.auth_key_value = cfg.AuthKey or "" -- para exibir a chave de autenticacao
 
         for i = 1, #fields do
             local f = fields[i]
@@ -398,16 +398,16 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
             if f[1] == "AuthKey" then
                 val = string.rep("*", string.len(val))
             elseif f[1] == "LogMode" then
-                val = tri(raw == log.MODE.APPEND, "append", "replace")
+                val = tri(raw == log.MODE.APPEND, "anexar", "substituir")
             elseif f[1] == "GreenPuPellet" then
-                val = tri(raw, "Green Pu/Cyan Po", "Cyan Pu/Green Po")
+                val = tri(raw, "Pu Verde/Po Ciano", "Pu Ciano/Po Verde")
             elseif f[1] == "TempScale" then
                 val = util.strval(types.TEMP_SCALE_NAMES[raw])
             elseif f[1] == "EnergyScale" then
                 val = util.strval(types.ENERGY_SCALE_NAMES[raw])
             end
 
-            if val == "nil" then val = "<not set>" end
+            if val == "nil" then val = "<nao def.>" end
 
             local c = tri(alternate, g_lg_fg_bg, cpair(colors.gray,colors.white))
             alternate = not alternate

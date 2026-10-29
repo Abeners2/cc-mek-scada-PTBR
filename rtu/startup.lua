@@ -1,5 +1,5 @@
 --
--- RTU Gateway: Remote Terminal Unit Gateway
+-- Gateway RTU: Gateway de Unidade Terminal Remota
 --
 
 require("/initenv").init_env()
@@ -27,19 +27,19 @@ local println = util.println
 local println_ts = util.println_ts
 
 ----------------------------------------
--- get configuration
+-- obter configuração
 ----------------------------------------
 
 if not rtu.load_config() then
-    -- try to reconfigure (user action)
+    -- tentar reconfigurar (ação do usuário)
     local success, error = configure.configure(true)
     if success then
         if not rtu.load_config() then
-            println("failed to load a valid configuration, please reconfigure")
+            println("falha ao carregar uma configuração válida, por favor reconfigure")
             return
         end
     else
-        println("configuration error: " .. error)
+        println("erro de configuração: " .. error)
         return
     end
 end
@@ -47,45 +47,45 @@ end
 local config = rtu.config
 
 ----------------------------------------
--- log init
+-- inicialização do log
 ----------------------------------------
 
 log.init(config.LogPath, config.LogMode, config.LogDebug)
 
 log.info("========================================")
-log.info("BOOTING rtu.startup v" .. RTU_VERSION)
+log.info("INICIANDO rtu.startup v" .. RTU_VERSION)
 log.info("========================================")
-println(">> RTU GATEWAY v" .. RTU_VERSION .. " <<")
+println(">> GATEWAY RTU v" .. RTU_VERSION .. " <<")
 
 crash.set_env("rtu", RTU_VERSION)
 crash.dbg_log_env()
 
 ----------------------------------------
--- main application
+-- aplicação principal
 ----------------------------------------
 
 local function main()
     ----------------------------------------
-    -- startup
+    -- inicialização
     ----------------------------------------
 
-    -- report versions
+    -- relatar versões
     databus.tx_versions(RTU_VERSION, comms.version)
 
-    -- mount connected devices
+    -- montar dispositivos conectados
     ppm.mount_all()
 
-    -- message authentication init
+    -- inicialização de autenticação de mensagens
     if type(config.AuthKey) == "string" and string.len(config.AuthKey) > 0 then
         network.init_mac(config.AuthKey)
     end
 
-    -- generate alarm tones
+    -- gerar tons de alarme
     audio.generate_tones()
 
     ---@class rtu_shared_memory
     local __shared_memory = {
-        -- RTU system state flags
+        -- sinalizadores de estado do sistema da RTU
         ---@class rtu_state
         rtu_state = {
             fp_ok = false,
@@ -93,7 +93,7 @@ local function main()
             shutdown = false
         },
 
-        -- system objects
+        -- objetos do sistema
         ---@class rtu_sys
         rtu_sys = {
             rtu_comms = nil,     ---@type rtu_comms
@@ -101,7 +101,7 @@ local function main()
             units = {}           ---@type rtu_registry_entry[]
         },
 
-        -- message queues
+        -- filas de mensagens
         q = {
             mq_comms = mqueue.new()
         }
@@ -112,39 +112,39 @@ local function main()
     local units     = __shared_memory.rtu_sys.units
 
     ----------------------------------------
-    -- init and start system
+    -- inicializar e iniciar sistema
     ----------------------------------------
 
-    -- modem and speaker initialization
+    -- inicialização de modem e alto-falante
     if not backplane.init(config, __shared_memory) then return end
 
-    log.debug("startup> running uinit()")
+    log.debug("startup> executando uinit()")
 
     if uinit(config, __shared_memory) then
-        -- start UI
+        -- iniciar UI
         local message
         rtu_state.fp_ok, message = renderer.try_start_ui(config, units)
 
         if not rtu_state.fp_ok then
-            println_ts(util.c("UI error: ", message))
-            println("startup> running without front panel")
-            log.error(util.c("front panel GUI render failed with error ", message))
-            log.info("startup> running in headless mode without front panel")
+            println_ts(util.c("Erro de UI: ", message))
+            println("startup> executando sem painel frontal")
+            log.error(util.c("falha na renderização da GUI do painel frontal com erro ", message))
+            log.info("startup> executando em modo headless sem painel frontal")
         end
 
-        -- start connection watchdog
+        -- iniciar watchdog de conexão
         smem_sys.conn_watchdog = util.new_watchdog(config.ConnTimeout)
-        log.debug("startup> conn watchdog started")
+        log.debug("startup> watchdog de conexão iniciado")
 
-        -- setup comms
+        -- configurar comunicações
         smem_sys.rtu_comms = rtu.comms(RTU_VERSION, backplane, smem_sys.conn_watchdog)
-        log.debug("startup> comms init")
+        log.debug("startup> comunicações inicializadas")
 
-        -- init threads
+        -- inicializar threads
         local main_thread  = threads.thread__main(__shared_memory)
         local comms_thread = threads.thread__comms(__shared_memory)
 
-        -- assemble thread list
+        -- montar lista de threads
         local _threads = { main_thread.p_exec, comms_thread.p_exec }
         for i = 1, #units do
             if units[i].thread ~= nil then
@@ -152,18 +152,18 @@ local function main()
             end
         end
 
-        log.info("startup> completed")
+        log.info("startup> concluído")
 
-        -- run threads
+        -- executar threads
         parallel.waitForAll(table.unpack(_threads))
     else
-        println("system initialization failed, exiting...")
+        println("falha na inicialização do sistema, saindo...")
     end
 
     renderer.close_ui()
 
-    println_ts("exited")
-    log.info("exited")
+    println_ts("encerrado")
+    log.info("encerrado")
 end
 
 if not xpcall(main, crash.handler) then

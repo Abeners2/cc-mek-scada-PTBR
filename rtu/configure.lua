@@ -1,5 +1,5 @@
 --
--- Configuration GUI
+-- GUI de Configuração
 --
 
 local log         = require("scada-common.log")
@@ -30,15 +30,15 @@ local cpair = core.cpair
 
 local CENTER = core.ALIGN.CENTER
 
--- changes to the config data/format to let the user know
+-- alterações nos dados/formato de configuração para informar o usuário
 local changes = {
-    { "v1.7.9", { "ConnTimeout can now have a fractional part" } },
-    { "v1.7.15", { "Added front panel UI theme", "Added color accessibility modes" } },
-    { "v1.9.2", { "Added standard with black off state color mode", "Added blue indicator color modes" } },
-    { "v1.10.2", { "Re-organized peripheral configuration UI, resulting in some input fields being re-ordered" } },
-    { "v1.11.8", { "Added advanced option to invert digital redstone signals" } },
-    { "v1.12.0", { "Added support for redstone relays" } },
-    { "v1.13.0", { "Added support for wired communications modems" } }
+    { "v1.7.9", { "ConnTimeout agora pode ter uma parte fracionária" } },
+    { "v1.7.15", { "Adicionado tema de UI do painel frontal", "Adicionados modos de acessibilidade de cores" } },
+    { "v1.9.2", { "Adicionado modo de cor padrão com estado desligado preto", "Adicionados modos de cor de indicador azul" } },
+    { "v1.10.2", { "UI de configuração de periféricos reorganizada, resultando na reordenação de alguns campos de entrada" } },
+    { "v1.11.8", { "Adicionada opção avançada para inverter sinais digitais de redstone" } },
+    { "v1.12.0", { "Adicionado suporte para relés de redstone" } },
+    { "v1.13.0", { "Adicionado suporte para modems de comunicação cabeados" } }
 }
 
 ---@class rtu_configurator
@@ -116,23 +116,23 @@ local ini_cfg = {}
 local settings_cfg = {}
 
 local fields = {
-    { "SpeakerVolume", "Speaker Volume", 1.0 },
-    { "WirelessModem", "Wireless/Ender Comms Modem", true },
-    { "WiredModem", "Wired Comms Modem", false },
-    { "PreferWireless", "Prefer Wireless Modem", true },
-    { "SVR_Channel", "SVR Channel", 16240 },
-    { "RTU_Channel", "RTU Channel", 16242 },
-    { "ConnTimeout", "Connection Timeout", 5 },
-    { "TrustedRange", "Trusted Range", 0 },
-    { "AuthKey", "Facility Auth Key", "" },
-    { "LogMode", "Log Mode", log.MODE.APPEND },
-    { "LogPath", "Log Path", "/log.txt" },
-    { "LogDebug", "Log Debug Messages", false },
-    { "FrontPanelTheme", "Front Panel Theme", themes.FP_THEME.SANDSTONE },
-    { "ColorMode", "Color Mode", themes.COLOR_MODE.STANDARD }
+    { "SpeakerVolume", "Volume do Alto-falante", 1.0 },
+    { "WirelessModem", "Modem de Comms Sem Fio/Ender", true },
+    { "WiredModem", "Modem de Comms Cabeado", false },
+    { "PreferWireless", "Preferir Modem Sem Fio", true },
+    { "SVR_Channel", "Canal SVR", 16240 },
+    { "RTU_Channel", "Canal RTU", 16242 },
+    { "ConnTimeout", "Tempo Limite de Conexão", 5 },
+    { "TrustedRange", "Alcance Confiável", 0 },
+    { "AuthKey", "Chave de Autent. da Instalação", "" },
+    { "LogMode", "Modo de Log", log.MODE.APPEND },
+    { "LogPath", "Caminho do Log", "/log.txt" },
+    { "LogDebug", "Registrar Mensagens de Debug", false },
+    { "FrontPanelTheme", "Tema do Painel Frontal", themes.FP_THEME.SANDSTONE },
+    { "ColorMode", "Modo de Cor", themes.COLOR_MODE.STANDARD }
 }
 
--- deep copy peripherals defs
+-- cópia profunda das definições de periféricos
 ---@param data rtu_peri_definition[]
 function tool_ctl.deep_copy_peri(data)
     local array = {}
@@ -140,7 +140,7 @@ function tool_ctl.deep_copy_peri(data)
     return array
 end
 
--- deep copy redstone defs
+-- cópia profunda das definições de redstone
 ---@param data rtu_rs_definition[]
 function tool_ctl.deep_copy_rs(data)
     local array = {}
@@ -148,9 +148,9 @@ function tool_ctl.deep_copy_rs(data)
     return array
 end
 
--- load data from the settings file
+-- carregar dados do arquivo de configurações
 ---@param target rtu_config
----@param raw boolean? true to not use default values
+---@param raw boolean? verdadeiro para não usar valores padrão
 local function load_settings(target, raw)
     for k, _ in pairs(tmp_cfg) do settings.unset(k) end
 
@@ -164,7 +164,7 @@ local function load_settings(target, raw)
     return loaded
 end
 
--- create the config view
+-- criar a visualização de configuração
 ---@param display DisplayBox
 local function config_view(display)
     local bw_fg_bg      = style.bw_fg_bg
@@ -175,7 +175,7 @@ local function config_view(display)
 
     local function exit() os.queueEvent("terminate") end
 
-    TextBox{parent=display,y=1,text="RTU Gateway Configurator",alignment=CENTER,fg_bg=style.header}
+    TextBox{parent=display,y=1,text="Configurador do Gateway RTU",alignment=CENTER,fg_bg=style.header}
 
     local root_pane_div = Div{parent=display,y=2}
 
@@ -198,18 +198,18 @@ local function config_view(display)
         req_space = math.max(0, req_space - fs.getSize("/rtu.settings"))
     end
 
-    -- show disk space warning if needed
+    -- mostrar aviso de espaço em disco se necessário
     if fs.getFreeSpace("/") < req_space then main_pane.set_value(11) end
 
-    --#region Main Page
+    --#region Página Principal
 
     local y_start = 2
 
     if tool_ctl.ask_config then
-        TextBox{parent=main_page,x=2,y=y_start,height=4,width=49,text="Notice: This device is not configured for this version of the RTU Gateway. If you previously had a valid config, it's not lost. You may want to check the Change Log to see what changed.",fg_bg=cpair(colors.red,colors.lightGray)}
+        TextBox{parent=main_page,x=2,y=y_start,height=4,width=49,text="Aviso: Este dispositivo não está configurado para esta versão do Gateway RTU. Se você tinha uma config. válida antes, ela não foi perdida. Verifique o Histórico para ver o que mudou.",fg_bg=cpair(colors.red,colors.lightGray)}
         y_start = y_start + 5
     else
-        TextBox{parent=main_page,x=2,y=2,height=2,text="Welcome to the RTU Gateway configurator! Please select one of the following options."}
+        TextBox{parent=main_page,x=2,y=2,height=2,text="Bem-vindo ao configurador do Gateway RTU! Por favor, selecione uma das seguintes opções."}
         y_start = y_start + 3
     end
 
@@ -222,7 +222,7 @@ local function config_view(display)
     end
 
     if fs.exists("/rtu/config.lua") then
-        PushButton{parent=main_page,x=2,y=y_start,min_width=28,text="Import Legacy 'config.lua'",callback=function()tool_ctl.load_legacy()end,fg_bg=cpair(colors.black,colors.cyan),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=y_start,min_width=28,text="Importar 'config.lua' Legado",callback=function()tool_ctl.load_legacy()end,fg_bg=cpair(colors.black,colors.cyan),active_fg_bg=btn_act_fg_bg}
         y_start = y_start + 2
     end
 
@@ -235,10 +235,10 @@ local function config_view(display)
         main_pane.set_value(9)
     end
 
-    PushButton{parent=main_page,x=2,y=y_start,min_width=19,text="Configure Gateway",callback=function()main_pane.set_value(2)end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg}
-    tool_ctl.view_gw_cfg = PushButton{parent=main_page,x=2,y=y_start+2,min_width=28,text="View Gateway Configuration",callback=view_config,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    tool_ctl.dev_cfg = PushButton{parent=main_page,x=2,y=y_start+4,min_width=24,text="Peripheral Connections",callback=show_peri_conns,fg_bg=cpair(colors.black,colors.yellow),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    tool_ctl.rs_cfg = PushButton{parent=main_page,x=2,y=y_start+6,min_width=22,text="Redstone Connections",callback=show_rs_conns,fg_bg=cpair(colors.black,colors.yellow),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=main_page,x=2,y=y_start,min_width=19,text="Configurar Gateway",callback=function()main_pane.set_value(2)end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg}
+    tool_ctl.view_gw_cfg = PushButton{parent=main_page,x=2,y=y_start+2,min_width=28,text="Ver Config. do Gateway",callback=view_config,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    tool_ctl.dev_cfg = PushButton{parent=main_page,x=2,y=y_start+4,min_width=24,text="Conexões de Periféricos",callback=show_peri_conns,fg_bg=cpair(colors.black,colors.yellow),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    tool_ctl.rs_cfg = PushButton{parent=main_page,x=2,y=y_start+6,min_width=22,text="Conexões de Redstone",callback=show_rs_conns,fg_bg=cpair(colors.black,colors.yellow),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
 
     local function jump_color()
         tool_ctl.jumped_to_color = true
@@ -252,16 +252,16 @@ local function config_view(display)
         exit()
     end
 
-    PushButton{parent=main_page,x=39,y=y_start,min_width=12,text="Self-Check",callback=function()main_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    tool_ctl.color_cfg = PushButton{parent=main_page,x=36,y=y_start+2,min_width=15,text="Color Options",callback=jump_color,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
-    PushButton{parent=main_page,x=39,y=y_start+4,min_width=12,text="Change Log",callback=function()main_pane.set_value(7)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=main_page,x=39,y=y_start,min_width=12,text="Autoteste",callback=function()main_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    tool_ctl.color_cfg = PushButton{parent=main_page,x=36,y=y_start+2,min_width=15,text="Opções de Cor",callback=jump_color,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=main_page,x=39,y=y_start+4,min_width=12,text="Histórico",callback=function()main_pane.set_value(7)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     if tool_ctl.ask_config then
-        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Exit",callback=exit,dis_fg_bg=btn_dis_fg_bg}.disable()
-        PushButton{parent=main_page,x=35,y=17,min_width=16,text="Resume Startup",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Sair",callback=exit,dis_fg_bg=btn_dis_fg_bg}.disable()
+        PushButton{parent=main_page,x=35,y=17,min_width=16,text="Retomar Início",callback=exit,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
     else
-        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Exit",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
-        PushButton{parent=main_page,x=42,y=17,min_width=9,text="Startup",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=2,y=17,min_width=6,text="Sair",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
+        PushButton{parent=main_page,x=42,y=17,min_width=9,text="Iniciar",callback=startup,fg_bg=cpair(colors.black,colors.green),active_fg_bg=btn_act_fg_bg}
     end
 
     if not tool_ctl.has_config then
@@ -273,9 +273,9 @@ local function config_view(display)
 
     --#endregion
 
-    -- #region Disk Space Warning
+    -- #region Aviso de Espaço em Disco
 
-    TextBox{parent=disk_warn,y=2,text=" Insufficent Disk Space",fg_bg=cpair(colors.white,colors.black)}
+    TextBox{parent=disk_warn,y=2,text=" Espaço em Disco Insuficiente",fg_bg=cpair(colors.white,colors.black)}
 
     local disk_page = Div{parent=disk_warn,x=2,y=4,width=49}
 
@@ -283,52 +283,52 @@ local function config_view(display)
         fs.delete(ini_cfg.LogPath)
 
         local space = fs.getFreeSpace("/")
-        tool_ctl.dw_free_space.set_value("Available Free Space: "..space.." bytes")
+        tool_ctl.dw_free_space.set_value("Espaço Livre Disponível: "..space.." bytes")
 
         if not fs.exists(ini_cfg.LogPath) then
-            tool_ctl.dw_log_size.set_value("Log File Size: 0 bytes")
+            tool_ctl.dw_log_size.set_value("Tamanho do Arq. de Log: 0 bytes")
             tool_ctl.dw_del_log_btn.disable()
         end
 
         if space >= req_space then tool_ctl.dw_continue.enable() end
     end
 
-    TextBox{parent=disk_page,height=3,text="There is not enough disk space to safely configure this device. Saving the configuration may fail and cause loss of configuration data."}
+    TextBox{parent=disk_page,height=3,text="Não há espaço em disco suficiente para configurar este dispositivo com segurança. Salvar a configuração pode falhar e causar perda de dados."}
 
-    TextBox{parent=disk_page,y=5,height=1,text="Capacity:             "..fs.getCapacity("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
-    tool_ctl.dw_free_space = TextBox{parent=disk_page,height=1,text="Available Free Space: "..fs.getFreeSpace("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
-    TextBox{parent=disk_page,height=1,text="Required Free Space:  "..req_space.." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    TextBox{parent=disk_page,y=5,height=1,text="Capacidade:              "..fs.getCapacity("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    tool_ctl.dw_free_space = TextBox{parent=disk_page,height=1,text="Espaço Livre Disponível: "..fs.getFreeSpace("/").." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+    TextBox{parent=disk_page,height=1,text="Espaço Livre Necessário: "..req_space.." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
 
     if fs.exists(ini_cfg.LogPath) then
-        TextBox{parent=disk_page,y=9,height=2,text="If your log file is on this computer and not an external disk, deleting it may help."}
-        tool_ctl.dw_log_size = TextBox{parent=disk_page,y=12,height=1,text="Log File Size: "..fs.getSize(ini_cfg.LogPath).." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
+        TextBox{parent=disk_page,y=9,height=2,text="Se o seu arquivo de log estiver neste computador e não em um disco externo, excluí-lo pode ajudar."}
+        tool_ctl.dw_log_size = TextBox{parent=disk_page,y=12,height=1,text="Tamanho do Arq. de Log: "..fs.getSize(ini_cfg.LogPath).." bytes",fg_bg=cpair(colors.gray,colors._INHERIT)}
 
-        tool_ctl.dw_del_log_btn = PushButton{parent=disk_page,x=33,y=12,min_width=17,text="Delete Log File",callback=delete_log,fg_bg=cpair(colors.black,colors.orange),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+        tool_ctl.dw_del_log_btn = PushButton{parent=disk_page,x=33,y=12,min_width=17,text="Excluir Arq. Log",callback=delete_log,fg_bg=cpair(colors.black,colors.orange),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
     else
-        TextBox{parent=disk_page,y=9,height=4,text="The log file wasn't found, so you'll need to manually make space. Please remove any files unrelated to this application that you may have manually created."}
+        TextBox{parent=disk_page,y=9,height=4,text="O arquivo de log não foi encontrado, então você precisará liberar espaço manualmente. Por favor, remova quaisquer arquivos não relacionados a este aplicativo que você tenha criado."}
     end
 
-    PushButton{parent=disk_page,y=14,min_width=6,text="Exit",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
-    tool_ctl.dw_continue = PushButton{parent=disk_page,x=40,y=14,min_width=10,text="Continue",callback=function()main_pane.set_value(1)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=disk_page,y=14,min_width=6,text="Sair",callback=exit,fg_bg=cpair(colors.black,colors.red),active_fg_bg=btn_act_fg_bg}
+    tool_ctl.dw_continue = PushButton{parent=disk_page,x=40,y=14,min_width=10,text="Continuar",callback=function()main_pane.set_value(1)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
     tool_ctl.dw_continue.disable()
 
     -- #endregion
 
     local settings = { settings_cfg, ini_cfg, tmp_cfg, fields, load_settings }
 
-    --#region Peripherals Configuration
+    --#region Configuração de Periféricos
 
     local peri_pane, NEEDS_UNIT = peripherals.create(tool_ctl, main_pane, settings, peri_cfg, style)
 
     --#endregion
 
-    --#region Redstone Configuration
+    --#region Configuração de Redstone
 
     local rs_pane = redstone.create(tool_ctl, main_pane, settings, rs_cfg, style)
 
     --#endregion
 
-    --#region System Configuration
+    --#region Configuração do Sistema
 
     local divs = { spkr_cfg, net_cfg, log_cfg, clr_cfg, summary }
     local ext  = { peri_pane, rs_pane, NEEDS_UNIT, show_peri_conns, show_rs_conns, startup, exit }
@@ -337,11 +337,11 @@ local function config_view(display)
 
     --#endregion
 
-    --#region Config Change Log
+    --#region Histórico de Alterações de Configuração
 
     local cl = Div{parent=changelog,x=2,y=4,width=49}
 
-    TextBox{parent=changelog,y=2,text=" Config Change Log",fg_bg=bw_fg_bg}
+    TextBox{parent=changelog,y=2,text=" Histórico de Alterações de Config.",fg_bg=bw_fg_bg}
 
     local c_log = ListBox{parent=cl,y=1,height=12,width=49,scroll_height=100,fg_bg=bw_fg_bg,nav_fg_bg=g_lg_fg_bg,nav_active=cpair(colors.black,colors.gray)}
 
@@ -354,18 +354,18 @@ local function config_view(display)
         end
     end
 
-    PushButton{parent=cl,y=14,text="\x1b Back",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=cl,y=14,text="\x1b Voltar",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 
-    --#region Self-Check
+    --#region Autoteste
 
     check.create(main_pane, settings_cfg, check_sys, style)
 
     --#endregion
 end
 
--- reset terminal screen
+-- redefinir tela do terminal
 local function reset_term()
     term.setTextColor(colors.white)
     term.setBackgroundColor(colors.black)
@@ -373,15 +373,15 @@ local function reset_term()
     term.setCursorPos(1, 1)
 end
 
--- run the RTU gateway configurator
----@param ask_config? boolean indicate if this is being called by the startup app due to an invalid configuration
+-- executar o configurador do gateway RTU
+---@param ask_config? boolean indicar se isto está sendo chamado pelo aplicativo de inicialização devido a uma configuração inválida
 function configurator.configure(ask_config)
     tool_ctl.ask_config = ask_config == true
 
     load_settings(settings_cfg, true)
     tool_ctl.has_config = load_settings(ini_cfg)
 
-    -- set tmp_cfg so interface lists are correct
+    -- definir tmp_cfg para que as listas de interfaces estejam corretas
     tmp_cfg.WiredModem = ini_cfg.WiredModem
     tmp_cfg.Peripherals = tool_ctl.deep_copy_peri(ini_cfg.Peripherals)
     tmp_cfg.Redstone = tool_ctl.deep_copy_rs(ini_cfg.Redstone)
@@ -390,7 +390,7 @@ function configurator.configure(ask_config)
 
     ppm.mount_all()
 
-    -- set overridden colors
+    -- definir cores substituídas
     for i = 1, #style.colors do
         term.setPaletteColor(style.colors[i].c, style.colors[i].hex)
     end
@@ -404,7 +404,7 @@ function configurator.configure(ask_config)
         while true do
             local event, param1, param2, param3, param4, param5 = util.pull_event()
 
-            -- handle event
+            -- tratar evento
             if event == "timer" then
                 tcd.handle(param1)
             elseif event == "mouse_click" or event == "mouse_up" or event == "mouse_drag" or event == "mouse_scroll" or event == "double_click" then
@@ -437,7 +437,7 @@ function configurator.configure(ask_config)
         end
     end)
 
-    -- restore colors
+    -- restaurar cores
     for i = 1, #style.colors do
         local r, g, b = term.nativePaletteColor(style.colors[i].c)
         term.setPaletteColor(style.colors[i].c, r, g, b)
@@ -445,7 +445,7 @@ function configurator.configure(ask_config)
 
     reset_term()
     if not status then
-        println("configurator error: " .. error)
+        println("erro do configurador: " .. error)
     end
 
     return status, error, tool_ctl.launch_startup

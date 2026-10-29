@@ -1,18 +1,18 @@
 --
--- Audio & Tone Control for Alarms
+-- Controle de Áudio e Tons para Alarmes
 --
 
 local min = math.min
 local max = math.max
 
--- sounds modeled after https://www.e2s.com/references-and-guidelines/listen-and-download-alarm-tones
+-- sons modelados a partir de https://www.e2s.com/references-and-guidelines/listen-and-download-alarm-tones
 
--- note: max samples = 0x20000 (128 * 1024 samples)
+-- nota: máx de amostras = 0x20000 (128 * 1024 amostras)
 
-local _2_PI        = 2 * math.pi -- 2 whole pies, hope you're hungry
-local _DRATE       = 48000       -- 48kHz audio data rate
-local _MAX_VAL     = 127 / 2     -- max signed integer in this 8-bit audio
-local _05s_SAMPLES = 24000       -- half a second worth of samples
+local _2_PI        = 2 * math.pi -- 2 tortas inteiras, espero que esteja com fome
+local _DRATE       = 48000       -- taxa de dados de áudio de 48kHz
+local _MAX_VAL     = 127 / 2     -- inteiro com sinal máximo neste áudio de 8 bits
+local _05s_SAMPLES = 24000       -- meio segundo de amostras
 
 ---@class audio
 local audio = {}
@@ -33,17 +33,17 @@ audio.TONE = TONE
 
 ---@type integer[][][]
 local tone_data = {
-    { {}, {}, {}, {} }, -- 340Hz @ 2Hz Intermittent
-    { {}, {}, {}, {} }, -- 544Hz 100mS / 440Hz 400mS Alternating
-    { {}, {}, {}, {} }, -- 660Hz @ 125ms On 125ms Off
-    { {}, {}, {}, {} }, -- 745Hz @ 1Hz Intermittent
-    { {}, {}, {}, {} }, -- 800Hz @ 0.25s On 1.75s Off
-    { {}, {}, {}, {} }, -- 800/1000Hz @ 0.25s Alternating
-    { {}, {}, {}, {} }, -- 1KHz 1s on, 1s off Intermittent
-    { {}, {}, {}, {} }  -- 1.8KHz @ 4Hz Intermittent
+    { {}, {}, {}, {} }, -- 340Hz @ 2Hz Intermitente
+    { {}, {}, {}, {} }, -- 544Hz 100mS / 440Hz 400mS Alternado
+    { {}, {}, {}, {} }, -- 660Hz @ 125ms Ligado 125ms Desligado
+    { {}, {}, {}, {} }, -- 745Hz @ 1Hz Intermitente
+    { {}, {}, {}, {} }, -- 800Hz @ 0.25s Ligado 1.75s Desligado
+    { {}, {}, {}, {} }, -- 800/1000Hz @ 0.25s Alternado
+    { {}, {}, {}, {} }, -- 1KHz 1s ligado, 1s desligado Intermitente
+    { {}, {}, {}, {} }  -- 1.8KHz @ 4Hz Intermitente
 }
 
--- calculate how many samples are in the given number of milliseconds
+-- calcula quantas amostras há no número fornecido de milissegundos
 ---@nodiscard
 ---@param ms integer milliseconds
 ---@return integer samples
@@ -51,7 +51,7 @@ local function ms_to_samples(ms) return math.floor(ms * 48) end
 
 --#region Tone Generation (the Maths)
 
--- 340Hz @ 2Hz Intermittent
+-- 340Hz @ 2Hz Intermitente
 local function gen_tone_1()
     local t, dt = 0, _2_PI * 340 / _DRATE
 
@@ -65,7 +65,7 @@ local function gen_tone_1()
     end
 end
 
--- 544Hz 100mS / 440Hz 400mS Alternating
+-- 544Hz 100mS / 440Hz 400mS Alternado
 local function gen_tone_2()
     local t1, dt1 = 0, _2_PI * 544 / _DRATE
     local t2, dt2 = 0, _2_PI * 440 / _DRATE
@@ -89,7 +89,7 @@ local function gen_tone_2()
     end
 end
 
--- 660Hz @ 125ms On 125ms Off
+-- 660Hz @ 125ms Ligado 125ms Desligado
 local function gen_tone_3()
     local elapsed_samples = 0
     local alternate_after = ms_to_samples(125)
@@ -119,7 +119,7 @@ local function gen_tone_3()
     end
 end
 
--- 745Hz @ 1Hz Intermittent
+-- 745Hz @ 1Hz Intermitente
 local function gen_tone_4()
     local t, dt = 0, _2_PI * 745 / _DRATE
 
@@ -133,7 +133,7 @@ local function gen_tone_4()
     end
 end
 
--- 800Hz @ 0.25s On 1.75s Off
+-- 800Hz @ 0.25s Ligado 1.75s Desligado
 local function gen_tone_5()
     local t, dt = 0, _2_PI * 800 / _DRATE
     local stop_at = ms_to_samples(250)
@@ -155,7 +155,7 @@ local function gen_tone_5()
     end
 end
 
--- 1000/800Hz @ 0.25s Alternating
+-- 1000/800Hz @ 0.25s Alternado
 local function gen_tone_6()
     local t1, dt1 = 0, _2_PI * 1000 / _DRATE
     local t2, dt2 = 0, _2_PI * 800 / _DRATE
@@ -179,7 +179,7 @@ local function gen_tone_6()
     end
 end
 
--- 1KHz 1s on, 1s off Intermittent
+-- 1KHz 1s ligado, 1s desligado Intermitente
 local function gen_tone_7()
     local t, dt = 0, _2_PI * 1000 / _DRATE
 
@@ -193,7 +193,7 @@ local function gen_tone_7()
     end
 end
 
--- 1800Hz @ 4Hz Intermittent
+-- 1800Hz @ 4Hz Intermitente
 local function gen_tone_8()
     local t, dt = 0, _2_PI * 1800 / _DRATE
 
@@ -216,7 +216,7 @@ end
 
 --#endregion
 
--- generate all 8 tone sequences
+-- gera todas as 8 sequências de tom
 function audio.generate_tones()
     gen_tone_1()
     gen_tone_2()
@@ -228,7 +228,7 @@ function audio.generate_tones()
     gen_tone_8()
 end
 
--- clear output buffer
+-- limpa o buffer de saída
 ---@param buffer integer[][] quad buffer
 local function clear(buffer)
     for i = 1, 4 do
@@ -236,15 +236,15 @@ local function clear(buffer)
     end
 end
 
--- create a new audio tone stream controller
+-- cria um novo controlador de fluxo de tons de áudio
 function audio.new_stream()
     local self = {
         any_active = false,
         need_recompute = false,
         next_block = 1,
-        ---@type integer[][] split audio up into 0.5s samples, so specific components can be ended quicker
+        ---@type integer[][] divide o áudio em amostras de 0.5s, para que componentes específicos possam terminar mais rápido
         quad_buffer = { {}, {}, {}, {} },
-        -- all tone enable states
+        -- estados de ativação de todos os tons
         tone_active = { false, false, false, false, false, false, false, false }
     }
 
@@ -253,7 +253,7 @@ function audio.new_stream()
     ---@class tone_stream
     local public = {}
 
-    -- add a tone to the output buffer
+    -- adiciona um tom ao buffer de saída
     ---@param index TONE tone ID
     ---@param active boolean active state
     function public.set_active(index, active)
@@ -263,13 +263,13 @@ function audio.new_stream()
         end
     end
 
-    -- check if a tone is active
+    -- verifica se um tom está ativo
     ---@param index TONE tone index
     function public.is_active(index)
         return self.tone_active[index] or false
     end
 
-    -- set all tones inactive, reset next block, and clear output buffer
+    -- define todos os tons como inativos, redefine o próximo bloco e limpa o buffer de saída
     function public.stop()
         for i = 1, #self.tone_active do
             self.tone_active[i] = false
@@ -280,10 +280,10 @@ function audio.new_stream()
         clear(self.quad_buffer)
     end
 
-    -- check if the output buffer needs to be recomputed due to changes
+    -- verifica se o buffer de saída precisa ser recalculado devido a alterações
     function public.is_recompute_needed() return self.need_recompute end
 
-    -- re-compute the output buffer
+    -- recalcula o buffer de saída
     function public.compute_buffer()
         clear(self.quad_buffer)
 
@@ -306,13 +306,13 @@ function audio.new_stream()
         end
     end
 
-    -- check if any alarms are active
+    -- verifica se algum alarme está ativo
     function public.any_active() return self.any_active end
 
-    -- check if the next audio block has data
+    -- verifica se o próximo bloco de áudio possui dados
     function public.has_next_block() return #self.quad_buffer[self.next_block] > 0 end
 
-    -- get the next audio block
+    -- obtém o próximo bloco de áudio
     function public.get_next_block()
         local block = self.quad_buffer[self.next_block]
 

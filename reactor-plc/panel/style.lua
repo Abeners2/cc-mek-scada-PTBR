@@ -1,5 +1,5 @@
 --
--- Graphics Style Options
+-- Opções de Estilo Gráfico
 --
 
 local core   = require("graphics.core")
@@ -17,7 +17,7 @@ style.colorblind = false
 style.ind_grn = cpair(colors.green, colors.green_off)
 style.ind_red = cpair(colors.red, colors.red_off)
 
--- set theme per configuration
+-- define o tema conforme a configuração
 ---@param fp FP_THEME front panel theme
 ---@param color_mode COLOR_MODE the color mode to use
 function style.set_theme(fp, color_mode)

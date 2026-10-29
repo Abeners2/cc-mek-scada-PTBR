@@ -1,5 +1,5 @@
 --
--- RTU Gateway System Core Peripheral Backplane
+-- Backplane de Periféricos Principais do Sistema Gateway RTU
 --
 
 local log     = require("scada-common.log")
@@ -24,15 +24,15 @@ local _bp = {
     act_nic = nil,  ---@type nic
     wd_nic = nil,   ---@type nic|nil
     wl_nic = nil,   ---@type nic|nil
-    nic_map = {},   ---@type nic[] connected nics
+    nic_map = {},   ---@type nic[] nics conectadas
 
     sounders = {}   ---@type rtu_speaker_sounder[]
 }
 
--- network interfaces indexed by peripheral names
+-- interfaces de rede indexadas por nomes de periféricos
 backplane.nics = _bp.nic_map
 
--- initialize the system peripheral backplane
+-- inicializar o backplane de periféricos do sistema
 ---@param config rtu_config
 ---@param __shared_memory rtu_shared_memory
 ---@return boolean success
@@ -41,9 +41,9 @@ function backplane.init(config, __shared_memory)
     _bp.wlan_pref = config.PreferWireless
     _bp.lan_iface = config.WiredModem
 
-    -- Modem Init
+    -- Inicialização de Modem
 
-    -- init wired NIC
+    -- inicializar NIC cabeada
     if type(_bp.lan_iface) == "string" then
         local modem  = ppm.get_modem(_bp.lan_iface)
         local wd_nic = network.nic(modem, config.SVR_Channel)
@@ -51,7 +51,7 @@ function backplane.init(config, __shared_memory)
         log.info("BKPLN: WIRED PHY_" .. util.trinary(modem, "UP ", "DOWN ") .. _bp.lan_iface)
 
         _bp.wd_nic  = wd_nic
-        _bp.act_nic = wd_nic -- set this as active for now
+        _bp.act_nic = wd_nic -- definir esta como ativa por enquanto
         _bp.nic_map[_bp.lan_iface] = wd_nic
 
         wd_nic.closeAll()
@@ -60,14 +60,14 @@ function backplane.init(config, __shared_memory)
         databus.tx_hw_wd_modem(modem ~= nil)
     end
 
-    -- init wireless NIC(s)
+    -- inicializar NIC(s) sem fio
     if config.WirelessModem then
         local modem, iface = ppm.get_wireless_modem()
         local wl_nic       = network.nic(modem, config.SVR_Channel)
 
         log.info("BKPLN: WIRELESS PHY_" .. util.trinary(modem, "UP ", "DOWN") .. (iface or ""))
 
-        -- set this as active if connected or if both modems are disconnected and this is preferred
+        -- definir esta como ativa se conectada ou se ambos os modems estiverem desconectados e este for o preferido
         if (modem and _bp.wlan_pref) or not (_bp.act_nic and _bp.act_nic.is_connected()) then
             _bp.act_nic = wl_nic
         end
@@ -81,16 +81,16 @@ function backplane.init(config, __shared_memory)
         databus.tx_hw_wl_modem(modem ~= nil)
     end
 
-    -- at least one comms modem is required
+    -- pelo menos um modem de comunicação é necessário
     if not ((_bp.wd_nic and _bp.wd_nic.is_connected()) or (_bp.wl_nic and _bp.wl_nic.is_connected())) then
-        println("startup> no comms modem found")
-        log.warning("BKPLN: no comms modem on startup")
+        println("startup> nenhum modem de comunicação encontrado")
+        log.warning("BKPLN: nenhum modem de comunicação na inicialização")
         return false
     end
 
-    -- Speaker Init
+    -- Inicialização de Alto-falantes
 
-    -- find and setup all speakers
+    -- encontrar e configurar todos os alto-falantes
     local speakers = ppm.get_all_devices("speaker")
     for _, s in pairs(speakers) do
         log.info("BKPLN: SPEAKER LINK_UP " .. ppm.get_iface(s))
@@ -99,7 +99,7 @@ function backplane.init(config, __shared_memory)
         local sounder = rtu.init_sounder(s)
         table.insert(_bp.sounders, sounder)
 
-        log.debug(util.c("BKPLN: added speaker sounder, attached as ", sounder.name))
+        log.debug(util.c("BKPLN: sinalizador sonoro adicionado, anexado como ", sounder.name))
     end
 
     databus.tx_hw_spkr_count(#_bp.sounders)
@@ -107,23 +107,23 @@ function backplane.init(config, __shared_memory)
     return true
 end
 
--- get the active NIC
+-- obter a NIC ativa
 function backplane.active_nic() return _bp.act_nic end
 
--- get the standby NIC
+-- obter a NIC de reserva (standby)
 ---@return nic|nil
 function backplane.standby_nic() return util.trinary(_bp.act_nic == _bp.wl_nic, _bp.wd_nic, _bp.wl_nic) end
 
--- get the sounder interfaces
+-- obter as interfaces de sinalizadores sonoros
 function backplane.sounders() return _bp.sounders end
 
--- periodic backplane peripheral tasks
+-- tarefas periódicas de periféricos do backplane
 function backplane.periodic()
     if _bp.wd_nic then databus.tx_wd_net(_bp.wd_nic.periodic()) end
     if _bp.wl_nic then databus.tx_wl_net(_bp.wl_nic.periodic()) end
 end
 
--- handle a backplane peripheral attach
+-- tratar conexão de periférico no backplane
 ---@param type string
 ---@param device ppm_generic
 ---@param iface string
@@ -141,50 +141,50 @@ function backplane.attach(type, device, iface, print_no_fp)
         log.info(util.c("BKPLN: ", util.trinary(m_is_wl, "WIRELESS", "WIRED"), " PHY_ATTACH ", iface))
 
         if wd_nic and (_bp.lan_iface == iface) then
-            -- connect this as the wired NIC
+            -- conectar este como a NIC cabeada
             wd_nic.connect(device)
             _bp.nic_map[iface] = wd_nic
 
             log.info("BKPLN: WIRED PHY_UP " .. iface)
-            print_no_fp("wired comms modem reconnected")
+            print_no_fp("modem de comunicação cabeado reconectado")
 
             databus.tx_hw_wd_modem(true)
 
             if (_bp.act_nic ~= wd_nic) and not _bp.wlan_pref then
-                -- switch back to preferred wired
+                -- voltar para o cabeado preferido
                 _bp.act_nic = wd_nic
 
                 comms.switch_nic(_bp.act_nic, _bp.smem.rtu_state)
-                log.info("BKPLN: switched comms to wired modem (preferred)")
+                log.info("BKPLN: comunicações alteradas para o modem cabeado (preferido)")
             end
         elseif wl_nic and (not wl_nic.is_connected()) and m_is_wl then
-            -- connect this as the wireless NIC
+            -- conectar este como a NIC sem fio
             wl_nic.connect(device)
             _bp.nic_map[iface] = wl_nic
 
             log.info("BKPLN: WIRELESS PHY_UP " .. iface)
-            print_no_fp("wireless comms modem reconnected")
+            print_no_fp("modem de comunicação sem fio reconectado")
 
             databus.tx_hw_wl_modem(true)
 
             if (_bp.act_nic ~= wl_nic) and _bp.wlan_pref then
-                -- switch back to preferred wireless
+                -- voltar para o sem fio preferido
                 _bp.act_nic = wl_nic
 
                 comms.switch_nic(_bp.act_nic, _bp.smem.rtu_state)
-                log.info("BKPLN: switched comms to wireless modem (preferred)")
+                log.info("BKPLN: comunicações alteradas para o modem sem fio (preferido)")
             end
         elseif wl_nic and m_is_wl then
-            -- the wireless NIC already has a modem
+            -- a NIC sem fio já possui um modem
             device.closeAll()
 
-            print_no_fp("standby wireless modem connected")
-            log.info("BKPLN: standby wireless modem connected")
+            print_no_fp("modem sem fio de reserva conectado")
+            log.info("BKPLN: modem sem fio de reserva conectado")
         else
             device.closeAll()
 
-            print_no_fp("unassigned modem connected")
-            log.warning("BKPLN: unassigned modem connected")
+            print_no_fp("modem não atribuído conectado")
+            log.warning("BKPLN: modem não atribuído conectado")
         end
     elseif type == "speaker" then
         ---@cast device Speaker
@@ -193,14 +193,14 @@ function backplane.attach(type, device, iface, print_no_fp)
 
         table.insert(_bp.sounders, rtu.init_sounder(device))
 
-        print_no_fp("a speaker was connected")
-        log.info("BKPLN: setup speaker sounder for speaker " .. iface)
+        print_no_fp("um alto-falante foi conectado")
+        log.info("BKPLN: sinalizador sonoro configurado para o alto-falante " .. iface)
 
         databus.tx_hw_spkr_count(#_bp.sounders)
     end
 end
 
--- handle a backplane peripheral detach
+-- tratar desconexão de periférico no backplane
 ---@param type string
 ---@param device ppm_generic
 ---@param iface string
@@ -229,18 +229,18 @@ function backplane.detach(type, device, iface, print_no_fp)
             databus.tx_hw_wl_modem(false)
         end
 
-        -- we only care if this is our active comms modem
+        -- só nos importamos se este for nosso modem de comunicação ativo
         if _bp.act_nic.is_modem(device) then
-            print_no_fp("active comms modem disconnected")
-            log.warning("BKPLN: active comms modem disconnected")
+            print_no_fp("modem de comunicação ativo desconectado")
+            log.warning("BKPLN: modem de comunicação ativo desconectado")
 
-            -- failover and try to find a new comms modem
+            -- alternar em caso de falha (failover) e tentar encontrar um novo modem de comunicação
             if _bp.act_nic == wl_nic then
-                -- wireless active disconnected
-                -- try to find another wireless modem, otherwise switch to wired
+                -- sem fio ativo desconectado
+                -- tentar encontrar outro modem sem fio, caso contrário alternar para cabeado
                 local modem, m_iface = ppm.get_wireless_modem()
                 if wl_nic and modem then
-                    log.info("BKPLN: found another wireless modem, using it for comms")
+                    log.info("BKPLN: outro modem sem fio encontrado, usando-o para comunicações")
 
                     wl_nic.connect(modem)
 
@@ -251,32 +251,32 @@ function backplane.detach(type, device, iface, print_no_fp)
                     _bp.act_nic = wd_nic
 
                     comms.switch_nic(_bp.act_nic, _bp.smem.rtu_state)
-                    log.info("BKPLN: switched comms to wired modem")
+                    log.info("BKPLN: comunicações alteradas para o modem cabeado")
                 else
-                    -- no other wireless modems, wired unavailable
+                    -- sem outros modems sem fio, cabeado indisponível
                     comms.close(_bp.smem.rtu_state)
                 end
             elseif wl_nic and wl_nic.is_connected() then
-                -- wired active disconnected, wireless available
+                -- cabeado ativo desconectado, sem fio disponível
                 _bp.act_nic = wl_nic
 
                 comms.switch_nic(_bp.act_nic, _bp.smem.rtu_state)
-                log.info("BKPLN: switched comms to wireless modem")
+                log.info("BKPLN: comunicações alteradas para o modem sem fio")
             else
-                -- wired active disconnected, wireless unavailable
+                -- cabeado ativo desconectado, sem fio indisponível
                 comms.close(_bp.smem.rtu_state)
             end
         elseif wd_nic and wd_nic.is_modem(device) then
-            -- wired, but not active
-            print_no_fp("standby wired modem disconnected")
-            log.info("BKPLN: standby wired modem disconnected")
+            -- cabeado, mas não ativo
+            print_no_fp("modem cabeado de reserva desconectado")
+            log.info("BKPLN: modem cabeado de reserva desconectado")
         elseif wl_nic and wl_nic.is_modem(device) then
-            -- wireless, but not active
-            print_no_fp("standby wireless modem disconnected")
-            log.info("BKPLN: standby wireless modem disconnected")
+            -- sem fio, mas não ativo
+            print_no_fp("modem sem fio de reserva desconectado")
+            log.info("BKPLN: modem sem fio de reserva desconectado")
         else
-            print_no_fp("unassigned modem disconnected")
-            log.warning("BKPLN: unassigned modem disconnected")
+            print_no_fp("modem não atribuído desconectado")
+            log.warning("BKPLN: modem não atribuído desconectado")
         end
     elseif type == "speaker" then
         ---@cast device Speaker
@@ -287,8 +287,8 @@ function backplane.detach(type, device, iface, print_no_fp)
             if _bp.sounders[i].speaker == device then
                 table.remove(_bp.sounders, i)
 
-                print_no_fp("a speaker was disconnected")
-                log.warning("BKPLN: speaker sounder " .. iface .. " disconnected")
+                print_no_fp("um alto-falante foi desconectado")
+                log.warning("BKPLN: sinalizador sonoro " .. iface .. " desconectado")
 
                 databus.tx_hw_spkr_count(#_bp.sounders)
                 break

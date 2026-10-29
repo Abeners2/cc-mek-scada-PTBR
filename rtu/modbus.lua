@@ -6,15 +6,15 @@ local modbus = {}
 local MODBUS_FCODE = types.MODBUS_FCODE
 local MODBUS_EXCODE = types.MODBUS_EXCODE
 
--- new modbus comms handler object
+-- novo objeto manipulador de comunicações modbus
 ---@nodiscard
----@param rtu_dev rtu_device|rtu_rs_device RTU device
----@param use_parallel_read boolean whether or not to use parallel calls when reading
+---@param rtu_dev rtu_device|rtu_rs_device dispositivo RTU
+---@param use_parallel_read boolean usar ou não chamadas paralelas ao ler
 function modbus.new(rtu_dev, use_parallel_read)
     local insert = table.insert
 
-    -- read a span of coils (digital outputs)<br>
-    -- returns a table of readings or a MODBUS_EXCODE error code
+    -- ler um intervalo de bobinas (saídas digitais)<br>
+    -- retorna uma tabela de leituras ou um código de erro MODBUS_EXCODE
     ---@nodiscard
     ---@param c_addr_start integer
     ---@param count integer
@@ -41,7 +41,7 @@ function modbus.new(rtu_dev, use_parallel_read)
                 end
             end
 
-            -- run parallel tasks if configured
+            -- executar tarefas paralelas se configurado
             if use_parallel_read then
                 parallel.waitForAll(table.unpack(tasks))
             end
@@ -57,8 +57,8 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, readings
     end
 
-    -- read a span of discrete inputs (digital inputs)<br>
-    -- returns a table of readings or a MODBUS_EXCODE error code
+    -- ler um intervalo de entradas discretas (entradas digitais)<br>
+    -- retorna uma tabela de leituras ou um código de erro MODBUS_EXCODE
     ---@nodiscard
     ---@param di_addr_start integer
     ---@param count integer
@@ -85,7 +85,7 @@ function modbus.new(rtu_dev, use_parallel_read)
                 end
             end
 
-            -- run parallel tasks if configured
+            -- executar tarefas paralelas se configurado
             if use_parallel_read then
                 parallel.waitForAll(table.unpack(tasks))
             end
@@ -101,8 +101,8 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, readings
     end
 
-    -- read a span of holding registers (analog outputs)<br>
-    -- returns a table of readings or a MODBUS_EXCODE error code
+    -- ler um intervalo de registradores de retenção (saídas analógicas)<br>
+    -- retorna uma tabela de leituras ou um código de erro MODBUS_EXCODE
     ---@nodiscard
     ---@param hr_addr_start integer
     ---@param count integer
@@ -129,7 +129,7 @@ function modbus.new(rtu_dev, use_parallel_read)
                 end
             end
 
-            -- run parallel tasks if configured
+            -- executar tarefas paralelas se configurado
             if use_parallel_read then
                 parallel.waitForAll(table.unpack(tasks))
             end
@@ -145,8 +145,8 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, readings
     end
 
-    -- read a span of input registers (analog inputs)<br>
-    -- returns a table of readings or a MODBUS_EXCODE error code
+    -- ler um intervalo de registradores de entrada (entradas analógicas)<br>
+    -- retorna uma tabela de leituras ou um código de erro MODBUS_EXCODE
     ---@nodiscard
     ---@param ir_addr_start integer
     ---@param count integer
@@ -173,7 +173,7 @@ function modbus.new(rtu_dev, use_parallel_read)
                 end
             end
 
-            -- run parallel tasks if configured
+            -- executar tarefas paralelas se configurado
             if use_parallel_read then
                 parallel.waitForAll(table.unpack(tasks))
             end
@@ -189,7 +189,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, readings
     end
 
-    -- write a single coil (digital output)
+    -- escrever em uma única bobina (saída digital)
     ---@nodiscard
     ---@param c_addr integer
     ---@param value any
@@ -213,7 +213,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, response
     end
 
-    -- write a single holding register (analog output)
+    -- escrever em um único registrador de retenção (saída analógica)
     ---@nodiscard
     ---@param hr_addr integer
     ---@param value any
@@ -237,7 +237,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, response
     end
 
-    -- write multiple coils (digital outputs)
+    -- escrever em múltiplas bobinas (saídas digitais)
     ---@nodiscard
     ---@param c_addr_start integer
     ---@param values any
@@ -266,7 +266,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         return return_ok, response
     end
 
-    -- write multiple holding registers (analog outputs)
+    -- escrever em múltiplos registradores de retenção (saídas analógicas)
     ---@nodiscard
     ---@param hr_addr_start integer
     ---@param values any
@@ -298,7 +298,7 @@ function modbus.new(rtu_dev, use_parallel_read)
     ---@class modbus
     local public = {}
 
-    -- validate a request without actually executing it
+    -- validar uma solicitação sem realmente executá-la
     ---@nodiscard
     ---@param adu modbus_adu
     ---@return boolean return_code, modbus_container reply
@@ -307,7 +307,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         local response = { MODBUS_EXCODE.ACKNOWLEDGE }
 
         if adu.length == 2 then
-            -- handle  by function code
+            -- tratar por código de função
             if adu.func_code == MODBUS_FCODE.READ_COILS then
             elseif adu.func_code == MODBUS_FCODE.READ_DISCRETE_INPUTS then
             elseif adu.func_code == MODBUS_FCODE.READ_MUL_HOLD_REGS then
@@ -317,28 +317,28 @@ function modbus.new(rtu_dev, use_parallel_read)
             elseif adu.func_code == MODBUS_FCODE.WRITE_MUL_COILS then
             elseif adu.func_code == MODBUS_FCODE.WRITE_MUL_HOLD_REGS then
             else
-                -- unknown function
+                -- função desconhecida
                 return_code = false
                 response = { MODBUS_EXCODE.ILLEGAL_FUNCTION }
             end
         else
-            -- invalid length
+            -- tamanho inválido
             return_code = false
             response = { MODBUS_EXCODE.NEG_ACKNOWLEDGE }
         end
 
-        -- default is to echo back<br>
-        -- but here we echo back with error flag, on success the "error" will be acknowledgement
+        -- o padrão é ecoar de volta<br>
+        -- mas aqui ecoamos de volta com sinalizador de erro, em caso de sucesso o "erro" será confirmação (acknowledge)
         local func_code = bit.bor(adu.func_code, MODBUS_FCODE.ERROR_FLAG)
 
-        -- create reply
+        -- criar resposta
         local reply = comms.modbus_container()
         reply.make(adu.txn_id, adu.unit_id, func_code, response)
 
         return return_code, reply
     end
 
-    -- handle a MODBUS TCP ADU and generate a reply
+    -- tratar uma ADU MODBUS TCP e gerar uma resposta
     ---@nodiscard
     ---@param adu modbus_adu
     ---@return boolean return_code, modbus_container reply
@@ -347,7 +347,7 @@ function modbus.new(rtu_dev, use_parallel_read)
         local response      ---@type table|MODBUS_EXCODE
 
         if adu.length >= 2 then
-            -- handle  by function code
+            -- tratar por código de função
             if adu.func_code == MODBUS_FCODE.READ_COILS then
                 return_code, response = _1_read_coils(adu.data[1], adu.data[2])
             elseif adu.func_code == MODBUS_FCODE.READ_DISCRETE_INPUTS then
@@ -365,20 +365,20 @@ function modbus.new(rtu_dev, use_parallel_read)
             elseif adu.func_code == MODBUS_FCODE.WRITE_MUL_HOLD_REGS then
                 return_code, response = _16_write_multiple_holding_registers(adu.data[1], { table.unpack(adu.data, 2, adu.length) })
             else
-                -- unknown function
+                -- função desconhecida
                 return_code = false
                 response = MODBUS_EXCODE.ILLEGAL_FUNCTION
             end
         else
-            -- invalid length
+            -- tamanho inválido
             return_code = false
             response = MODBUS_EXCODE.NEG_ACKNOWLEDGE
         end
 
-        -- default is to echo back
+        -- o padrão é ecoar de volta
         local func_code = adu.func_code
         if not return_code then
-            -- echo back with error flag
+            -- ecoar de volta com sinalizador de erro
             func_code = bit.bor(adu.func_code, MODBUS_FCODE.ERROR_FLAG)
         end
 
@@ -389,7 +389,7 @@ function modbus.new(rtu_dev, use_parallel_read)
             response = { response }
         end
 
-        -- create reply
+        -- criar resposta
         local reply = comms.modbus_container()
         reply.make(adu.txn_id, adu.unit_id, func_code, response)
 
@@ -399,40 +399,40 @@ function modbus.new(rtu_dev, use_parallel_read)
     return public
 end
 
--- create an error reply
+-- criar uma resposta de erro
 ---@nodiscard
----@param adu modbus_adu MODBUS ADU
----@param code MODBUS_EXCODE exception code
+---@param adu modbus_adu ADU MODBUS
+---@param code MODBUS_EXCODE código de exceção
 ---@return modbus_container reply
 local function excode_reply(adu, code)
-    -- reply back with error flag and exception code
+    -- responder de volta com sinalizador de erro e código de exceção
     local reply = comms.modbus_container()
     local fcode = bit.bor(adu.func_code, MODBUS_FCODE.ERROR_FLAG)
     reply.make(adu.txn_id, adu.unit_id, fcode, { code })
     return reply
 end
 
--- return a SERVER_DEVICE_FAIL error reply
+-- retornar uma resposta de erro SERVER_DEVICE_FAIL
 ---@nodiscard
----@param adu modbus_adu MODBUS ADU
+---@param adu modbus_adu ADU MODBUS
 ---@return modbus_container reply
 function modbus.reply__srv_device_fail(adu) return excode_reply(adu, MODBUS_EXCODE.SERVER_DEVICE_FAIL) end
 
--- return a SERVER_DEVICE_BUSY error reply
+-- retornar uma resposta de erro SERVER_DEVICE_BUSY
 ---@nodiscard
----@param adu modbus_adu MODBUS ADU
+---@param adu modbus_adu ADU MODBUS
 ---@return modbus_container reply
 function modbus.reply__srv_device_busy(adu) return excode_reply(adu, MODBUS_EXCODE.SERVER_DEVICE_BUSY) end
 
--- return a NEG_ACKNOWLEDGE error reply
+-- retornar uma resposta de erro NEG_ACKNOWLEDGE
 ---@nodiscard
----@param adu modbus_adu MODBUS ADU
+---@param adu modbus_adu ADU MODBUS
 ---@return modbus_container reply
 function modbus.reply__neg_ack(adu) return excode_reply(adu, MODBUS_EXCODE.NEG_ACKNOWLEDGE) end
 
--- return a GATEWAY_PATH_UNAVAILABLE error reply
+-- retornar uma resposta de erro GATEWAY_PATH_UNAVAILABLE
 ---@nodiscard
----@param adu modbus_adu MODBUS ADU
+---@param adu modbus_adu ADU MODBUS
 ---@return modbus_container reply
 function modbus.reply__gw_unavailable(adu) return excode_reply(adu, MODBUS_EXCODE.GATEWAY_PATH_UNAVAILABLE) end
 

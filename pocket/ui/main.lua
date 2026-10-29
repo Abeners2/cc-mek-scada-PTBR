@@ -1,5 +1,5 @@
 --
--- Pocket GUI Root
+-- Raiz da GUI do Pocket
 --
 
 local util        = require("scada-common.util")
@@ -42,12 +42,12 @@ local cpair = core.cpair
 
 local APP_ID = pocket.APP_ID
 
--- create new main view
----@param main DisplayBox main displaybox
+-- cria nova visualizacao principal
+---@param main DisplayBox caixa de exibicao principal
 local function init(main)
     local db = ioctl.get_db()
 
-    -- window header message and connection status
+    -- mensagem de cabecalho da janela e status de conexao
     TextBox{parent=main,y=1,text="                   S   C  ",fg_bg=style.header}
     local svr_conn = SignalBar{parent=main,y=1,x=22,compact=true,colors_low_med=cpair(colors.red,colors.yellow),disconnect_color=colors.lightGray,fg_bg=cpair(colors.green,colors.gray)}
     local crd_conn = SignalBar{parent=main,y=1,x=26,compact=true,colors_low_med=cpair(colors.red,colors.yellow),disconnect_color=colors.lightGray,fg_bg=cpair(colors.green,colors.gray)}
@@ -59,18 +59,18 @@ local function init(main)
     local main_pane = Div{parent=main,y=2}
 
     WaitingAnim{parent=start_pane,x=12,y=7,fg_bg=cpair(colors.lightBlue,style.root.bkg)}
-    TextBox{parent=start_pane,y=11,text="starting up...",alignment=ALIGN.CENTER,fg_bg=cpair(colors.lightGray,style.root.bkg)}
+    TextBox{parent=start_pane,y=11,text="iniciando...",alignment=ALIGN.CENTER,fg_bg=cpair(colors.lightGray,style.root.bkg)}
 
     local root_pane = MultiPane{parent=main,y=2,panes={start_pane,main_pane}}
 
     local page_div = Div{parent=main_pane,x=4,y=1}
 
-    -- create all the apps & pages
+    -- cria todos os aplicativos e paginas
 
     home_page(page_div)
     loader_app(page_div)
 
-    -- page 1
+    -- pagina 1
     unit_app(page_div)
     facil_app(page_div)
     control_app(page_div)
@@ -79,14 +79,14 @@ local function init(main)
     guide_app(page_div)
     about_app(page_div)
 
-    -- page 2
+    -- pagina 2
     alarm_app(page_div)
     comps_app(page_div)
     rad_app(page_div)
     build_app(page_div)
 
-    -- verify all apps were created
-    assert(util.table_len(db.nav.get_containers()) == APP_ID.NUM_APPS, "app IDs were not sequential or some apps weren't registered")
+    -- verifica se todos os aplicativos foram criados
+    assert(util.table_len(db.nav.get_containers()) == APP_ID.NUM_APPS, "os IDs dos apps nao sao sequenciais ou alguns apps nao foram registrados")
 
     db.nav.set_pane(MultiPane{parent=page_div,y=1,panes=db.nav.get_containers()})
     db.nav.set_sidebar(Sidebar{parent=main_pane,y=1,height=18,fg_bg=cpair(colors.white,colors.gray)})
@@ -95,7 +95,7 @@ local function init(main)
 
     db.nav.go_home()
 
-    -- done with initial render, lets go!
+    -- renderizacao inicial concluida, vamos la!
     root_pane.set_value(2)
 end
 

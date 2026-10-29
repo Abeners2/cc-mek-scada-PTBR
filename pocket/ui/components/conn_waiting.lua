@@ -1,5 +1,5 @@
 --
--- Connection Waiting Spinner
+-- Animacao de Espera de Conexao
 --
 
 local ioctl       = require("pocket.ioctl")
@@ -17,14 +17,14 @@ local ALIGN = core.ALIGN
 
 local cpair = core.cpair
 
--- create a waiting view
----@param parent Container parent
----@param y integer y offset
+-- cria uma visualizacao de espera
+---@param parent Container pai
+---@param y integer deslocamento y
 local function init(parent, y, is_api)
-    -- root div
+    -- div raiz
     local root = Div{parent=parent,y=1}
 
-    -- bounding box div
+    -- div de caixa delimitadora
     local box = Div{parent=root,y=y,height=12}
 
     local waiting_x = math.floor(parent.get_width() / 2) - 1
@@ -33,11 +33,11 @@ local function init(parent, y, is_api)
 
     if is_api then
         WaitingAnim{parent=box,x=waiting_x,y=1,fg_bg=cpair(colors.blue,style.root.bkg)}
-        TextBox{parent=box,y=5,text="Connecting to API",alignment=ALIGN.CENTER,fg_bg=cpair(colors.white,style.root.bkg),trim_whitespace=true}
+        TextBox{parent=box,y=5,text="Conectando a API",alignment=ALIGN.CENTER,fg_bg=cpair(colors.white,style.root.bkg),trim_whitespace=true}
         msg.register(ioctl.get_db().ps, "api_link_msg", msg.set_value)
     else
         WaitingAnim{parent=box,x=waiting_x,y=1,fg_bg=cpair(colors.green,style.root.bkg)}
-        TextBox{parent=box,y=5,text="Connecting to Supervisor",alignment=ALIGN.CENTER,fg_bg=cpair(colors.white,style.root.bkg),trim_whitespace=true}
+        TextBox{parent=box,y=5,text="Conectando ao Supervisor",alignment=ALIGN.CENTER,fg_bg=cpair(colors.white,style.root.bkg),trim_whitespace=true}
         msg.register(ioctl.get_db().ps, "svr_link_msg", msg.set_value)
     end
 

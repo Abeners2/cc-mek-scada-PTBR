@@ -1,5 +1,5 @@
 --
--- Graphics Rendering Control
+-- Controle de Renderização Gráfica
 --
 
 local panel_view = require("supervisor.panel.front_panel")
@@ -18,44 +18,44 @@ local ui = {
     display = nil
 }
 
--- try to start the UI
----@param config svr_config configuration
+-- tentar iniciar a UI
+---@param config svr_config configuração
 ---@return boolean success, any error_msg
 function renderer.try_start_ui(config)
     local status, msg = true, nil
 
     if ui.display == nil then
-        -- set theme
+        -- definir tema
         style.set_theme(config.FrontPanelTheme, config.ColorMode)
 
-        -- reset terminal
+        -- redefinir terminal
         term.setTextColor(colors.white)
         term.setBackgroundColor(colors.black)
         term.clear()
         term.setCursorPos(1, 1)
 
-        -- set overridden colors
+        -- definir cores substituídas
         for i = 1, #style.theme.colors do
             term.setPaletteColor(style.theme.colors[i].c, style.theme.colors[i].hex)
         end
 
-        -- apply color mode
+        -- aplicar modo de cor
         local c_mode_overrides = style.theme.color_modes[config.ColorMode]
         for i = 1, #c_mode_overrides do
             term.setPaletteColor(c_mode_overrides[i].c, c_mode_overrides[i].hex)
         end
 
-        -- init front panel view
+        -- inicializar visualização do painel frontal
         status, msg = pcall(function ()
             ui.display = DisplayBox{window=term.current(),fg_bg=style.fp.root}
             panel_view(ui.display, config)
         end)
 
         if status then
-            -- start flasher callback task
+            -- iniciar tarefa de callback do pisca-pisca
             flasher.run()
         else
-            -- report fail and close ui
+            -- reportar falha e fechar ui
             msg = core.extract_assert_msg(msg)
             renderer.close_ui()
         end
@@ -64,28 +64,28 @@ function renderer.try_start_ui(config)
     return status, msg
 end
 
--- close out the UI
+-- fechar a UI
 function renderer.close_ui()
     if ui.display ~= nil then
-        -- stop blinking indicators
+        -- parar indicadores piscantes
         flasher.clear()
 
-        -- disable PGI
+        -- desativar PGI
         pgi.unlink()
 
-        -- hide to stop animation callbacks
+        -- ocultar para parar callbacks de animação
         ui.display.hide()
 
-        -- clear root UI elements
+        -- limpar elementos raiz da UI
         ui.display = nil
 
-        -- restore colors
+        -- restaurar cores
         for i = 1, #style.theme.colors do
             local r, g, b = term.nativePaletteColor(style.theme.colors[i].c)
             term.setPaletteColor(style.theme.colors[i].c, r, g, b)
         end
 
-        -- reset terminal
+        -- redefinir terminal
         term.setTextColor(colors.white)
         term.setBackgroundColor(colors.black)
         term.clear()
@@ -93,12 +93,12 @@ function renderer.close_ui()
     end
 end
 
--- is the UI ready?
+-- a UI está pronta?
 ---@nodiscard
 ---@return boolean ready
 function renderer.ui_ready() return ui.display ~= nil end
 
--- handle a mouse event
+-- tratar um evento de mouse
 ---@param event mouse_interaction|nil
 function renderer.handle_mouse(event)
     if ui.display ~= nil and event ~= nil then

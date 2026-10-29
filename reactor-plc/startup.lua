@@ -1,5 +1,5 @@
 --
--- Fission Reactor Programmable Logic Controller
+-- Controlador Lógico Programável (PLC) de Reator de Fissão
 --
 
 require("/initenv").init_env()
@@ -29,15 +29,15 @@ local println_ts = util.println_ts
 ----------------------------------------
 
 if not plc.load_config() then
-    -- try to reconfigure (user action)
+    -- tenta reconfigurar (ação do usuário)
     local success, error = configure.configure(true)
     if success then
         if not plc.load_config() then
-            println("failed to load a valid configuration, please reconfigure")
+            println("falha ao carregar uma configuracao valida, por favor reconfigure")
             return
         end
     else
-        println("configuration error: " .. error)
+        println("erro de configuracao: " .. error)
         return
     end
 end
@@ -51,9 +51,9 @@ local config = plc.config
 log.init(config.LogPath, config.LogMode, config.LogDebug)
 
 log.info("========================================")
-log.info("BOOTING reactor-plc.startup v" .. R_PLC_VERSION)
+log.info("INICIANDO reactor-plc.startup v" .. R_PLC_VERSION)
 log.info("========================================")
-println(">> Fission Reactor PLC v" .. R_PLC_VERSION .. " <<")
+println(">> PLC do Reator de Fissao v" .. R_PLC_VERSION .. " <<")
 
 crash.set_env("reactor-plc", R_PLC_VERSION)
 crash.dbg_log_env()
@@ -67,25 +67,25 @@ local function main()
     -- startup
     ----------------------------------------
 
-    -- report versions and ID
+    -- reporta versões e ID
     databus.tx_versions(R_PLC_VERSION, comms.version)
     databus.tx_id(config.UnitID)
 
-    -- mount connected devices
+    -- monta dispositivos conectados
     ppm.mount_all()
 
-    -- message authentication init
+    -- inicialização de autenticação de mensagens
     if type(config.AuthKey) == "string" and string.len(config.AuthKey) > 0 then
         network.init_mac(config.AuthKey)
     end
 
-    -- shared memory across threads
+    -- memória compartilhada entre threads
     ---@class plc_shared_memory
     local __shared_memory = {
-        -- networked setting
+        -- configuração em rede
         networked = config.Networked,
 
-        -- PLC system state flags
+        -- sinalizadores de estado do sistema do PLC
         ---@class plc_state
         plc_state = {
             fp_ok = false,
@@ -99,29 +99,29 @@ local function main()
             wl_modem = true
         },
 
-        -- control setpoints
+        -- pontos de ajuste (setpoints) de controle
         ---@class plc_setpoints
         setpoints = {
             burn_rate_en = false,
             burn_rate = 0.0
         },
 
-        -- control limits/constraints
+        -- limites/restrições de controle
         ---@class plc_limits
         limits = {
-            -- uses false rather than math.huge for transmission
+            -- usa false em vez de math.huge para transmissão
             reportable_max_burn = false, ---@type number|false
-            -- maximum burn rate to prevent loss of fuel fill
+            -- taxa máxima de queima para evitar perda de nível de combustível
             fuel_max_burn = math.huge
         },
 
-        -- global PLC devices, still initialized by the backplane
+        -- dispositivos globais do PLC, ainda inicializados pelo backplane
         ---@class plc_dev
         plc_dev = {
             reactor = nil       ---@type FissionReactor
         },
 
-        -- system objects
+        -- objetos do sistema
         ---@class plc_sys
         plc_sys = {
             rps = nil,          ---@type rps
@@ -129,14 +129,14 @@ local function main()
             conn_watchdog = nil ---@type watchdog
         },
 
-        -- message queues
+        -- filas de mensagens
         q = {
             mq_rps = mqueue.new(),
             mq_comms_tx = mqueue.new(),
             mq_comms_rx = mqueue.new()
         },
 
-        -- message queue message types
+        -- tipos de mensagens da fila de mensagens
         q_types = {
             MQ__RPS_CMD = {
                 SCRAM = 1,
@@ -155,93 +155,93 @@ local function main()
 
     local plc_state = __shared_memory.plc_state
 
-    -- reactor and modem initialization
+    -- inicialização do reator e modem
     backplane.init(config, __shared_memory)
 
-    -- scram on boot if networked, otherwise leave the reactor be
+    -- scram na inicialização se estiver em rede, caso contrário deixa o reator como está
     if __shared_memory.networked and (not plc_state.no_reactor) and plc_state.reactor_formed and smem_dev.reactor.getStatus() then
-        log.debug("startup> power-on SCRAM")
+        log.debug("startup> SCRAM ao ligar")
         smem_dev.reactor.scram()
     end
 
-    -- setup front panel
+    -- configura o painel frontal
     local message
     plc_state.fp_ok, message = renderer.try_start_ui(config)
 
-    -- ...or not
+    -- ...ou não
     if not plc_state.fp_ok then
-        println_ts(util.c("UI error: ", message))
-        println("startup> running without front panel")
-        log.error(util.c("front panel GUI render failed with error ", message))
-        log.info("startup> running in headless mode without front panel")
+        println_ts(util.c("Erro de UI: ", message))
+        println("startup> executando sem painel frontal")
+        log.error(util.c("renderizacao da GUI do painel frontal falhou com erro ", message))
+        log.info("startup> executando em modo headless sem painel frontal")
     end
 
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprime uma mensagem de log no terminal enquanto a UI não estiver em execução
     local function _println_no_fp(msg) if not plc_state.fp_ok then println(msg) end end
 
     ----------------------------------------
     -- initialize PLC
     ----------------------------------------
 
-    -- init reactor protection system
+    -- inicializa o sistema de proteção do reator (RPS)
     smem_sys.rps = plc.rps_init(smem_dev.reactor, plc_state)
-    log.debug("startup> rps init")
+    log.debug("startup> rps inicializado")
 
-    -- notify user of emergency coolant configuration status
+    -- notifica o usuário sobre o status da configuração do refrigerante de emergência
     if config.EmerCoolEnable then
-        _println_no_fp("startup> emergency coolant control ready")
-        log.info("startup> emergency coolant control available")
+        _println_no_fp("startup> controle de refrigerante de emergencia pronto")
+        log.info("startup> controle de refrigerante de emergencia disponivel")
     end
 
-    -- conditionally init comms
+    -- inicializa comunicações condicionalmente
     if __shared_memory.networked then
-        -- comms watchdog
+        -- watchdog de comunicações
         smem_sys.conn_watchdog = util.new_watchdog(config.ConnTimeout)
-        log.debug("startup> conn watchdog started")
+        log.debug("startup> watchdog de conexao iniciado")
 
-        -- create network interface then setup comms
+        -- cria interface de rede e configura comunicações
         smem_sys.plc_comms = plc.comms(R_PLC_VERSION, backplane.active_nic(), __shared_memory)
-        log.debug("startup> comms init")
+        log.debug("startup> comunicacoes inicializadas")
     else
-        _println_no_fp("startup> starting in non-networked mode")
-        log.info("startup> starting without networking")
+        _println_no_fp("startup> iniciando em modo fora de rede")
+        log.info("startup> iniciando sem rede")
     end
 
     databus.tx_hw_status(plc_state)
 
-    _println_no_fp("startup> completed")
-    log.info("startup> completed")
+    _println_no_fp("startup> concluido")
+    log.info("startup> concluido")
 
-    -- init threads
+    -- inicializa threads
     local main_thread = threads.thread__main(__shared_memory)
     local rps_thread  = threads.thread__rps(__shared_memory)
 
     if __shared_memory.networked then
-        -- init comms threads
+        -- inicializa threads de comunicação
         local comms_thread_tx = threads.thread__comms_tx(__shared_memory)
         local comms_thread_rx = threads.thread__comms_rx(__shared_memory)
 
-        -- setpoint control only needed when networked
+        -- controle de setpoint necessário apenas quando em rede
         local sp_ctrl_thread = threads.thread__setpoint_control(__shared_memory)
 
-        -- run threads
+        -- executa threads
         parallel.waitForAll(main_thread.p_exec, rps_thread.p_exec, comms_thread_tx.p_exec, comms_thread_rx.p_exec, sp_ctrl_thread.p_exec)
 
-        -- send status one last time after RPS shutdown
+        -- envia o status uma última vez após o desligamento do RPS
         smem_sys.plc_comms.send_status(plc_state.no_reactor, plc_state.reactor_formed)
         smem_sys.plc_comms.send_rps_status()
 
-        -- close connection
+        -- fecha a conexão
         smem_sys.plc_comms.close()
     else
-        -- run threads, excluding comms
+        -- executa threads, excluindo comunicações
         parallel.waitForAll(main_thread.p_exec, rps_thread.p_exec)
     end
 
     renderer.close_ui()
 
-    println_ts("exited")
-    log.info("exited")
+    println_ts("encerrado")
+    log.info("encerrado")
 end
 
 if not xpcall(main, crash.handler) then

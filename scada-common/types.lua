@@ -1,6 +1,6 @@
 --
--- Global Types
--- note: for development, refer to the types/ directory for global comment-only @class and @alias definitions
+-- Tipos Globais
+-- nota: para desenvolvimento, consulte o diretório types/ para definições globais @class e @alias apenas em comentários
 --
 
 ---@class types
@@ -8,20 +8,20 @@ local types = {}
 
 --#region Common Classes
 
--- create a new tank fluid
+-- cria um novo fluido de tanque
 ---@nodiscard
 ---@param n string name
 ---@param a integer amount
 ---@return radiation_reading
 function types.new_tank_fluid(n, a) return { name = n, amount = a } end
 
--- create a new empty tank fluid
+-- cria um novo fluido de tanque vazio
 ---@see tank_fluid
 ---@nodiscard
 ---@return tank_fluid
 function types.new_empty_gas() return { type = "mekanism:empty_gas", amount = 0 } end
 
--- create a new radiation reading
+-- cria uma nova leitura de radiação
 ---@see radiation_reading
 ---@nodiscard
 ---@param r number radiaiton level
@@ -29,13 +29,13 @@ function types.new_empty_gas() return { type = "mekanism:empty_gas", amount = 0 
 ---@return radiation_reading
 function types.new_radiation_reading(r, u) return { radiation = r, unit = u } end
 
--- create a new zeroed radiation reading
+-- cria uma nova leitura de radiação zerada
 ---@see radiation_reading
 ---@nodiscard
 ---@return radiation_reading
 function types.new_zero_radiation_reading() return { radiation = 0, unit = "nSv" } end
 
--- create a new coordinate
+-- cria uma nova coordenada
 ---@see coordinate
 ---@nodiscard
 ---@param x integer
@@ -44,7 +44,7 @@ function types.new_zero_radiation_reading() return { radiation = 0, unit = "nSv"
 ---@return coordinate
 function types.new_coordinate(x, y, z) return { x = x, y = y, z = z } end
 
--- create a new zero coordinate
+-- cria uma nova coordenada zero
 ---@see coordinate
 ---@nodiscard
 ---@return coordinate
@@ -54,7 +54,7 @@ function types.new_zero_coordinate() return { x = 0, y = 0, z = 0 } end
 
 --#region Shared Multiblock Data Structures
 
--- create a new reactor database
+-- cria um novo banco de dados de reator
 ---@nodiscard
 function types.new_reactor_db()
     ---@class reactor_db
@@ -131,7 +131,7 @@ function types.new_reactor_db()
     return db
 end
 
--- create a new boiler database
+-- cria um novo banco de dados de caldeira
 ---@nodiscard
 function types.new_boiler_db()
     ---@class boilerv_session_db
@@ -178,7 +178,7 @@ function types.new_boiler_db()
     return db
 end
 
--- create a new turbine database
+-- cria um novo banco de dados de turbina
 ---@nodiscard
 function types.new_turbine_db()
     ---@class turbinev_session_db
@@ -224,7 +224,7 @@ function types.new_turbine_db()
     return db
 end
 
--- create a new dynamic tank database
+-- cria um novo banco de dados de tanque dinâmico
 ---@nodiscard
 function types.new_tank_db()
     ---@class dynamicv_session_db
@@ -255,7 +255,7 @@ function types.new_tank_db()
     return db
 end
 
--- create a new dynamic tank database
+-- cria um novo banco de dados de SPS
 ---@nodiscard
 function types.new_sps_db()
     ---@class sps_session_db
@@ -294,7 +294,7 @@ function types.new_sps_db()
     return db
 end
 
--- create a new dynamic tank database
+-- cria um novo banco de dados de matriz de indução
 ---@nodiscard
 function types.new_induction_db()
     ---@class imatrix_session_db
@@ -328,7 +328,7 @@ function types.new_induction_db()
     return db
 end
 
--- create a new dynamic tank database
+-- cria um novo banco de dados de núcleo de energia
 ---@nodiscard
 function types.new_ecore_db()
     ---@class ecore_session_db
@@ -474,16 +474,16 @@ types.PANEL_LINK_STATE = {
 
 ---@enum RTU_UNIT_TYPE
 types.RTU_UNIT_TYPE = {
-    VIRTUAL = 0,        -- virtual device
-    REDSTONE = 1,       -- redstone I/O
-    BOILER_VALVE = 2,   -- boiler mekanism 10.1+
-    TURBINE_VALVE = 3,  -- turbine, mekanism 10.1+
-    DYNAMIC_VALVE = 4,  -- dynamic tank, mekanism 10.1+
-    IMATRIX = 5,        -- induction matrix
+    VIRTUAL = 0,        -- dispositivo virtual
+    REDSTONE = 1,       -- E/S de redstone
+    BOILER_VALVE = 2,   -- caldeira mekanism 10.1+
+    TURBINE_VALVE = 3,  -- turbina, mekanism 10.1+
+    DYNAMIC_VALVE = 4,  -- tanque dinâmico, mekanism 10.1+
+    IMATRIX = 5,        -- matriz de indução
     SPS = 6,            -- SPS
     SNA = 7,            -- SNA
-    ENV_DETECTOR = 8,   -- environment detector
-    ENERGY_CORE = 9     -- draconic energy core
+    ENV_DETECTOR = 8,   -- detector de ambiente
+    ENERGY_CORE = 9     -- núcleo de energia dracônico
 }
 
 types.RTU_UNIT_NAMES = {
@@ -498,7 +498,7 @@ types.RTU_UNIT_NAMES = {
     "energy_core"
 }
 
--- safe conversion of RTU UNIT TYPE to string
+-- conversão segura de RTU_UNIT_TYPE para string
 ---@nodiscard
 ---@param utype RTU_UNIT_TYPE
 ---@return string
@@ -573,10 +573,10 @@ types.AUTO_GROUP = {
 
 types.AUTO_GROUP_NAMES = {
     "Manual",
-    "Primary",
-    "Secondary",
-    "Tertiary",
-    "Backup"
+    "Primario",
+    "Secundario",
+    "Terciario",
+    "Reserva"
 }
 
 ---@enum COOLANT_TYPE
@@ -728,7 +728,7 @@ types.DUMPING_MODE = {
 
 --#region MODBUS
 
--- MODBUS function codes
+-- códigos de função MODBUS
 ---@enum MODBUS_FCODE
 types.MODBUS_FCODE = {
     READ_COILS = 0x01,
@@ -742,7 +742,7 @@ types.MODBUS_FCODE = {
     ERROR_FLAG = 0x80
 }
 
--- MODBUS exception codes
+-- códigos de exceção MODBUS
 ---@enum MODBUS_EXCODE
 types.MODBUS_EXCODE = {
     OK = 0x00,

@@ -1,5 +1,5 @@
 --
--- Graphics Style Options
+-- Opções de Estilo Gráfico
 --
 
 local core   = require("graphics.core")
@@ -16,9 +16,9 @@ style.colorblind = false
 
 style.ind_grn = cpair(colors.green, colors.green_off)
 
--- set theme per configuration
----@param fp FP_THEME front panel theme
----@param color_mode COLOR_MODE the color mode to use
+-- definir tema conforme a configuração
+---@param fp FP_THEME tema do painel frontal
+---@param color_mode COLOR_MODE o modo de cor a ser usado
 function style.set_theme(fp, color_mode)
     if fp == themes.FP_THEME.SANDSTONE then
         style.theme = themes.sandstone

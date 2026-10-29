@@ -1,5 +1,5 @@
 --
--- I/O Control for Pocket Integration with Supervisor & Coordinator
+-- Controle de E/S para Integracao do Pocket com Supervisor e Coordenador
 --
 
 local psil    = require("scada-common.psil")
@@ -34,15 +34,15 @@ ioctl.LINK_STATE = LINK_STATE
 
 ---@class pkt_io
 local io = {
-    version = "unknown", -- pocket version
-    ps = psil.create(),  -- pocket PSIL
+    version = "unknown", -- versao do pocket
+    ps = psil.create(),  -- PSIL do pocket
     loader_require = { sv = false, api = false }
 }
 
 local config = nil  ---@type pkt_config
 local comms  = nil  ---@type pocket_comms
 
--- initialize facility-independent components of pocket iocontrol
+-- inicializa componentes independentes de instalacao do controle de E/S do pocket
 ---@param pkt_comms pocket_comms
 ---@param nav pocket_nav
 ---@param cfg pkt_config
@@ -57,7 +57,7 @@ function ioctl.init_core(pkt_comms, nav, cfg)
     ---@class pocket_ioctl_diag
     io.diag = {}
 
-    -- alarm testing
+    -- teste de alarmes
     io.diag.tone_test = {
         test_1 = function (state) comms.diag__set_alarm_tone(1, state) end,
         test_2 = function (state) comms.diag__set_alarm_tone(2, state) end,
@@ -89,10 +89,10 @@ function ioctl.init_core(pkt_comms, nav, cfg)
         alarm_buttons = {} ---@type Checkbox[]
     }
 
-    -- computer list
+    -- lista de computadores
     io.diag.get_comps = function () comms.diag__get_computers() end
 
-    -- API access
+    -- acesso a API
     ---@class pocket_ioctl_api
     io.api = {
         get_fac   = function () comms.api__get_facility() end,
@@ -105,14 +105,14 @@ function ioctl.init_core(pkt_comms, nav, cfg)
     }
 end
 
--- initialize facility-dependent components of pocket iocontrol
----@param conf facility_conf facility configuration
+-- inicializa componentes dependentes de instalacao do controle de E/S do pocket
+---@param conf facility_conf configuracao da instalacao
 function ioctl.init_fac(conf)
     local temp_scale, energy_scale = config.TempScale, config.EnergyScale
     io.temp_label = TEMP_UNITS[temp_scale]
     io.energy_label = ENERGY_UNITS[energy_scale]
 
-    -- temperature unit label and conversion function (from Kelvin)
+    -- rotulo de unidade de temperatura e funcao de conversao (de Kelvin)
     if temp_scale == TEMP_SCALE.CELSIUS then
         io.temp_convert = function (t) return t - 273.15 end
     elseif temp_scale == TEMP_SCALE.FAHRENHEIT then
@@ -124,7 +124,7 @@ function ioctl.init_fac(conf)
         io.temp_convert = function (t) return t end
     end
 
-    -- energy unit label and conversion function (from Joules unless otherwise specified)
+    -- rotulo de unidade de energia e funcao de conversao (de Joules, a menos que especificado de outra forma)
     if energy_scale == ENERGY_SCALE.FE or energy_scale == ENERGY_SCALE.RF then
         io.energy_convert = util.joules_to_fe_rf
         io.energy_convert_from_fe = function (t) return t end
@@ -136,7 +136,7 @@ function ioctl.init_fac(conf)
         io.energy_convert_to_fe = util.joules_to_fe_rf
     end
 
-    -- facility data structure
+    -- estrutura de dados da instalacao
     ---@class pkt_io_facility
     io.facility = {
         num_units = conf.num_units,
@@ -171,7 +171,7 @@ function ioctl.init_fac(conf)
         auto_current_waste_product = types.WASTE_PRODUCT.PLUTONIUM,
         auto_pu_fallback_active = false,
         auto_sps_disabled = false,
-        waste_stats = { 0, 0, 0, 0, 0, 0 }, -- waste in, pu, po, po pellets, am, spent waste
+        waste_stats = { 0, 0, 0, 0, 0, 0 }, -- rejeito entrada, pu, po, pastilhas po, am, rejeito esgotado
 
         num_snas = 0,
         sna_peak_rate_in = 0.0,
@@ -205,7 +205,7 @@ function ioctl.init_fac(conf)
         rad_monitors = {}        ---@type { radiation: radiation_reading, raw: number }[]
     }
 
-    -- create ESS and SPS tables (currently only 1 of each is supported)
+    -- cria tabelas de ESS e SPS (atualmente apenas 1 de cada e suportado)
     table.insert(io.facility.induction_ps_tbl, psil.create())
     table.insert(io.facility.induction_data_tbl, types.new_induction_db())
     table.insert(io.facility.ecore_ps_tbl, psil.create())
@@ -213,7 +213,7 @@ function ioctl.init_fac(conf)
     table.insert(io.facility.sps_ps_tbl, psil.create())
     table.insert(io.facility.sps_data_tbl, types.new_sps_db())
 
-    -- create facility tank tables
+    -- cria tabelas de tanques da instalacao
     for i = 1, #io.facility.tank_list do
         if io.facility.tank_list[i] == 2 then
             table.insert(io.facility.tank_ps_tbl, psil.create())
@@ -221,7 +221,7 @@ function ioctl.init_fac(conf)
         end
     end
 
-    -- create unit data structures
+    -- cria estruturas de dados das unidades
     io.units = {}   ---@type pkt_io_unit[]
     for i = 1, conf.num_units do
         ---@class pkt_io_unit
@@ -256,16 +256,16 @@ function ioctl.init_fac(conf)
             last_rate_change_ms = 0,
             turbine_flow_stable = false,
             fuel_burn_rate_limited = false,
-            waste_stats = { 0, 0, 0 },  -- plutonium, polonium, po pellets
+            waste_stats = { 0, 0, 0 },  -- plutonio, polonio, pastilhas po
 
-            -- auto control group
+            -- grupo de controle automatico
             a_group = types.AUTO_GROUP.MANUAL,
 
             start = function () process.start(i) end,
             scram = function () process.scram(i) end,
             reset_rps = function () process.reset_rps(i) end,
             ack_alarms = function () process.ack_all_alarms(i) end,
-            set_burn = function (rate) process.set_rate(i, rate) end,   ---@param rate number burn rate
+            set_burn = function (rate) process.set_rate(i, rate) end,   ---@param rate number taxa de queima
 
             start_ack = nil,        ---@type fun(success: boolean)
             scram_ack = nil,        ---@type fun(success: boolean)
@@ -280,8 +280,8 @@ function ioctl.init_fac(conf)
 
             ---@type unit_properties
             properties = {
-                flow_perf = {}, ---@type number[] turbine flow performance
-                generators = {} ---@type generator_properties[] turbine generator properties
+                flow_perf = {}, ---@type number[] desempenho de fluxo da turbina
+                generators = {} ---@type generator_properties[] propriedades do gerador da turbina
             },
 
             unit_ps = psil.create(),
@@ -299,25 +299,25 @@ function ioctl.init_fac(conf)
             rad_monitors = {}       ---@type { radiation: radiation_reading, raw: number }[]
         }
 
-        -- on other facility modes, overwrite unit TANK option with facility tank defs
+        -- em outros modos de instalacao, sobrescreve a opcao TANK da unidade com as definicoes de tanques da instalacao
         if io.facility.tank_mode ~= 0 then
             entry.has_tank = conf.cooling.fac_tank_defs[i] > 0
         end
 
-        -- create boiler tables
+        -- cria tabelas de caldeiras
         for _ = 1, conf.cooling.r_cool[i].BoilerCount do
             table.insert(entry.boiler_ps_tbl, psil.create())
             table.insert(entry.boiler_data_tbl, types.new_boiler_db())
         end
 
-        -- create turbine tables
+        -- cria tabelas de turbinas
         for _ = 1, conf.cooling.r_cool[i].TurbineCount do
             table.insert(entry.properties.generators, { { multiplier = 0, efficiency = 0 } })
             table.insert(entry.turbine_ps_tbl, psil.create())
             table.insert(entry.turbine_data_tbl, types.new_turbine_db())
         end
 
-        -- create tank tables
+        -- cria tabelas de tanques
         if io.facility.tank_defs[i] == 1 then
             table.insert(entry.tank_ps_tbl, psil.create())
             table.insert(entry.tank_data_tbl, types.new_tank_db())
@@ -329,14 +329,14 @@ function ioctl.init_fac(conf)
         table.insert(io.units, entry)
     end
 
-    -- pass IO control here since it can't be require'd due to a require loop
+    -- passa o controle de E/S aqui, pois nao pode ser importado com require devido a loop de require
     process.init(io, comms)
 end
 
--- set network link state
+-- define o estado do link de rede
 ---@param state POCKET_LINK_STATE
----@param sv_addr integer|false|nil supervisor address if linked, nil if unchanged, false if unlinked
----@param api_addr integer|false|nil coordinator address if linked, nil if unchanged, false if unlinked
+---@param sv_addr integer|false|nil endereco do supervisor se conectado, nil se inalterado, false se desconectado
+---@param api_addr integer|false|nil endereco do coordenador se conectado, nil se inalterado, false se desconectado
 function ioctl.report_link_state(state, sv_addr, api_addr)
     io.ps.publish("link_state", state)
 
@@ -351,23 +351,23 @@ function ioctl.report_link_state(state, sv_addr, api_addr)
     if sv_addr then
         io.ps.publish("sv_addr", util.c(sv_addr, ":", config.SVR_Channel))
     elseif sv_addr == false then
-        io.ps.publish("sv_addr", "unknown (not linked)")
+        io.ps.publish("sv_addr", "desconhecido (s/ link)")
     end
 
     if api_addr then
         io.ps.publish("api_addr", util.c(api_addr, ":", config.CRD_Channel))
     elseif api_addr == false then
-        io.ps.publish("api_addr", "unknown (not linked)")
+        io.ps.publish("api_addr", "desconhecido (s/ link)")
     end
 end
 
--- show the reason the supervisor connection isn't linking
+-- mostra o motivo pelo qual a conexao com o supervisor nao esta conectando
 function ioctl.report_svr_link_error(msg) io.ps.publish("svr_link_msg", msg) end
 
--- show the reason the coordinator api connection isn't linking
+-- mostra o motivo pelo qual a conexao com a API do coordenador nao esta conectando
 function ioctl.report_crd_link_error(msg) io.ps.publish("api_link_msg", msg) end
 
--- determine supervisor connection quality (trip time)
+-- determina a qualidade da conexao do supervisor (tempo de viagem)
 ---@param trip_time integer
 function ioctl.report_svr_tt(trip_time)
     local state = 3
@@ -380,7 +380,7 @@ function ioctl.report_svr_tt(trip_time)
     io.ps.publish("svr_conn_quality", state)
 end
 
--- determine coordinator connection quality (trip time)
+-- determina a qualidade da conexao do coordenador (tempo de viagem)
 ---@param trip_time integer
 function ioctl.report_crd_tt(trip_time)
     local state = 3
@@ -393,7 +393,7 @@ function ioctl.report_crd_tt(trip_time)
     io.ps.publish("crd_conn_quality", state)
 end
 
--- get the IO controller database
+-- obtem o banco de dados do controlador de E/S
 function ioctl.get_db() return io end
 
 return ioctl

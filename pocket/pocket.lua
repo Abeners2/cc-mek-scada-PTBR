@@ -28,7 +28,7 @@ local config = {}
 
 pocket.config = config
 
--- load the pocket configuration
+-- carrega a configuracao do pocket
 function pocket.load_config()
     if not settings.load("/pocket.settings") then return false end
 
@@ -79,10 +79,10 @@ end
 
 ---@enum POCKET_APP_ID
 local APP_ID = {
-    -- core UI
+    -- UI principal
     ROOT = 1,
     LOADER = 2,
-    -- main apps
+    -- apps principais
     UNITS = 3,
     FACILITY = 4,
     CONTROL = 5,
@@ -92,23 +92,23 @@ local APP_ID = {
     ABOUT = 9,
     RADMON = 10,
     BUILD = 11,
-    -- diagnostic apps
+    -- apps de diagnostico
     ALARMS = 12,
     COMPS = 13,
-    -- count
+    -- contagem
     NUM_APPS = 13
 }
 
 pocket.APP_ID = APP_ID
 
 ---@class nav_tree_page
----@field _p nav_tree_page|nil page's parent
----@field _c nav_tree_page[] page's children
----@field nav_to function function to navigate to this page
----@field switcher function|nil function to switch between children
----@field tasks function[] tasks to run while viewing this page
+---@field _p nav_tree_page|nil pagina pai
+---@field _c nav_tree_page[] paginas filhas
+---@field nav_to function funcao para navegar para esta pagina
+---@field switcher function|nil funcao para alternar entre filhas
+---@field tasks function[] tarefas executadas enquanto visualiza esta pagina
 
--- initialize the page navigation system
+-- inicializa o sistema de navegacao de paginas
 ---@param smem pkt_shared_memory
 function pocket.init_nav(smem)
     local self = {
@@ -127,20 +127,20 @@ function pocket.init_nav(smem)
     ---@class pocket_nav
     local nav = {}
 
-    -- set the root pane element to switch between apps with
+    -- define o elemento painel raiz para alternar entre apps
     ---@param root_pane MultiPane
     function nav.set_pane(root_pane) self.pane = root_pane end
 
-    -- link sidebar element
+    -- vincula o elemento da barra lateral
     ---@param sidebar Sidebar
     function nav.set_sidebar(sidebar) self.sidebar = sidebar end
 
-    -- register an app
-    ---@param app_id POCKET_APP_ID app ID
-    ---@param container Container element that contains this app (usually a Div)
-    ---@param pane? AppMultiPane|MultiPane multipane if this is a simple paned app, then nav_to must be a number
-    ---@param require_sv? boolean true to specifiy if this app should be unloaded when the supervisor connection is lost
-    ---@param require_api? boolean true to specifiy if this app should be unloaded when the api connection is lost
+    -- registra um app
+    ---@param app_id POCKET_APP_ID ID do app
+    ---@param container Container elemento que contem este app (geralmente um Div)
+    ---@param pane? AppMultiPane|MultiPane multipane se for um app simples com paineis, entao nav_to deve ser um numero
+    ---@param require_sv? boolean true para especificar se este app deve ser descarregado quando a conexao com o supervisor for perdida
+    ---@param require_api? boolean true para especificar se este app deve ser descarregado quando a conexao com a API for perdida
     function nav.register_app(app_id, container, pane, require_sv, require_api)
         ---@class pocket_app
         local app = {
@@ -154,39 +154,39 @@ function pocket.init_nav(smem)
         app.load = function () app.loaded = true end
         app.unload = function () app.loaded = false end
 
-        -- check which connections this requires (for unload)
+        -- verifica quais conexoes este app requer (para descarregamento)
         ---@return boolean requires_sv, boolean requires_api
         function app.check_requires() return require_sv or false, require_api or false end
 
-        -- check if any connection is required (for load)
+        -- verifica se alguma conexao e necessaria (para carregamento)
         function app.requires_conn() return require_sv or require_api or false end
 
-        -- delayed set of the pane if it wasn't ready at the start
+        -- definicao atrasada do painel se nao estava pronto no inicio
         ---@param root_pane AppMultiPane|MultiPane multipane
         function app.set_root_pane(root_pane)
             app.pane = root_pane
         end
 
-        -- configure the sidebar
+        -- configura a barra lateral
         ---@param items sidebar_entry[]
         function app.set_sidebar(items)
             app.sidebar_items = items
-            -- only modify the sidebar if this app is still open
+            -- modifica a barra lateral apenas se este app ainda estiver aberto
             if self.cur_app == app_id then
                 if self.sidebar then self.sidebar.update(items) end
             end
         end
 
-        -- function to run on initial load into memory
+        -- funcao executada no carregamento inicial na memoria
         ---@param on_load function callback
         function app.set_load(on_load)
             app.load = function ()
-                app.loaded = true   -- must flag first so it can't be repeatedly attempted
+                app.loaded = true   -- deve sinalizar primeiro para evitar tentativas repetidas
                 on_load()
             end
         end
 
-        -- function to run to close out the app
+        -- funcao executada para encerrar o app
         ---@param on_unload function callback
         function app.set_unload(on_unload)
             app.unload = function ()
@@ -195,18 +195,18 @@ function pocket.init_nav(smem)
             end
         end
 
-        -- if a pane was provided, this will switch between numbered pages
-        ---@param idx integer page index
+        -- se um painel foi fornecido, alterna entre paginas numeradas
+        ---@param idx integer indice da pagina
         function app.switcher(idx)
             if app.paned_pages[idx] then
                 app.paned_pages[idx].nav_to()
             end
         end
 
-        -- create a new page entry in the app's page navigation tree
-        ---@param parent nav_tree_page|nil a parent page or nil to set this as the root
-        ---@param nav_to function|integer function to navigate to this page or pane index
-        ---@return nav_tree_page new_page this new page
+        -- cria uma nova entrada de pagina na arvore de navegacao do app
+        ---@param parent nav_tree_page|nil pagina pai ou nil para definir como raiz
+        ---@param nav_to function|integer funcao para navegar para esta pagina ou indice do painel
+        ---@return nav_tree_page new_page esta nova pagina
         function app.new_page(parent, nav_to)
             ---@type nav_tree_page
             local page = { _p = parent, _c = {}, nav_to = function () end, switcher = function () end, tasks = {} }
@@ -229,8 +229,8 @@ function pocket.init_nav(smem)
                 end
             end
 
-            -- switch between children
-            ---@param id integer child ID
+            -- alterna entre filhas
+            ---@param id integer ID da filha
             function page.switcher(id) if page._c[id] then page._c[id].nav_to() end end
 
             if parent ~= nil then
@@ -240,17 +240,17 @@ function pocket.init_nav(smem)
             return page
         end
 
-        -- delete paned pages and clear the current page
+        -- exclui paginas em paineis e limpa a pagina atual
         function app.delete_pages()
             app.paned_pages = {}
             app.cur_page = nil
         end
 
-        -- get the currently active page
+        -- obtem a pagina ativa no momento
         function app.get_current_page() return app.cur_page end
 
-        -- attempt to navigate up the tree
-        ---@return boolean success true if successfully navigated up
+        -- tenta navegar para cima na arvore
+        ---@return boolean success true se navegou para cima com sucesso
         function app.nav_up()
             local parent = app.cur_page._p
             if parent then parent.nav_to() end
@@ -263,11 +263,11 @@ function pocket.init_nav(smem)
         return app
     end
 
-    -- open an app
+    -- abre um app
     ---@param app_id POCKET_APP_ID
     ---@param on_ready? function
     function nav.open_app(app_id, on_ready)
-        -- reset help return on navigating out of an app
+        -- redefine o retorno de ajuda ao sair de um app
         if app_id == APP_ID.ROOT then self.help_return = nil end
 
         local app = self.apps[app_id]
@@ -276,11 +276,11 @@ function pocket.init_nav(smem)
             local req_sv, req_api = app.check_requires()
 
             if (req_sv and not p_comms.is_sv_linked()) or (req_api and not p_comms.is_api_linked()) then
-                -- report required connction(s)
+                -- informa conexoes necessarias
                 ioctl.get_db().loader_require = { sv = req_sv, api = req_api }
                 ioctl.get_db().ps.toggle("loader_reqs")
 
-                -- bring up the app loader
+                -- exibe o carregador de app
                 self.loader_return = app_id
                 app_id = APP_ID.LOADER
                 app = self.apps[app_id]
@@ -301,23 +301,23 @@ function pocket.init_nav(smem)
         end
     end
 
-    -- go home (open the home screen app)
+    -- vai para o inicio (abre o app da tela inicial)
     function nav.go_home() nav.open_app(APP_ID.ROOT) end
 
-    -- open the app that was blocked on connecting
+    -- abre o app que estava aguardando conexao
     function nav.on_loader_connected()
         if self.loader_return then
             nav.open_app(self.loader_return)
         end
     end
 
-    -- load a given app
+    -- carrega um determinado app
     ---@param app_id POCKET_APP_ID
     function nav.load_app(app_id)
         self.apps[app_id].load()
     end
 
-    -- unload api-dependent apps
+    -- descarrega apps dependentes da API
     function nav.unload_api()
         for id, app in pairs(self.apps) do
             local _, api = app.check_requires()
@@ -328,7 +328,7 @@ function pocket.init_nav(smem)
         end
     end
 
-    -- unload supervisor-dependent apps
+    -- descarrega apps dependentes do supervisor
     function nav.unload_sv()
         for id, app in pairs(self.apps) do
             local sv, _ = app.check_requires()
@@ -339,19 +339,19 @@ function pocket.init_nav(smem)
         end
     end
 
-    -- get a list of the app containers (usually Div elements)
+    -- obtem uma lista dos containers de apps (geralmente elementos Div)
     function nav.get_containers() return self.containers end
 
-    -- get the currently active page
+    -- obtem a pagina ativa no momento
     ---@return nav_tree_page|nil
     function nav.get_current_page()
         return self.apps[self.cur_app].get_current_page()
     end
 
-    -- attempt to navigate up within the active app, otherwise open home page<br>
-    -- except, this will go back to a prior app if leaving the help app after open_help was used
+    -- tenta navegar para cima dentro do app ativo, caso contrario abre a pagina inicial<br>
+    -- exceto que voltara ao app anterior se sair do app de ajuda apos usar open_help
     function nav.nav_up()
-        -- return out of help if opened with open_help
+        -- retorna da ajuda se foi aberta com open_help
         if self.help_return then
             nav.open_app(self.help_return)
             self.help_return = nil
@@ -367,7 +367,7 @@ function pocket.init_nav(smem)
         end
     end
 
-    -- open the help app, to show the reference for a key
+    -- abre o app de ajuda para mostrar a referencia de uma chave
     function nav.open_help(key)
         self.help_return = self.cur_app
 
@@ -376,17 +376,17 @@ function pocket.init_nav(smem)
         end)
     end
 
-    -- link the help map from the guide app
+    -- vincula o mapa de ajuda do app de guia
     ---@param map { [string]: function }
     function nav.link_help(map) self.help_map = map end
 
     return nav
 end
 
--- pocket coordinator + supervisor communications
+-- comunicacoes do pocket com coordenador + supervisor
 ---@nodiscard
----@param version string pocket version
----@param nic nic network interface device
+---@param version string versao do pocket
+---@param nic nic dispositivo de interface de rede
 ---@param sv_watchdog watchdog
 ---@param api_watchdog watchdog
 ---@param nav pocket_nav
@@ -395,14 +395,14 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         sv = {
             linked = false,
             addr = comms.BROADCAST,
-            seq_num = util.time_ms() * 10, -- unique per peer, restarting will not re-use seq nums due to message rate
+            seq_num = util.time_ms() * 10, -- unico por par, reiniciar nao reutilizara seq nums devido a taxa de mensagens
             r_seq_num = nil,               ---@type nil|integer
             last_est_ack = ESTABLISH_ACK.ALLOW
         },
         api = {
             linked = false,
             addr = comms.BROADCAST,
-            seq_num = util.time_ms() * 10, -- unique per peer, restarting will not re-use seq nums due to message rate
+            seq_num = util.time_ms() * 10, -- unico por par, reiniciar nao reutilizara seq nums devido a taxa de mensagens
             r_seq_num = nil,               ---@type nil|integer
             last_est_ack = ESTABLISH_ACK.ALLOW
         },
@@ -411,13 +411,13 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
 
     comms.set_trusted_range(config.TrustedRange)
 
-    -- PRIVATE FUNCTIONS --
+    -- FUNCOES PRIVADAS --
 
-    -- configure network channels
+    -- configura canais de rede
     nic.closeAll()
     nic.open(config.PKT_Channel)
 
-    -- send a management packet to the supervisor
+    -- envia um pacote de gerenciamento ao supervisor
     ---@param msg_type MGMT_TYPE
     ---@param msg table
     local function _send_sv(msg_type, msg)
@@ -430,7 +430,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         self.sv.seq_num = self.sv.seq_num + 1
     end
 
-    -- send a management packet to the coordinator
+    -- envia um pacote de gerenciamento ao coordenador
     ---@param msg_type MGMT_TYPE
     ---@param msg table
     local function _send_crd(msg_type, msg)
@@ -443,7 +443,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         self.api.seq_num = self.api.seq_num + 1
     end
 
-    -- send an API packet to the coordinator
+    -- envia um pacote de API ao coordenador
     ---@param msg_type CRDN_TYPE
     ---@param msg table
     local function _send_api(msg_type, msg)
@@ -456,36 +456,36 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         self.api.seq_num = self.api.seq_num + 1
     end
 
-    -- attempt supervisor connection establishment
+    -- tenta estabelecer conexao com o supervisor
     local function _send_sv_establish()
         self.sv.r_seq_num = nil
         _send_sv(MGMT_TYPE.ESTABLISH, { comms.version, version, DEVICE_TYPE.PKT })
     end
 
-    -- attempt coordinator API connection establishment
+    -- tenta estabelecer conexao com a API do coordenador
     local function _send_api_establish()
         self.api.r_seq_num = nil
         _send_crd(MGMT_TYPE.ESTABLISH, { comms.version, version, DEVICE_TYPE.PKT, comms.api_version })
     end
 
-    -- keep alive ack to supervisor
+    -- confirmacao de keep alive ao supervisor
     ---@param srv_time integer
     local function _send_sv_keep_alive_ack(srv_time)
         _send_sv(MGMT_TYPE.KEEP_ALIVE, { srv_time, util.time() })
     end
 
-    -- keep alive ack to coordinator
+    -- confirmacao de keep alive ao coordenador
     ---@param srv_time integer
     local function _send_api_keep_alive_ack(srv_time)
         _send_crd(MGMT_TYPE.KEEP_ALIVE, { srv_time, util.time() })
     end
 
-    -- PUBLIC FUNCTIONS --
+    -- FUNCOES PUBLICAS --
 
     ---@class pocket_comms
     local public = {}
 
-    -- close connection to the supervisor
+    -- fecha a conexao com o supervisor
     function public.close_sv()
         sv_watchdog.cancel()
         nav.unload_sv()
@@ -499,7 +499,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         self.sv.addr = comms.BROADCAST
     end
 
-    -- close connection to coordinator API server
+    -- fecha a conexao com o servidor de API do coordenador
     function public.close_api()
         api_watchdog.cancel()
         nav.unload_api()
@@ -513,13 +513,13 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         self.api.addr = comms.BROADCAST
     end
 
-    -- close the connections to the servers
+    -- fecha as conexoes com os servidores
     function public.close()
         public.close_sv()
         public.close_api()
     end
 
-    -- attempt to re-link if any of the dependent links aren't active
+    -- tenta reconectar se algum dos links dependentes nao estiver ativo
     function public.link_update()
         if not (self.sv.linked and self.api.linked) then
             if self.api.linked then
@@ -540,87 +540,87 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         end
     end
 
-    -- supervisor get active alarm tones
+    -- supervisor obtem tons de alarme ativos
     function public.diag__get_alarm_tones()
         if self.sv.linked then _send_sv(MGMT_TYPE.DIAG_TONE_GET, {}) end
     end
 
-    -- supervisor test alarm tones by tone
-    ---@param id TONE|0 tone ID, or 0 to stop all
-    ---@param state boolean tone state
+    -- supervisor testa tons de alarme por tom
+    ---@param id TONE|0 ID do tom, ou 0 para parar todos
+    ---@param state boolean estado do tom
     function public.diag__set_alarm_tone(id, state)
         if self.sv.linked then _send_sv(MGMT_TYPE.DIAG_TONE_SET, { id, state }) end
     end
 
-    -- supervisor test alarm tones by alarm
-    ---@param id ALARM|0 alarm ID, 0 to stop all
-    ---@param state boolean alarm state
+    -- supervisor testa tons de alarme por alarme
+    ---@param id ALARM|0 ID do alarme, 0 para parar todos
+    ---@param state boolean estado do alarme
     function public.diag__set_alarm(id, state)
         if self.sv.linked then _send_sv(MGMT_TYPE.DIAG_ALARM_SET, { id, state }) end
     end
 
-    -- supervisor get connected computers
+    -- supervisor obtem computadores conectados
     function public.diag__get_computers()
         if self.sv.linked then _send_sv(MGMT_TYPE.INFO_LIST_CMP, {}) end
     end
 
-    -- coordinator get facility app data
+    -- coordenador obtem dados do app de instalacao
     function public.api__get_facility()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_FAC_DTL, {}) end
     end
 
-    -- coordinator get unit data
+    -- coordenador obtem dados da unidade
     function public.api__get_unit(unit)
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_UNIT, { unit }) end
     end
 
-    -- coordinator get control app data
+    -- coordenador obtem dados do app de controle
     function public.api__get_control()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_CTRL, {}) end
     end
 
-    -- coordinator get process app data
+    -- coordenador obtem dados do app de processo
     function public.api__get_process()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_PROC, {}) end
     end
 
-    -- coordinator get waste app data
+    -- coordenador obtem dados do app de rejeitos
     function public.api__get_waste()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_WASTE, {}) end
     end
 
-    -- coordinator get radiation app data
+    -- coordenador obtem dados do app de radiacao
     function public.api__get_rad()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_RAD, {}) end
     end
 
-    -- coordinator get build app data
+    -- coordenador obtem dados do app de construcao
     function public.api__get_build()
         if self.api.linked then _send_api(CRDN_TYPE.API_GET_BUILD, {}) end
     end
 
-    -- send a facility command
-    ---@param cmd FAC_COMMAND command
-    ---@param option any? optional option options for the optional options (like waste mode)
+    -- envia um comando da instalacao
+    ---@param cmd FAC_COMMAND comando
+    ---@param option any? opcao opcional para os comandos que aceitam opcoes (como modo de rejeitos)
     function public.send_fac_command(cmd, option)
         _send_api(CRDN_TYPE.FAC_CMD, { cmd, option })
     end
 
-    -- send the auto process control configuration with a start command
+    -- envia a configuracao de controle automatico de processo com comando de iniciar
     ---@param auto_cfg auto_ctl_cfg
     function public.send_auto_start(auto_cfg)
         _send_api(CRDN_TYPE.FAC_CMD, { FAC_COMMAND.START, table.unpack(auto_cfg) })
     end
 
-    -- send a unit command
-    ---@param cmd UNIT_COMMAND command
-    ---@param unit integer unit ID
-    ---@param option any? optional option options for the optional options (like burn rate)
+    -- envia um comando de unidade
+    ---@param cmd UNIT_COMMAND comando
+    ---@param unit integer ID da unidade
+    ---@param option any? opcao opcional para comandos com opcoes (como taxa de queima)
     function public.send_unit_command(cmd, unit, option)
         _send_api(CRDN_TYPE.UNIT_CMD, { cmd, unit, option })
     end
 
-    -- parse a packet
+    -- interpreta um pacote
     ---@param side string
     ---@param sender integer
     ---@param reply_to integer
@@ -663,7 +663,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         log.debug(util.sprintf(fmt, packet.scada_frame.remote_channel(), packet.scada_frame.protocol(), packet.type))
     end
 
-    -- handle a packet
+    -- trata um pacote
     ---@param packet mgmt_packet|crdn_packet|nil
     function public.handle_packet(packet)
         local diag = ioctl.get_db().diag
@@ -678,7 +678,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
             if l_chan ~= config.PKT_Channel then
                 log.debug("received packet on unconfigured channel " .. l_chan, true)
             elseif r_chan == config.CRD_Channel then
-                -- check sequence number
+                -- verifica numero de sequencia
                 if self.api.r_seq_num == nil then
                     self.api.r_seq_num = packet.scada_frame.seq_num() + 1
                 elseif self.api.r_seq_num ~= packet.scada_frame.seq_num() then
@@ -692,14 +692,14 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                     self.api.r_seq_num = packet.scada_frame.seq_num() + 1
                 end
 
-                -- feed watchdog on valid sequence number
+                -- alimenta o watchdog ao receber numero de sequencia valido
                 api_watchdog.feed()
 
                 if protocol == PROTOCOL.SCADA_CRDN then
                     ---@cast packet crdn_packet
                     if self.api.linked then
                         if packet.type == CRDN_TYPE.FAC_CMD then
-                            -- facility command acknowledgement
+                            -- confirmacao de comando da instalacao
                             if packet.length >= 2 then
                                 local cmd = packet.data[1]
                                 local ack = packet.data[2] == true
@@ -722,7 +722,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                 log.debug("SCADA_CRDN facility command ack packet length mismatch")
                             end
                         elseif packet.type == CRDN_TYPE.UNIT_CMD then
-                            -- unit command acknowledgement
+                            -- confirmacao de comando da unidade
                             if packet.length == 3 then
                                 local cmd = packet.data[1]
                                 local unit_id = packet.data[2]
@@ -784,7 +784,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                     ---@cast packet mgmt_packet
                     if self.api.linked then
                         if packet.type == MGMT_TYPE.KEEP_ALIVE then
-                            -- keep alive request received, echo back
+                            -- requisicao de keep alive recebida, ecoa de volta
                             if _check_length(packet, 1) then
                                 local timestamp = packet.data[1]
                                 local trip_time = util.time() - timestamp
@@ -800,7 +800,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                 ioctl.report_crd_tt(trip_time)
                             end
                         elseif packet.type == MGMT_TYPE.CLOSE then
-                            -- handle session close
+                            -- trata fechamento de sessao
                             api_watchdog.cancel()
                             nav.unload_api()
                             self.api.linked = false
@@ -809,7 +809,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                             log.info("coordinator server connection closed by remote host")
                         else _fail_type(packet) end
                     elseif packet.type == MGMT_TYPE.ESTABLISH then
-                        -- connection with coordinator established
+                        -- conexao com coordenador estabelecida
                         if _check_length(packet, 1, 2) then
                             local est_ack = packet.data[1]
 
@@ -818,7 +818,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                     local fac_config = packet.data[2]
 
                                     if type(fac_config) == "table" and #fac_config == 4 then
-                                        -- get configuration
+                                        -- obtem a configuracao
                                         local conf = { num_units = fac_config[1], cooling = fac_config[2], com_waste = fac_config[3], ess = fac_config[4] }
 
                                         ioctl.init_fac(conf)
@@ -845,23 +845,23 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                 if self.api.last_est_ack ~= est_ack then
                                     if est_ack == ESTABLISH_ACK.DENY then
                                         log.info("coordinator connection denied")
-                                        ioctl.report_crd_link_error("denied")
+                                        ioctl.report_crd_link_error("acesso negado")
                                     elseif est_ack == ESTABLISH_ACK.COLLISION then
                                         log.info("coordinator connection denied due to collision")
-                                        ioctl.report_crd_link_error("collision")
+                                        ioctl.report_crd_link_error("colisao")
                                     elseif est_ack == ESTABLISH_ACK.BAD_VERSION then
                                         log.info("coordinator comms version mismatch")
-                                        ioctl.report_crd_link_error("comms version mismatch")
+                                        ioctl.report_crd_link_error("versao comms incompativel")
                                     elseif est_ack == ESTABLISH_ACK.BAD_API_VERSION then
                                         log.info("coordinator api version mismatch")
-                                        ioctl.report_crd_link_error("API version mismatch")
+                                        ioctl.report_crd_link_error("versao API incompativel")
                                     else
                                         log.debug("coordinator SCADA_MGMT establish packet reply unsupported")
-                                        ioctl.report_crd_link_error("unknown reply")
+                                        ioctl.report_crd_link_error("resposta desconhecida")
                                     end
                                 end
 
-                                -- unlink
+                                -- desvincula
                                 self.api.addr = comms.BROADCAST
                                 self.api.linked = false
                             end
@@ -875,7 +875,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                     log.debug("illegal packet type " .. protocol .. " from coordinator", true)
                 end
             elseif r_chan == config.SVR_Channel then
-                -- check sequence number
+                -- verifica numero de sequencia
                 if self.sv.r_seq_num == nil then
                     self.sv.r_seq_num = packet.scada_frame.seq_num() + 1
                 elseif self.sv.r_seq_num ~= packet.scada_frame.seq_num() then
@@ -889,15 +889,15 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                     self.sv.r_seq_num = packet.scada_frame.seq_num() + 1
                 end
 
-                -- feed watchdog on valid sequence number
+                -- alimenta o watchdog ao receber numero de sequencia valido
                 sv_watchdog.feed()
 
-                -- handle packet
+                -- trata pacote
                 if protocol == PROTOCOL.SCADA_MGMT then
                     ---@cast packet mgmt_packet
                     if self.sv.linked then
                         if packet.type == MGMT_TYPE.KEEP_ALIVE then
-                            -- keep alive request received, echo back
+                            -- requisicao de keep alive recebida, ecoa de volta
                             if _check_length(packet, 1) then
                                 local timestamp = packet.data[1]
                                 local trip_time = util.time() - timestamp
@@ -913,7 +913,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                 ioctl.report_svr_tt(trip_time)
                             end
                         elseif packet.type == MGMT_TYPE.CLOSE then
-                            -- handle session close
+                            -- trata fechamento de sessao
                             sv_watchdog.cancel()
                             nav.unload_sv()
                             self.sv.linked = false
@@ -928,13 +928,13 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                             end
                         elseif packet.type == MGMT_TYPE.DIAG_TONE_SET then
                             if packet.length == 1 and packet.data[1] == false then
-                                ps.publish("alarm_ready_warn", "testing denied")
+                                ps.publish("alarm_ready_warn", "teste negado")
                                 log.debug("supervisor SCADA diag tone set failed")
                             elseif packet.length == 2 and type(packet.data[2]) == "table" then
                                 local ready = packet.data[1]
                                 local states = packet.data[2]
 
-                                ps.publish("alarm_ready_warn", util.trinary(ready, "", "system not idle"))
+                                ps.publish("alarm_ready_warn", util.trinary(ready, "", "sistema ocupado"))
 
                                 for i = 1, #states do
                                     if diag.tone_test.tone_buttons[i] ~= nil then
@@ -947,13 +947,13 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                             end
                         elseif packet.type == MGMT_TYPE.DIAG_ALARM_SET then
                             if packet.length == 1 and packet.data[1] == false then
-                                ps.publish("alarm_ready_warn", "testing denied")
+                                ps.publish("alarm_ready_warn", "teste negado")
                                 log.debug("supervisor SCADA diag alarm set failed")
                             elseif packet.length == 2 and type(packet.data[2]) == "table" then
                                 local ready = packet.data[1]
                                 local states = packet.data[2]
 
-                                ps.publish("alarm_ready_warn", util.trinary(ready, "", "system not idle"))
+                                ps.publish("alarm_ready_warn", util.trinary(ready, "", "sistema ocupado"))
 
                                 for i = 1, #states do
                                     if diag.tone_test.alarm_buttons[i] ~= nil then
@@ -967,7 +967,7 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                             ioctl.rx.record_network_data(packet.data)
                         else _fail_type(packet) end
                     elseif packet.type == MGMT_TYPE.ESTABLISH then
-                        -- connection with supervisor established
+                        -- conexao com supervisor estabelecida
                         if _check_length(packet, 1) then
                             local est_ack = packet.data[1]
 
@@ -988,20 +988,20 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
                                 if self.sv.last_est_ack ~= est_ack then
                                     if est_ack == ESTABLISH_ACK.DENY then
                                         log.info("supervisor connection denied")
-                                        ioctl.report_svr_link_error("denied")
+                                        ioctl.report_svr_link_error("acesso negado")
                                     elseif est_ack == ESTABLISH_ACK.COLLISION then
                                         log.info("supervisor connection denied due to collision")
-                                        ioctl.report_svr_link_error("collision")
+                                        ioctl.report_svr_link_error("colisao")
                                     elseif est_ack == ESTABLISH_ACK.BAD_VERSION then
                                         log.info("supervisor comms version mismatch")
-                                        ioctl.report_svr_link_error("comms version mismatch")
+                                        ioctl.report_svr_link_error("versao comms incompativel")
                                     else
                                         log.debug("supervisor SCADA_MGMT establish packet reply unsupported")
-                                        ioctl.report_svr_link_error("unknown reply")
+                                        ioctl.report_svr_link_error("resposta desconhecida")
                                     end
                                 end
 
-                                -- unlink
+                                -- desvincula
                                 self.sv.addr = comms.BROADCAST
                                 self.sv.linked = false
                             end
@@ -1018,15 +1018,15 @@ function pocket.comms(version, nic, sv_watchdog, api_watchdog, nav)
         end
     end
 
-    -- check if we are still linked with the supervisor
+    -- verifica se ainda estamos conectados ao supervisor
     ---@nodiscard
     function public.is_sv_linked() return self.sv.linked end
 
-    -- check if we are still linked with the coordinator
+    -- verifica se ainda estamos conectados ao coordenador
     ---@nodiscard
     function public.is_api_linked() return self.api.linked end
 
-    -- check if we are still linked with the supervisor and coordinator
+    -- verifica se ainda estamos conectados ao supervisor e ao coordenador
     ---@nodiscard
     function public.is_linked() return self.sv.linked and self.api.linked end
 

@@ -14,7 +14,7 @@ local BAND  = bit.band          ---@type function
 local LSHFT = bit.blshift       ---@type function
 local RSHFT = bit.blogic_rshift ---@type function
 
--- decode a base64 string
+-- decodificar uma string base64
 ---@param input string
 local function b64_decode(input)
     local t_start = os.epoch("local")
@@ -27,7 +27,7 @@ local function b64_decode(input)
         local block = input:sub(idx, idx + 4)
         local word = 0x0
 
-        -- build the 24-bit sequence from the 4 characters
+        -- construir a sequência de 24 bits a partir dos 4 caracteres
         for i = 1, 4 do
             local num = b64_lookup[block:sub(i, i)]
 
@@ -36,7 +36,7 @@ local function b64_decode(input)
             end
         end
 
-        -- decode the 24-bit sequence as 8 bytes
+        -- decodificar a sequência de 24 bits como 8 bytes
         for i = 1, 3 do
             local char = BAND(BYTE, RSHFT(word, (3 - i) * 8))
 
@@ -55,7 +55,7 @@ local function b64_decode(input)
     return decoded_str, elapsed
 end
 
--- write files recursively from base64 encodings in a table
+-- gravar arquivos recursivamente a partir de codificações base64 em uma tabela
 ---@param files table
 ---@param path string
 local function write_files(files, path)
@@ -64,10 +64,10 @@ local function write_files(files, path)
     for k, v in pairs(files) do
         if type(v) == "table" then
             if k == "system" then
-                -- write system files to root
+                -- gravar arquivos do sistema na raiz
                 write_files(v, "/")
             else
-                -- descend into directories
+                -- descer nos diretórios
                 write_files(v, path .. "/" .. k .. "/")
             end
 
@@ -76,7 +76,7 @@ local function write_files(files, path)
             local handle = fs.open(path .. k, "w")
             local text, time = b64_decode(v)
 
-            print("decoded '" .. k .. "' in " .. time .. "ms")
+            print("decodificado '" .. k .. "' em " .. time .. "ms")
 
             handle.write(text)
             handle.close()
@@ -84,7 +84,7 @@ local function write_files(files, path)
     end
 end
 
--- write installation manifiest and offline install manager
+-- gravar manifesto de instalação e gerenciador de instalação offline
 local function write_install()
     local handle = fs.open("install_manifest.json", "w")
     handle.write(b64_decode(install_manifest))
@@ -97,19 +97,19 @@ end
 
 lgray()
 
--- write both app and dependency files
+-- gravar tanto os arquivos do app quanto os de dependências
 write_files(app_files, "/")
 write_files(dep_files, "/")
 
--- write an install manifest and the offline installer
+-- gravar um manifesto de instalação e o instalador offline
 write_install()
 
 green()
-print("Done!")
+print("Concluído!")
 white()
-print("All files have been installed. The app can be started with 'startup' and configured with 'configure'.")
+print("Todos os arquivos foram instalados. O app pode ser iniciado com 'startup' e configurado com 'configure'.")
 lgray()
-print("Hint: You can use 'ccmsim' to manage your off-line installation.")
+print("Dica: Você pode usar 'ccmsim' para gerenciar sua instalação off-line.")
 white()
 
 --luacheck: pop

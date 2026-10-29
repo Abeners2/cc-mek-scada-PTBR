@@ -25,10 +25,10 @@ local config = {}
 
 supervisor.config = config
 
--- control state from last unexpected shutdown
+-- estado de controle do último desligamento inesperado
 supervisor.boot_state = nil ---@type sv_boot_state|nil
 
--- load the supervisor configuration and startup state
+-- carregar a configuração do supervisor e o estado de inicialização
 function supervisor.load_config()
     if not settings.load("/supervisor.settings") then return false end
 
@@ -38,7 +38,7 @@ function supervisor.load_config()
         unit_states = settings.get("LastUnitStates") ---@type boolean[]
     }
 
-    -- only record boot state if likely valid
+    -- registrar o estado de inicialização apenas se provavelmente válido
     if type(boot_state.mode) == "number" and type(boot_state.unit_states) == "table" then
         supervisor.boot_state = boot_state
     end
@@ -187,7 +187,7 @@ function supervisor.load_config()
     cfv.assert_range(config.ColorMode, 1, themes.COLOR_MODE.NUM_MODES)
 
     if cfv.valid() then
-        -- apply Mekanism config overrides
+        -- aplicar substituições de configuração do Mekanism
         constants.mek.JOULES_PER_MB          = config.MekanismConfig.energyPerFissionFuel
         constants.mek.TURBINE_DISPERSER_FLOW = config.MekanismConfig.turbineDisperserChemicalFlow
         constants.mek.TURBINE_VENT_FLOW      = config.MekanismConfig.turbineVentChemicalFlow
@@ -197,14 +197,14 @@ function supervisor.load_config()
     return cfv.valid()
 end
 
--- supervisory controller communications
+-- comunicações do controlador supervisório
 ---@nodiscard
----@param _version string supervisor version
----@param fp_ok boolean if the front panel UI is running
----@param facility facility facility instance
+---@param _version string versão do supervisor
+---@param fp_ok boolean se a UI do painel frontal está rodando
+---@param facility facility instância da instalação
 ---@diagnostic disable-next-line: unused-local
 function supervisor.comms(_version, fp_ok, facility)
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprimir uma mensagem de log no terminal desde que a UI não esteja rodando
     local function println(message) if not fp_ok then util.println_ts(message) end end
 
     local self = {
@@ -215,16 +215,16 @@ function supervisor.comms(_version, fp_ok, facility)
         comms.set_trusted_range(config.TrustedRange)
     end
 
-    -- pass system data and objects to svsessions
+    -- passar dados e objetos do sistema para svsessions
     svsessions.init(fp_ok, config, facility)
 
-    --#region PRIVATE FUNCTIONS --
+    --#region FUNÇÕES PRIVADAS --
 
-    -- send an establish request response
+    -- enviar uma resposta de solicitação de estabelecimento
     ---@param nic nic
     ---@param rx_frame scada_frame
     ---@param ack ESTABLISH_ACK
-    ---@param data? any optional data
+    ---@param data? any dados opcionais
     local function _send_establish(nic, rx_frame, ack, data)
         local tx_frame, mgmt = comms.scada_frame(), comms.mgmt_container()
 
@@ -235,9 +235,9 @@ function supervisor.comms(_version, fp_ok, facility)
         self.last_est_acks[rx_frame.src_addr()] = ack
     end
 
-    --#region Establish Handlers
+    --#region Manipuladores de Estabelecimento
 
-    -- handle a PLC establish
+    -- tratar um estabelecimento de CLP
     ---@param nic nic
     ---@param packet mgmt_packet
     ---@param src_addr integer
@@ -249,59 +249,59 @@ function supervisor.comms(_version, fp_ok, facility)
         local dev_type   = packet.data[3]
 
         if (config.PLC_Listen ~= LISTEN_MODE.ALL) and (nic.isWireless() ~= (config.PLC_Listen == LISTEN_MODE.WIRELESS)) and periphemu == nil then
-            -- drop if not listening
+            -- descartar se não estiver escutando
         elseif comms_v ~= comms.version then
             if last_ack ~= ESTABLISH_ACK.BAD_VERSION then
-                log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] dropping PLC establish packet with incorrect comms version v", comms_v, " (expected v", comms.version, ")"))
+                log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] descartando pacote de estabelecimento de CLP com versão de comms incorreta v", comms_v, " (esperada v", comms.version, ")"))
             end
 
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.BAD_VERSION)
         elseif dev_type == DEVICE_TYPE.PLC then
-            -- PLC linking request
+            -- solicitação de vinculação de CLP
             if packet.length == 4 and type(packet.data[4]) == "number" then
                 local reactor_id = packet.data[4]
 
-                -- check ID validity
+                -- verificar validade do ID
                 if reactor_id < 1 or reactor_id > config.UnitCount then
-                    -- reactor index out of range
+                    -- índice do reator fora do intervalo
                     if last_ack ~= ESTABLISH_ACK.DENY then
-                        log.warning(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] denied assignment ", reactor_id, " outside of configured unit count ", config.UnitCount))
+                        log.warning(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] atribuição negada ", reactor_id, " fora da contagem de unidades configurada ", config.UnitCount))
                     end
 
                     _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
                 else
-                    -- try to establish the session
+                    -- tentar estabelecer a sessão
                     local plc_id = svsessions.establish_plc_session(nic, src_addr, i_seq_num, reactor_id, firmware_v)
 
                     if plc_id == false then
-                        -- reactor already has a PLC assigned
+                        -- reator já possui um CLP atribuído
                         if last_ack ~= ESTABLISH_ACK.COLLISION then
-                            log.warning(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] assignment collision with reactor ", reactor_id))
+                            log.warning(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] colisão de atribuição com o reator ", reactor_id))
                         end
 
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.COLLISION)
                     elseif plc_id == true then
-                        -- valid, but this was just a test
-                        log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] sending connection test success response on ", nic.phy_name()))
+                        -- válido, mas isso foi apenas um teste
+                        log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] enviando resposta de sucesso no teste de conexão em ", nic.phy_name()))
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW)
                     else
-                        -- got an ID; assigned to a reactor successfully
-                        println(util.c("PLC (", firmware_v, ") [@", src_addr, "] \xbb reactor ", reactor_id, " connected"))
-                        log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] (", firmware_v, ") reactor unit ", reactor_id, " PLC connected with session ID ", plc_id, " on ", nic.phy_name()))
+                        -- obteve um ID; atribuído a um reator com sucesso
+                        println(util.c("CLP (", firmware_v, ") [@", src_addr, "] \xbb reator ", reactor_id, " conectado"))
+                        log.info(util.c("PLC_ESTABLISH: PLC [@", src_addr, "] (", firmware_v, ") CLP da unidade de reator ", reactor_id, " conectado com ID de sessão ", plc_id, " em ", nic.phy_name()))
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW)
                     end
                 end
             else
-                log.debug("PLC_ESTABLISH: [@" .. src_addr .. "] packet length mismatch/bad parameter type")
+                log.debug("PLC_ESTABLISH: [@" .. src_addr .. "] incompatibilidade de tamanho do pacote/tipo de parâmetro inválido")
                 _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
             end
         else
-            log.debug(util.c("PLC_ESTABLISH: [@", src_addr, "] illegal establish packet for device ", dev_type, " on PLC channel"))
+            log.debug(util.c("PLC_ESTABLISH: [@", src_addr, "] pacote de estabelecimento ilegal para o dispositivo ", dev_type, " no canal do CLP"))
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
         end
     end
 
-    -- handle an RTU gateway establish
+    -- tratar um estabelecimento de gateway RTU
     ---@param nic nic
     ---@param packet mgmt_packet
     ---@param src_addr integer
@@ -313,39 +313,39 @@ function supervisor.comms(_version, fp_ok, facility)
         local dev_type   = packet.data[3]
 
         if (config.RTU_Listen ~= LISTEN_MODE.ALL) and (nic.isWireless() ~= (config.RTU_Listen == LISTEN_MODE.WIRELESS)) and periphemu == nil then
-            -- drop if not listening
+            -- descartar se não estiver escutando
         elseif comms_v ~= comms.version then
             if last_ack ~= ESTABLISH_ACK.BAD_VERSION then
-                log.info(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] dropping RTU_GW establish packet with incorrect comms version v", comms_v, " (expected v", comms.version, ")"))
+                log.info(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] descartando pacote de estabelecimento de RTU_GW com versão de comms incorreta v", comms_v, " (esperada v", comms.version, ")"))
             end
 
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.BAD_VERSION)
         elseif dev_type == DEVICE_TYPE.RTU then
             if packet.length == 4 then
                 if firmware_v ~= comms.CONN_TEST_FWV then
-                    -- this is an RTU advertisement for a new session
+                    -- este é um anúncio de RTU para uma nova sessão
                     local rtu_advert = packet.data[4]
                     local s_id = svsessions.establish_rtu_session(nic, src_addr, i_seq_num, rtu_advert, firmware_v)
 
-                    println(util.c("RTU (", firmware_v, ") [@", src_addr, "] \xbb connected"))
-                    log.info(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] RTU_GW (",firmware_v, ") connected with session ID ", s_id, " on ", nic.phy_name()))
+                    println(util.c("RTU (", firmware_v, ") [@", src_addr, "] \xbb conectado"))
+                    log.info(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] RTU_GW (",firmware_v, ") conectado com ID de sessão ", s_id, " em ", nic.phy_name()))
                     _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW)
                 else
-                    -- valid, but this was just a test
-                    log.info(util.c("RTU_GW_ESTABLISH: RTU_GW [@", src_addr, "] sending connection test success response on ", nic.phy_name()))
+                    -- válido, mas isso foi apenas um teste
+                    log.info(util.c("RTU_GW_ESTABLISH: RTU_GW [@", src_addr, "] enviando resposta de sucesso no teste de conexão em ", nic.phy_name()))
                     _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW)
                 end
             else
-                log.debug("RTU_GW_ESTABLISH: [@" .. src_addr .. "] packet length mismatch")
+                log.debug("RTU_GW_ESTABLISH: [@" .. src_addr .. "] incompatibilidade de tamanho do pacote")
                 _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
             end
         else
-            log.debug(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] illegal establish packet for device ", dev_type, " on RTU channel"))
+            log.debug(util.c("RTU_GW_ESTABLISH: [@", src_addr, "] pacote de estabelecimento ilegal para o dispositivo ", dev_type, " no canal de RTU"))
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
         end
     end
 
-    -- handle a coordinator establish
+    -- tratar um estabelecimento de coordenador
     ---@param nic nic
     ---@param packet mgmt_packet
     ---@param src_addr integer
@@ -357,36 +357,36 @@ function supervisor.comms(_version, fp_ok, facility)
         local dev_type   = packet.data[3]
 
         if (config.CRD_Listen ~= LISTEN_MODE.ALL) and (nic.isWireless() ~= (config.CRD_Listen == LISTEN_MODE.WIRELESS)) and periphemu == nil then
-            -- drop if not listening
+            -- descartar se não estiver escutando
         elseif comms_v ~= comms.version then
             if last_ack ~= ESTABLISH_ACK.BAD_VERSION then
-                log.info(util.c("CRD_ESTABLISH: [@", src_addr, "] dropping coordinator establish packet with incorrect comms version v", comms_v, " (expected v", comms.version, ")"))
+                log.info(util.c("CRD_ESTABLISH: [@", src_addr, "] descartando pacote de estabelecimento de coordenador com versão de comms incorreta v", comms_v, " (esperada v", comms.version, ")"))
             end
 
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.BAD_VERSION)
         elseif dev_type == DEVICE_TYPE.CRD then
-            -- this is an attempt to establish a new coordinator session
+            -- esta é uma tentativa de estabelecer uma nova sessão de coordenador
             local s_id = svsessions.establish_crd_session(nic, src_addr, i_seq_num, firmware_v)
 
             if s_id ~= false then
-                println(util.c("CRD (", firmware_v, ") [@", src_addr, "] \xbb connected"))
-                log.info(util.c("CRD_ESTABLISH: [@", src_addr, "] CRD (", firmware_v, ") connected with session ID ", s_id, " on ", nic.phy_name()))
+                println(util.c("CRD (", firmware_v, ") [@", src_addr, "] \xbb conectado"))
+                log.info(util.c("CRD_ESTABLISH: [@", src_addr, "] CRD (", firmware_v, ") conectado com ID de sessão ", s_id, " em ", nic.phy_name()))
 
                 _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW, { config.UnitCount, facility.get_cooling_conf(), { config.MekanismWasteToPu, config.MekanismWasteToPo }, config.CombinedWaste, config.EnergyStorageSystem })
             else
                 if last_ack ~= ESTABLISH_ACK.COLLISION then
-                    log.info("CRD_ESTABLISH: [@" .. src_addr .. "] denied new coordinator due to already being connected to another coordinator")
+                    log.info("CRD_ESTABLISH: [@" .. src_addr .. "] novo coordenador negado por já estar conectado a outro coordenador")
                 end
 
                 _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.COLLISION)
             end
         else
-            log.debug(util.c("CRD_ESTABLISH: [@", src_addr, "] illegal establish packet for device ", dev_type, " on CRD channel"))
+            log.debug(util.c("CRD_ESTABLISH: [@", src_addr, "] pacote de estabelecimento ilegal para o dispositivo ", dev_type, " no canal do CRD"))
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
         end
     end
 
-    -- handle a pocket debug establish
+    -- tratar um estabelecimento de depuração pocket
     ---@param nic nic
     ---@param packet mgmt_packet
     ---@param src_addr integer
@@ -398,23 +398,23 @@ function supervisor.comms(_version, fp_ok, facility)
         local dev_type   = packet.data[3]
 
         if not config.PocketEnabled then
-            -- drop if not listening
+            -- descartar se não estiver escutando
         elseif comms_v ~= comms.version then
             if last_ack ~= ESTABLISH_ACK.BAD_VERSION then
-                log.info(util.c("PDG_ESTABLISH: [@", src_addr, "] dropping PKT establish packet with incorrect comms version v", comms_v, " (expected v", comms.version, ")"))
+                log.info(util.c("PDG_ESTABLISH: [@", src_addr, "] descartando pacote de estabelecimento de PKT com versão de comms incorreta v", comms_v, " (esperada v", comms.version, ")"))
             end
 
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.BAD_VERSION)
         elseif dev_type == DEVICE_TYPE.PKT then
-            -- this is an attempt to establish a new pocket diagnostic session
+            -- esta é uma tentativa de estabelecer uma nova sessão de diagnóstico pocket
             local s_id = svsessions.establish_pdg_session(nic, src_addr, i_seq_num, firmware_v)
 
-            println(util.c("PKT (", firmware_v, ") [@", src_addr, "] \xbb connected"))
-            log.info(util.c("PDG_ESTABLISH: [@", src_addr, "] pocket (", firmware_v, ") connected with session ID ", s_id, " on ", nic.phy_name()))
+            println(util.c("PKT (", firmware_v, ") [@", src_addr, "] \xbb conectado"))
+            log.info(util.c("PDG_ESTABLISH: [@", src_addr, "] pocket (", firmware_v, ") conectado com ID de sessão ", s_id, " em ", nic.phy_name()))
 
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.ALLOW)
         else
-            log.debug(util.c("PDG_ESTABLISH: [@", src_addr, "] illegal establish packet for device ", dev_type, " on PKT channel"))
+            log.debug(util.c("PDG_ESTABLISH: [@", src_addr, "] pacote de estabelecimento ilegal para o dispositivo ", dev_type, " no canal do PKT"))
             _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
         end
 
@@ -424,12 +424,12 @@ function supervisor.comms(_version, fp_ok, facility)
 
     --#endregion
 
-    --#region PUBLIC FUNCTIONS --
+    --#region FUNÇÕES PÚBLICAS --
 
     ---@class superv_comms
     local public = {}
 
-    -- parse a packet
+    -- analisar um pacote
     ---@nodiscard
     ---@param side string
     ---@param sender integer
@@ -453,17 +453,17 @@ function supervisor.comms(_version, fp_ok, facility)
                 elseif frame.protocol() == PROTOCOL.SCADA_CRDN then
                     pkt = comms.crdn_container().decode(frame)
                 else
-                    log.debug("parse_packet(" .. side .. "): attempted parse of illegal packet type " .. frame.protocol(), true)
+                    log.debug("parse_packet(" .. side .. "): tentativa de análise de tipo de pacote ilegal " .. frame.protocol(), true)
                 end
             end
         else
-            log.error("parse_packet(" .. side .. "): received a packet from an interface without a nic?")
+            log.error("parse_packet(" .. side .. "): recebeu um pacote de uma interface sem nic?")
         end
 
         return pkt
     end
 
-    -- handle a packet
+    -- tratar um pacote
     ---@param packet modbus_adu|rplc_packet|mgmt_packet|crdn_packet
     function public.handle_packet(packet)
         local nic       = backplane.nics[packet.scada_frame.interface()]
@@ -474,163 +474,163 @@ function supervisor.comms(_version, fp_ok, facility)
         local i_seq_num = packet.scada_frame.seq_num()
 
         if l_chan ~= config.SVR_Channel then
-            log.debug("received packet on unconfigured channel " .. l_chan, true)
+            log.debug("pacote recebido em canal não configurado " .. l_chan, true)
         elseif r_chan == config.PLC_Channel then
-            -- look for an associated session
+            -- procurar uma sessão associada
             local session = svsessions.find_plc_session(src_addr)
 
             if session then
                 if nic ~= session.nic then
-                    -- this is from the same device but on a different interface
-                    -- drop unless it is a connection transfer
+                    -- isto vem do mesmo dispositivo mas em uma interface diferente
+                    -- descartar a menos que seja uma transferência de conexão
                     if (protocol == PROTOCOL.SCADA_MGMT) and (packet.type == MGMT_TYPE.SWITCH_NET) then
                         session.nic = nic
                         session.in_queue.push_network(packet)
 
-                        log.info(util.c("switched session ", session, " to ", nic.phy_name()))
+                        log.info(util.c("sessão ", session, " alternada para ", nic.phy_name()))
                     else
-                        log.debug(util.c("unexpected packet for PLC @ ", src_addr, " received on ", nic.phy_name()))
+                        log.debug(util.c("pacote inesperado para CLP @ ", src_addr, " recebido em ", nic.phy_name()))
                     end
                 else
-                    -- pass the packet onto the session handler
+                    -- passar o pacote para o manipulador da sessão
                     session.in_queue.push_network(packet)
                 end
             elseif protocol == PROTOCOL.RPLC then
-                -- reactor PLC packet should be session related, discard it
-                log.debug("discarding RPLC packet without a known session")
+                -- pacote de CLP de reator deve ser relacionado a sessão, descartá-lo
+                log.debug("descartando pacote RPLC sem uma sessão conhecida")
             elseif protocol == PROTOCOL.SCADA_MGMT then
                 ---@cast packet mgmt_packet
-                -- SCADA management packet
+                -- pacote de gerenciamento SCADA
                 if packet.type == MGMT_TYPE.ESTABLISH then
-                    -- establish a new session: validate packet and continue
+                    -- estabelecer uma nova sessão: validar pacote e continuar
                     if packet.length >= 3 and type(packet.data[1]) == "string" and type(packet.data[2]) == "string" then
                         _establish_plc(nic, packet, src_addr, i_seq_num, self.last_est_acks[src_addr])
                     else
-                        log.debug("invalid establish packet (on PLC channel)")
+                        log.debug("pacote de estabelecimento inválido (no canal do CLP)")
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
                     end
                 else
-                    -- any other packet should be session related, discard it
-                    log.debug(util.c("discarding PLC SCADA_MGMT packet without a known session from computer ", src_addr))
+                    -- qualquer outro pacote deve ser relacionado a sessão, descartá-lo
+                    log.debug(util.c("descartando pacote SCADA_MGMT de CLP sem uma sessão conhecida do computador ", src_addr))
                 end
             else
-                log.debug(util.c("illegal packet type ", protocol, " on PLC channel"))
+                log.debug(util.c("tipo de pacote ilegal ", protocol, " no canal do CLP"))
             end
         elseif r_chan == config.RTU_Channel then
-            -- look for an associated session
+            -- procurar uma sessão associada
             local session = svsessions.find_rtu_session(src_addr)
 
             if session then
                 if nic ~= session.nic then
-                    -- this is from the same device but on a different interface
-                    -- drop unless it is a connection transfer
+                    -- isto vem do mesmo dispositivo mas em uma interface diferente
+                    -- descartar a menos que seja uma transferência de conexão
                     if (protocol == PROTOCOL.SCADA_MGMT) and (packet.type == MGMT_TYPE.SWITCH_NET) then
                         session.nic = nic
                         session.in_queue.push_network(packet)
 
-                        log.info(util.c("switched session ", session, " to ", nic.phy_name()))
+                        log.info(util.c("sessão ", session, " alternada para ", nic.phy_name()))
                     else
-                        log.debug(util.c("unexpected packet for RTU_GW @ ", src_addr, " received on ", nic.phy_name()))
+                        log.debug(util.c("pacote inesperado para RTU_GW @ ", src_addr, " recebido em ", nic.phy_name()))
                     end
                 else
-                    -- pass the packet onto the session handler
+                    -- passar o pacote para o manipulador da sessão
                     session.in_queue.push_network(packet)
                 end
             elseif protocol == PROTOCOL.MODBUS_TCP then
                 ---@cast packet modbus_adu
-                -- MODBUS response, should be session related, discard it
-                log.debug("discarding MODBUS_TCP packet without a known session")
+                -- resposta MODBUS, deve ser relacionada a sessão, descartá-la
+                log.debug("descartando pacote MODBUS_TCP sem uma sessão conhecida")
             elseif protocol == PROTOCOL.SCADA_MGMT then
                 ---@cast packet mgmt_packet
-                -- SCADA management packet
+                -- pacote de gerenciamento SCADA
                 if packet.type == MGMT_TYPE.ESTABLISH then
-                    -- establish a new session: validate packet and continue
+                    -- estabelecer uma nova sessão: validar pacote e continuar
                     if packet.length >= 3 and type(packet.data[1]) == "string" and type(packet.data[2]) == "string" then
                         _establish_rtu_gw(nic, packet, src_addr, i_seq_num, self.last_est_acks[src_addr])
                     else
-                        log.debug("invalid establish packet (on RTU channel)")
+                        log.debug("pacote de estabelecimento inválido (no canal de RTU)")
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
                     end
                 else
-                    -- any other packet should be session related, discard it
-                    log.debug(util.c("discarding RTU gateway SCADA_MGMT packet without a known session from computer ", src_addr))
+                    -- qualquer outro pacote deve ser relacionado a sessão, descartá-lo
+                    log.debug(util.c("descartando pacote SCADA_MGMT de gateway RTU sem uma sessão conhecida do computador ", src_addr))
                 end
             else
-                log.debug(util.c("illegal packet type ", protocol, " on RTU channel"))
+                log.debug(util.c("tipo de pacote ilegal ", protocol, " no canal de RTU"))
             end
         elseif r_chan == config.CRD_Channel then
-            -- look for an associated session
+            -- procurar uma sessão associada
             local session = svsessions.find_crd_session(src_addr)
 
             if session then
                 if nic ~= session.nic then
-                    -- this is from the same device but on a different interface
-                    -- drop unless it is a connection transfer
+                    -- isto vem do mesmo dispositivo mas em uma interface diferente
+                    -- descartar a menos que seja uma transferência de conexão
                     if (protocol == PROTOCOL.SCADA_MGMT) and (packet.type == MGMT_TYPE.SWITCH_NET) then
                         session.nic = nic
                         session.in_queue.push_network(packet)
 
-                        log.info(util.c("switched session ", session, " to ", nic.phy_name()))
+                        log.info(util.c("sessão ", session, " alternada para ", nic.phy_name()))
                     else
-                        log.debug(util.c("unexpected packet for CRD @ ", src_addr, " received on ", nic.phy_name()))
+                        log.debug(util.c("pacote inesperado para CRD @ ", src_addr, " recebido em ", nic.phy_name()))
                     end
                 else
-                    -- pass the packet onto the session handler
+                    -- passar o pacote para o manipulador da sessão
                     session.in_queue.push_network(packet)
                 end
             elseif protocol == PROTOCOL.SCADA_MGMT then
                 ---@cast packet mgmt_packet
-                -- SCADA management packet
+                -- pacote de gerenciamento SCADA
                 if packet.type == MGMT_TYPE.ESTABLISH then
-                    -- establish a new session: validate packet and continue
+                    -- estabelecer uma nova sessão: validar pacote e continuar
                     if packet.length >= 3 and type(packet.data[1]) == "string" and type(packet.data[2]) == "string" then
                         _establish_crd(nic, packet, src_addr, i_seq_num, self.last_est_acks[src_addr])
                     else
-                        log.debug("CRD_ESTABLISH: establish packet length mismatch")
+                        log.debug("CRD_ESTABLISH: incompatibilidade de tamanho do pacote de estabelecimento")
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
                     end
                 else
-                    -- any other packet should be session related, discard it
-                    log.debug(util.c("discarding coordinator SCADA_MGMT packet without a known session from computer ", src_addr))
+                    -- qualquer outro pacote deve ser relacionado a sessão, descartá-lo
+                    log.debug(util.c("descartando pacote SCADA_MGMT de coordenador sem uma sessão conhecida do computador ", src_addr))
                 end
             elseif protocol == PROTOCOL.SCADA_CRDN then
                 ---@cast packet crdn_packet
-                -- coordinator packet,  should be session related, discard it
-                log.debug(util.c("discarding coordinator SCADA_CRDN packet without a known session from computer ", src_addr))
+                -- pacote de coordenador, deve ser relacionado a sessão, descartá-lo
+                log.debug(util.c("descartando pacote SCADA_CRDN de coordenador sem uma sessão conhecida do computador ", src_addr))
             else
-                log.debug(util.c("illegal packet type ", protocol, " on CRD channel"))
+                log.debug(util.c("tipo de pacote ilegal ", protocol, " no canal do CRD"))
             end
         elseif r_chan == config.PKT_Channel then
-            -- look for an associated session
+            -- procurar uma sessão associada
             local session = svsessions.find_pdg_session(src_addr)
 
             if session then
-                -- pass the packet onto the session handler
+                -- passar o pacote para o manipulador da sessão
                 session.in_queue.push_network(packet)
             elseif protocol == PROTOCOL.SCADA_MGMT then
                 ---@cast packet mgmt_packet
-                -- SCADA management packet
+                -- pacote de gerenciamento SCADA
                 if packet.type == MGMT_TYPE.ESTABLISH then
-                    -- establish a new session: validate packet and continue
+                    -- estabelecer uma nova sessão: validar pacote e continuar
                     if packet.length >= 3 and type(packet.data[1]) == "string" and type(packet.data[2]) == "string" then
                         _establish_pdg(nic, packet, src_addr, i_seq_num, self.last_est_acks[src_addr])
                     else
-                        log.debug("PDG_ESTABLISH: establish packet length mismatch")
+                        log.debug("PDG_ESTABLISH: incompatibilidade de tamanho do pacote de estabelecimento")
                         _send_establish(nic, packet.scada_frame, ESTABLISH_ACK.DENY)
                     end
                 else
-                    -- any other packet should be session related, discard it
-                    log.debug(util.c("discarding pocket SCADA_MGMT packet without a known session from computer ", src_addr))
+                    -- qualquer outro pacote deve ser relacionado a sessão, descartá-lo
+                    log.debug(util.c("descartando pacote SCADA_MGMT de pocket sem uma sessão conhecida do computador ", src_addr))
                 end
             elseif protocol == PROTOCOL.SCADA_CRDN then
                 ---@cast packet crdn_packet
-                -- coordinator packet, should be session related, discard it
-                log.debug(util.c("discarding pocket SCADA_CRDN packet without a known session from computer ", src_addr))
+                -- pacote de coordenador, deve ser relacionado a sessão, descartá-lo
+                log.debug(util.c("descartando pacote SCADA_CRDN de pocket sem uma sessão conhecida do computador ", src_addr))
             else
-                log.debug(util.c("illegal packet type ", protocol, " on pocket channel"))
+                log.debug(util.c("tipo de pacote ilegal ", protocol, " no canal do pocket"))
             end
         else
-            log.debug("received packet for unknown channel " .. r_chan, true)
+            log.debug("pacote recebido para canal desconhecido " .. r_chan, true)
         end
     end
 

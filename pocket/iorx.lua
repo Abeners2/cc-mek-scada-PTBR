@@ -1,5 +1,5 @@
 --
--- I/O Control's Data Receive (Rx) Handlers
+-- Handlers de Recebimento de Dados (Rx) do Controle de E/S
 --
 
 local comms = require("scada-common.comms")
@@ -41,7 +41,7 @@ local function _record_multiblock_status(faulted, data, ps)
     for k, v in pairs(data.tanks) do ps.publish(k, v) end
 end
 
--- populate facility data from API_GET_FAC
+-- popula dados da instalacao a partir de API_GET_FAC
 ---@param data table
 ---@return boolean valid
 function iorx.record_facility_data(data)
@@ -53,7 +53,7 @@ function iorx.record_facility_data(data)
     fac.rtu_count = data[2]
     fac.radiation = data[3]
 
-    -- auto control
+    -- controle automatico
     if type(data[4]) == "table" and #data[4] == 4 then
         fac.auto_ready = data[4][1]
         fac.auto_active = data[4][2]
@@ -61,7 +61,7 @@ function iorx.record_facility_data(data)
         fac.auto_saturated = data[4][4]
     end
 
-    -- waste
+    -- rejeitos
     if type(data[5]) == "table" and #data[5] == 2 then
         fac.auto_current_waste_product = data[5][1]
         fac.auto_pu_fallback_active = data[5][2]
@@ -72,7 +72,7 @@ function iorx.record_facility_data(data)
     return valid
 end
 
--- update facility app with facility and unit data from API_GET_FAC_DTL
+-- atualiza o app de instalacao com dados da instalacao e unidades a partir de API_GET_FAC_DTL
 ---@param data table
 function iorx.record_fac_detail_data(data)
     local fac = io.facility
@@ -81,7 +81,7 @@ function iorx.record_fac_detail_data(data)
     local tank_statuses = data[5]
     local next_t_stat = 1
 
-    -- annunciator
+    -- anunciador
 
     fac.all_sys_ok = data[1]
     fac.rtu_count = data[2]
@@ -97,7 +97,7 @@ function iorx.record_fac_detail_data(data)
     f_ps.publish("as_radiation", fac.ascram_status.radiation)
     f_ps.publish("as_gen_fault", fac.ascram_status.gen_fault)
 
-    -- unit data
+    -- dados da unidade
 
     local units = data[12]
 
@@ -145,7 +145,7 @@ function iorx.record_fac_detail_data(data)
         end
     end
 
-    -- facility dynamic tank data
+    -- dados de tanques dinamicos da instalacao
 
     fac.tank_data_tbl = data[6]
 
@@ -174,7 +174,7 @@ function iorx.record_fac_detail_data(data)
         next_t_stat = next_t_stat + 1
     end
 
-    -- ess data
+    -- dados de ess
 
     local ess_ps
 
@@ -243,7 +243,7 @@ function iorx.record_fac_detail_data(data)
     ess_ps.publish("is_discharging", data[9][6])
     ess_ps.publish("at_max_io", data[9][7])
 
-    -- sps data
+    -- dados de sps
 
     fac.sps_data_tbl[1] = data[11]
 
@@ -269,7 +269,7 @@ function iorx.record_fac_detail_data(data)
     s_ps.publish("SPSStateStatus", s_stat)
 end
 
--- update unit status data from API_GET_UNIT
+-- atualiza dados de status da unidade a partir de API_GET_UNIT
 ---@param data table
 function iorx.record_unit_data(data)
     local unit = io.units[data[1]]
@@ -295,7 +295,7 @@ function iorx.record_unit_data(data)
         if key == "BoilerOnline" or key == "TurbineOnline" then
             local every = true
 
-            -- split up online arrays
+            -- divide arrays de online
             for id = 1, #val do
                 every = every and val[id]
 
@@ -310,7 +310,7 @@ function iorx.record_unit_data(data)
 
             u_ps.publish("U_" .. key, every)
         elseif key == "HeatingRateLow" or key == "WaterLevelLow" then
-            -- split up array for all boilers
+            -- divide array para todas as caldeiras
             local any = false
             for id = 1, #val do
                 any = any or val[id]
@@ -325,7 +325,7 @@ function iorx.record_unit_data(data)
 
             u_ps.publish("U_" .. key, any)
         elseif key == "SteamDumpOpen" or key == "TurbineOverSpeed" or key == "GeneratorTrip" or key == "TurbineTrip" then
-            -- split up array for all turbines
+            -- divide array para todas as turbinas
             local any = false
             for id = 1, #val do
                 any = any or val[id]
@@ -340,7 +340,7 @@ function iorx.record_unit_data(data)
 
             u_ps.publish("U_" .. key, any)
         else
-            -- non-table fields
+            -- campos que nao sao tabelas
             u_ps.publish(key, val)
         end
     end
@@ -372,7 +372,7 @@ function iorx.record_unit_data(data)
     local rps_status = 1
 
     if unit.connected then
-        -- update RPS status
+        -- atualiza status do RPS
         if unit.reactor_data.rps_tripped then
             control_status = 2
             rps_status = util.trinary(unit.reactor_data.rps_trip_cause == "manual", 3, 2)
@@ -380,9 +380,9 @@ function iorx.record_unit_data(data)
             rps_status = 4
         end
 
-        reactor_status = 4  -- ok, until proven otherwise
+        reactor_status = 4  -- ok, ate que se prove o contrario
 
-        -- update reactor/control status
+        -- atualiza status do reator/controle
         if unit.reactor_data.mek_status.status then
             control_status = util.trinary(unit.annunciator.AutoControl, 4, 3)
         else
@@ -512,7 +512,7 @@ function iorx.record_unit_data(data)
 
     --#region Status Information Display
 
-    local ecam = {} -- aviation reference :)
+    local ecam = {} -- referencia de aviacao :)
 
     local annunc = unit.annunciator
 
@@ -527,54 +527,54 @@ function iorx.record_unit_data(data)
     -- end
 
     if tripped(unit.alarms[ALARM.ContainmentBreach]) then
-        local items = { white("REACTOR MELTDOWN"), blue("DON HAZMAT SUIT") }
-        table.insert(ecam, { color = colors.red, text = "CONTAINMENT BREACH", help = "ContainmentBreach", items = items })
+        local items = { white("COLAPSO DO REATOR"), blue("USAR TRAJE HAZMAT") }
+        table.insert(ecam, { color = colors.red, text = "QUEBRA DE CONTENCAO", help = "ContainmentBreach", items = items })
     end
 
     if tripped(unit.alarms[ALARM.ContainmentRadiation]) then
         local items = {
-            white("RADIATION DETECTED"),
-            blue("DON HAZMAT SUIT"),
-            blue("RESOLVE LEAK"),
-            blue("AWAIT SAFE LEVELS")
+            white("RADIACAO DETECTADA"),
+            blue("USAR TRAJE HAZMAT"),
+            blue("CONTER VAZAMENTO"),
+            blue("AGUARDAR NIVEIS SEG")
         }
 
-        table.insert(ecam, { color = colors.red, text = "RADIATION LEAK", help = "ContainmentRadiation", items = items })
+        table.insert(ecam, { color = colors.red, text = "VAZAMENTO RADIACAO", help = "ContainmentRadiation", items = items })
     end
 
     if tripped(unit.alarms[ALARM.CriticalDamage]) then
-        local items = { white("MELTDOWN IMMINENT"), blue("EVACUATE") }
-        table.insert(ecam, { color = colors.red, text = "RCT DAMAGE CRITICAL", help = "CriticalDamage", items = items })
+        local items = { white("COLAPSO IMINENTE"), blue("EVACUAR") }
+        table.insert(ecam, { color = colors.red, text = "DANO CRITICO REATOR", help = "CriticalDamage", items = items })
     end
 
     if tripped(unit.alarms[ALARM.ReactorLost]) then
-        local items = { white("REACTOR OFF-LINE"), blue("CHECK PLC") }
-        table.insert(ecam, { color = colors.red, text = "REACTOR CONN LOST", help = "ReactorLost", items = items })
+        local items = { white("REATOR OFF-LINE"), blue("VERIFICAR CLP") }
+        table.insert(ecam, { color = colors.red, text = "CONEX REATOR PERDIDA", help = "ReactorLost", items = items })
     end
 
     if tripped(unit.alarms[ALARM.ReactorDamage]) then
-        local items = { white("REACTOR DAMAGED"), blue("CHECK RCS"), blue("AWAIT DMG REDUCED") }
-        table.insert(ecam, { color = colors.red, text = "REACTOR DAMAGE", help = "ReactorDamage", items = items })
+        local items = { white("REATOR DANIFICADO"), blue("VERIFICAR RCS"), blue("AGUARDAR REDUCAO") }
+        table.insert(ecam, { color = colors.red, text = "DANO NO REATOR", help = "ReactorDamage", items = items })
     end
 
     if tripped(unit.alarms[ALARM.ReactorOverTemp]) then
-        local items = { white("DAMAGING TEMP"), blue("CHECK RCS"), blue("AWAIT COOLDOWN") }
-        table.insert(ecam, { color = colors.red, text = "REACTOR OVER TEMP", help = "ReactorOverTemp", items = items })
+        local items = { white("TEMP CAUSANDO DANO"), blue("VERIFICAR RCS"), blue("AGUARDAR RESFRIAM.") }
+        table.insert(ecam, { color = colors.red, text = "SOBRETEMP DO REATOR", help = "ReactorOverTemp", items = items })
     end
 
     if tripped(unit.alarms[ALARM.ReactorHighTemp]) then
-        local items = { white("OVER EXPECTED TEMP"), blue("CHECK RCS") }
-        table.insert(ecam, { color = colors.yellow, text = "REACTOR HIGH TEMP", help = "ReactorHighTemp", items = items})
+        local items = { white("ACIMA TEMP ESPERADA"), blue("VERIFICAR RCS") }
+        table.insert(ecam, { color = colors.yellow, text = "TEMP ALTA DO REATOR", help = "ReactorHighTemp", items = items})
     end
 
     if tripped(unit.alarms[ALARM.ReactorWasteLeak]) then
-        local items = { white("AT WASTE CAPACITY"), blue("CHECK WASTE OUTPUT"), blue("KEEP RCT DISABLED") }
-        table.insert(ecam, { color = colors.red, text = "REACTOR WASTE LEAK", help = "ReactorWasteLeak", items = items})
+        local items = { white("REJEITO NO LIMITE"), blue("VER SAIDA REJEITOS"), blue("MANTER REATOR DESL.") }
+        table.insert(ecam, { color = colors.red, text = "VAZAM REJEITO REATOR", help = "ReactorWasteLeak", items = items})
     end
 
     if tripped(unit.alarms[ALARM.ReactorHighWaste]) then
-        local items = { blue("CHECK WASTE OUTPUT") }
-        table.insert(ecam, { color = colors.yellow, text = "REACTOR WASTE HIGH", help = "ReactorHighWaste", items = items})
+        local items = { blue("VER SAIDA REJEITOS") }
+        table.insert(ecam, { color = colors.yellow, text = "REJEITO ALTO REATOR", help = "ReactorHighWaste", items = items})
     end
 
     if tripped(unit.alarms[ALARM.RPSTransient]) then
@@ -585,22 +585,22 @@ function iorx.record_unit_data(data)
 
         local function insert(cond, key, text, color) if cond[key] then table.insert(items, { text = text, help = key, color = color }) end end
 
-        table.insert(items, white("REACTOR SCRAMMED"))
-        insert(stat, "high_dmg", "HIGH DAMAGE", colors.red)
-        insert(stat, "high_temp", "HIGH TEMPERATURE", colors.red)
-        insert(stat, "low_cool", "CRIT LOW COOLANT")
-        insert(stat, "ex_waste", "EXCESS WASTE")
-        insert(stat, "ex_hcool", "EXCESS HEATED COOL")
-        insert(stat, "fault", "HARDWARE FAULT")
-        insert(stat, "timeout", "SUPERVISOR DISCONN")
-        insert(stat, "manual", "MANUAL SCRAM", colors.white)
-        insert(stat, "automatic", "AUTOMATIC SCRAM")
-        insert(stat, "sys_fail", "NOT FORMED", colors.red)
-        insert(stat, "force_dis", "FORCE DISABLED", colors.red)
-        table.insert(items, blue("RESOLVE PROBLEM"))
-        table.insert(items, blue("RESET RPS"))
+        table.insert(items, white("SCRAM NO REATOR"))
+        insert(stat, "high_dmg", "DANO ALTO", colors.red)
+        insert(stat, "high_temp", "TEMPERATURA ALTA", colors.red)
+        insert(stat, "low_cool", "REFRIG CRIT BAIXO")
+        insert(stat, "ex_waste", "EXCESSO DE REJEITO")
+        insert(stat, "ex_hcool", "EXCESSO REFRIG QUEN")
+        insert(stat, "fault", "FALHA DE HARDWARE")
+        insert(stat, "timeout", "SUPERVISOR DESCONEC")
+        insert(stat, "manual", "SCRAM MANUAL", colors.white)
+        insert(stat, "automatic", "SCRAM AUTOMATICO")
+        insert(stat, "sys_fail", "NAO FORMADO", colors.red)
+        insert(stat, "force_dis", "DESATIVADO FORCADO", colors.red)
+        table.insert(items, blue("RESOLVER PROBLEMA"))
+        table.insert(items, blue("REARMAR RPS"))
 
-        table.insert(ecam, { color = colors.yellow, text = "RPS TRANSIENT", help = "RPSTransient", items = items})
+        table.insert(ecam, { color = colors.yellow, text = "TRANSIENTE DO RPS", help = "RPSTransient", items = items})
     end
 
     if tripped(unit.alarms[ALARM.RCSTransient]) then
@@ -619,97 +619,98 @@ function iorx.record_unit_data(data)
             if cond == true or (type(cond) == "table" and cond[key]) then table.insert(items, { text = text, help = key, color = color }) end
         end
 
-        table.insert(items, white("COOLANT PROBLEM"))
+        table.insert(items, white("PROBLEMA NO REFRIG"))
 
-        insert(annunc, "RCPTrip", "RCP TRIP", colors.red)
-        insert(annunc, "CoolantLevelLow", "LOW COOLANT")
+        insert(annunc, "RCPTrip", "TRIP DA RCP", colors.red)
+        insert(annunc, "CoolantLevelLow", "REFRIGERANTE BAIXO")
 
         if unit.num_boilers == 0 then
             if (util.time_ms() - unit.last_rate_change_ms) > const.FLOW_STABILITY_DELAY_MS then
-                insert(annunc, "BoilRateMismatch", "BOIL RATE MISMATCH")
+                insert(annunc, "BoilRateMismatch", "DESCOMP TAXA FERV.")
             end
 
             if unit.turbine_flow_stable then
-                insert(annunc, "RCSFlowLow", "RCS FLOW LOW")
-                insert(annunc, "CoolantFeedMismatch", "COOL FEED MISMATCH")
-                insert(annunc, "SteamFeedMismatch", "STM FEED MISMATCH")
+                insert(annunc, "RCSFlowLow", "FLUXO BAIXO NO RCS")
+                insert(annunc, "CoolantFeedMismatch", "DESCOMP ALIM REFRIG")
+                insert(annunc, "SteamFeedMismatch", "DESCOMP ALIM VAPOR")
             end
         else
             if (util.time_ms() - unit.last_rate_change_ms) > const.FLOW_STABILITY_DELAY_MS then
-                insert(annunc, "RCSFlowLow", "RCS FLOW LOW")
-                insert(annunc, "BoilRateMismatch", "BOIL RATE MISMATCH")
-                insert(annunc, "CoolantFeedMismatch", "COOL FEED MISMATCH")
+                insert(annunc, "RCSFlowLow", "FLUXO BAIXO NO RCS")
+                insert(annunc, "BoilRateMismatch", "DESCOMP TAXA FERV.")
+                insert(annunc, "CoolantFeedMismatch", "DESCOMP ALIM REFRIG")
             end
 
             if unit.turbine_flow_stable then
-                insert(annunc, "SteamFeedMismatch", "STM FEED MISMATCH")
+                insert(annunc, "SteamFeedMismatch", "DESCOMP ALIM VAPOR")
             end
         end
 
-        insert(annunc, "MaxWaterReturnFeed", "MAX WTR RTRN FEED")
+        insert(annunc, "MaxWaterReturnFeed", "RETORNO MAX DE AGUA")
 
-        for k, v in ipairs(annunc.WaterLevelLow) do insert(v, "WaterLevelLow", "BOILER " .. k .. " WTR LOW", colors.red) end
-        for k, v in ipairs(annunc.HeatingRateLow) do insert(v, "HeatingRateLow", "BOILER " .. k .. " HEAT RATE") end
-        for k, v in ipairs(annunc.TurbineOverSpeed) do insert(v, "TurbineOverSpeed", "TURBINE " .. k .. " OVERSPD", colors.red) end
-        for k, v in ipairs(annunc.GeneratorTrip) do insert(v, "GeneratorTrip", "TURBINE " .. k .. " GEN TRIP") end
+        for k, v in ipairs(annunc.WaterLevelLow) do insert(v, "WaterLevelLow", "CALDEIRA " .. k .. " AGUA BXA", colors.red) end
+        for k, v in ipairs(annunc.HeatingRateLow) do insert(v, "HeatingRateLow", "CALDEIRA " .. k .. " TX AQUEC") end
+        for k, v in ipairs(annunc.TurbineOverSpeed) do insert(v, "TurbineOverSpeed", "TURBINA " .. k .. " SOBREVEL", colors.red) end
+        for k, v in ipairs(annunc.GeneratorTrip) do insert(v, "GeneratorTrip", "TURBINA " .. k .. " TRIP GER") end
 
-        table.insert(items, blue("CHECK COOLING SYS"))
+        table.insert(items, blue("VER SIST RESFRIAM."))
 
-        table.insert(ecam, { color = colors.yellow, text = "RCS TRANSIENT", help = "RCSTransient", items = items})
+        table.insert(ecam, { color = colors.yellow, text = "TRANSIENTE DO RCS", help = "RCSTransient", items = items})
     end
 
     if tripped(unit.alarms[ALARM.TurbineTrip]) then
         local items = {}
 
         for k, v in ipairs(annunc.TurbineTrip) do
-            if v then table.insert(items, { text = "TURBINE " .. k .. " TRIP", help = "TurbineTrip" }) end
+            if v then table.insert(items, { text = "TRIP TURBINA " .. k, help = "TurbineTrip" }) end
         end
 
-        table.insert(items, blue("CHECK ENERGY OUT"))
-        table.insert(ecam, { color = colors.red, text = "TURBINE TRIP", help = "TurbineTripAlarm", items = items})
+        table.insert(items, blue("VER SAIDA ENERGIA"))
+        table.insert(ecam, { color = colors.red, text = "TRIP DE TURBINA", help = "TurbineTripAlarm", items = items})
     end
 
     if not (tripped(unit.alarms[ALARM.ReactorLost]) or unit.connected) then
-        local items = { blue("CHECK PLC") }
-        table.insert(ecam, { color = colors.yellow, text = "REACTOR OFF-LINE", items = items })
+        local items = { blue("VERIFICAR CLP") }
+        table.insert(ecam, { color = colors.yellow, text = "REATOR OFF-LINE", items = items })
     end
 
     if annunc.FuelInputRateLow then
-        table.insert(ecam, { color = colors.yellow, text = "FUEL INPUT RATE LOW", help = "FuelInputRateLow", items = { blue("CHECK FUEL INPUT") } })
+        table.insert(ecam, { color = colors.yellow, text = "ENTRADA COMB BAIXA", help = "FuelInputRateLow", items = { blue("VER ENTRADA COMB.") } })
     end
 
     if unit.fuel_burn_rate_limited then
-        table.insert(ecam, { color = colors.yellow, text = "MAX BURN LIMITED", items = { white("INSUFFICIENT FUEL"), white("INJECTION RATE"), blue("CHECK FUEL INPUT") } })
+        table.insert(ecam, { color = colors.yellow, text = "QUEIMA MAX LIMITADA", items = { white("TAXA DE INJECAO DE"), white("COMB. INSUFICIENTE"), blue("VER ENTRADA COMB.") } })
     end
 
     if annunc.WasteLineOcclusion then
-        table.insert(ecam, { color = colors.yellow, text = "WASTE LINE OCCLUSION", help = "WasteLineOcclusion", items = { blue("CHECK WASTE OUTPUT") } })
+        table.insert(ecam, { color = colors.yellow, text = "OCLUSAO LINHA REJ.", help = "WasteLineOcclusion", items = { blue("VER SAIDA REJEITOS") } })
     end
 
     for k, v in ipairs(annunc.BoilerOnline) do
         if not v then
-            local items = { blue("CHECK RTU") }
-            table.insert(ecam, { color = colors.yellow, text = "BOILER " .. k .. " OFF-LINE", items = items})
+            local items = { blue("VERIFICAR RTU") }
+            table.insert(ecam, { color = colors.yellow, text = "CALDEIRA " .. k .. " OFF-LINE", items = items})
         end
     end
 
     for k, v in ipairs(annunc.TurbineOnline) do
         if not v then
-            local items = { blue("CHECK RTU") }
-            table.insert(ecam, { color = colors.yellow, text = "TURBINE " .. k .. " OFF-LINE", items = items})
+            local items = { blue("VERIFICAR RTU") }
+            table.insert(ecam, { color = colors.yellow, text = "TURBINA " .. k .. " OFF-LINE", items = items})
         end
     end
 
-    -- if no alarms, put some basic status messages in
+    -- se nao houver alarmes, adiciona mensagens basicas de status
     if #ecam == 0 then
-        table.insert(ecam, { color = colors.green, text = "REACTOR " .. util.trinary(unit.reactor_data.mek_status.status, "NOMINAL", "IDLE"), items = {}})
+        table.insert(ecam, { color = colors.green, text = "REATOR " .. util.trinary(unit.reactor_data.mek_status.status, "NOMINAL", "OCIOSO"), items = {}})
 
         if (not unit.reactor_data.mek_status.status) and annunc.HighStartupRate then
-            table.insert(ecam, { color = colors.yellow, text = "HIGH STARTUP RATE", help = "HighStartupRate", items = {}})
+            table.insert(ecam, { color = colors.yellow, text = "TAXA PARTIDA ALTA", help = "HighStartupRate", items = {}})
         end
 
         local plural = util.trinary(unit.num_turbines > 1, "S", "")
-        table.insert(ecam, { color = colors.green, text = "TURBINE" .. plural .. util.trinary(unit.turbine_flow_stable, " STABLE", " STABILIZING"), items = {}})
+        local stable = util.trinary(unit.num_turbines > 1, " ESTAVEIS", " ESTAVEL")
+        table.insert(ecam, { color = colors.green, text = "TURBINA" .. plural .. util.trinary(unit.turbine_flow_stable, stable, " ESTABILIZ."), items = {}})
     end
 
     u_ps.publish("U_ECAM", textutils.serialize(ecam))
@@ -717,10 +718,10 @@ function iorx.record_unit_data(data)
     --#endregion
 end
 
--- update the builds app with build data from API_GET_BUILD
+-- atualiza o app de construcoes com dados de construcao a partir de API_GET_BUILD
 ---@param data table
 function iorx.record_build_data(data)
-    -- unit builds
+    -- construcoes das unidades
 
     for u_id = 1, #io.units do
         local unit = io.units[u_id]
@@ -728,7 +729,7 @@ function iorx.record_build_data(data)
         local u_data = data[u_id]
         local rct_build, blr_build, tbn_build, tnk_build = table.unpack(u_data)
 
-        -- reactor build
+        -- construcao do reator
         local r_data = unit.reactor_data
 
         r_data.mek_struct = rct_build[1]
@@ -742,12 +743,12 @@ function iorx.record_build_data(data)
         unit.unit_ps.publish("max_op_temp_H2O", r_data.max_op_temp_H2O)
         unit.unit_ps.publish("max_op_temp_Na", r_data.max_op_temp_Na)
 
-        -- boiler builds
+        -- construcoes das caldeiras
         for b = 1, #unit.boiler_data_tbl do
             _record_multiblock_build(b, blr_build[b], unit.boiler_data_tbl, unit.boiler_ps_tbl)
         end
 
-        -- turbine builds
+        -- construcoes das turbinas
         for t = 1, #unit.turbine_data_tbl do
             _record_multiblock_build(t, tbn_build[t][1], unit.turbine_data_tbl, unit.turbine_ps_tbl)
 
@@ -761,13 +762,13 @@ function iorx.record_build_data(data)
             ps.publish("gen_eff", props.generators[t].efficiency)
         end
 
-        -- tank builds
+        -- construcoes dos tanques
         for t = 1, #unit.tank_data_tbl do
             _record_multiblock_build(t, tnk_build[t], unit.tank_data_tbl, unit.tank_ps_tbl)
         end
     end
 
-    -- facility builds
+    -- construcoes da instalacao
 
     local fac = io.facility
 
@@ -795,7 +796,7 @@ function iorx.record_build_data(data)
     end
 end
 
--- update control app with unit data from API_GET_CTRL
+-- atualiza o app de controle com dados das unidades a partir de API_GET_CTRL
 ---@param data table
 function iorx.record_control_data(data)
     for u_id = 1, #data do
@@ -842,10 +843,10 @@ function iorx.record_control_data(data)
     end
 end
 
--- update process app with unit data from API_GET_PROC
+-- atualiza o app de processo com dados das unidades a partir de API_GET_PROC
 ---@param data table
 function iorx.record_process_data(data)
-    -- get unit data
+    -- obtem dados das unidades
     for u_id = 1, #io.units do
         local unit = io.units[u_id]
         local u_ps = unit.unit_ps
@@ -866,7 +867,7 @@ function iorx.record_process_data(data)
         u_ps.publish("auto_group", types.AUTO_GROUP_NAMES[unit.a_group + 1])
     end
 
-    -- get facility data
+    -- obtem dados da instalacao
     local fac = io.facility
     local f_ps = fac.ps
     local f_data = data[#io.units + 1]
@@ -904,13 +905,13 @@ function iorx.record_process_data(data)
     f_ps.publish("process_gen_target", f_data[5][6])
 end
 
--- update waste app with unit data from API_GET_WASTE
+-- atualiza o app de rejeitos com dados das unidades a partir de API_GET_WASTE
 ---@param data table
 function iorx.record_waste_data(data)
     local com_waste = io.facility.combined_waste
 
     if not com_waste then
-        -- get unit data
+        -- obtem dados das unidades
         for u_id = 1, #io.units do
             local unit = io.units[u_id]
             local u_ps = unit.unit_ps
@@ -945,7 +946,7 @@ function iorx.record_waste_data(data)
         end
     end
 
-    -- get facility data
+    -- obtem dados da instalacao
     local fac = io.facility
     local f_ps = fac.ps
     local f_data = data[#io.units + 1]
@@ -995,10 +996,10 @@ function iorx.record_waste_data(data)
     end
 end
 
--- update the radiation monitor app with radiation monitor data from API_GET_RAD
+-- atualiza o app de monitor de radiacao com dados dos monitores a partir de API_GET_RAD
 ---@param data table
 function iorx.record_radiation_data(data)
-    -- unit radiation monitors
+    -- monitores de radiacao das unidades
 
     for u_id = 1, #io.units do
         local unit      = io.units[u_id]
@@ -1023,7 +1024,7 @@ function iorx.record_radiation_data(data)
         unit.unit_ps.publish("radiation_monitors", textutils.serialize(connected))
     end
 
-    -- facility radiation monitors
+    -- monitores de radiacao da instalacao
 
     local fac = io.facility
 
@@ -1050,7 +1051,7 @@ end
 
 local comp_record = {}
 
--- update the computers app with the network data from INFO_LIST_CMP
+-- atualiza o app de computadores com os dados de rede a partir de INFO_LIST_CMP
 ---@param data table
 function iorx.record_network_data(data)
     local ps        = io.ps
@@ -1059,7 +1060,7 @@ function iorx.record_network_data(data)
 
     ps.publish("comp_online", #data)
 
-    -- add/update connected computers
+    -- adiciona/atualiza computadores conectados
     for i = 1, #data do
         local entry = data[i]
         local type  = entry[1]
@@ -1089,14 +1090,14 @@ function iorx.record_network_data(data)
             if not comp_record[id] then
                 comp_record[id] = true
 
-                -- trigger the app to create the new element
+                -- aciona o app para criar o novo elemento
                 ps.publish("comp_connect", id)
             end
         end
     end
 
-    -- handle the coordinator being online or not
-    -- no need to worry about the supervisor since this data is from the supervisor, so it has to be 'online' if received
+    -- trata se o coordenador esta online ou nao
+    -- nao e preciso se preocupar com o supervisor pois estes dados vem dele, entao deve estar 'online' se recebido
     ps.publish("comp_crd_online", crd_online)
     if not crd_online then
         ps.publish("comp_crd_addr", "---")
@@ -1104,24 +1105,24 @@ function iorx.record_network_data(data)
         ps.publish("comp_crd_rtt", "---")
     end
 
-    -- reset the published value
+    -- redefine o valor publicado
     ps.publish("comp_connect", false)
 
-    -- remove disconnected computers
+    -- remove computadores desconectados
     for id, state in pairs(comp_record) do
         if state and not connected[id] then
             comp_record[id] = false
 
-            -- trigger the app to delete the element
+            -- aciona o app para excluir o elemento
             ps.publish("comp_disconnect", id)
         end
     end
 
-    -- reset the published value
+    -- redefine o valor publicado
     ps.publish("comp_disconnect", false)
 end
 
--- clear the tracked connected computer record
+-- limpa o registro de computadores conectados rastreados
 function iorx.clear_comp_record() comp_record = {} end
 
 return function (io_obj)

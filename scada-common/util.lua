@@ -1,5 +1,5 @@
 --
--- Utility Functions
+-- Funções Utilitárias
 --
 
 local cc_strings = require("cc.strings")
@@ -23,7 +23,7 @@ local t_pack   = table.pack
 ---@class util
 local util = {}
 
--- scada-common version
+-- versão do scada-common
 util.version = "1.11.3"
 
 util.TICK_TIME_S = 0.05
@@ -31,7 +31,7 @@ util.TICK_TIME_MS = 50
 
 --#region OPERATORS
 
--- trinary operator
+-- operador ternário
 ---@nodiscard
 ---@param cond any condition
 ---@param a any return if evaluated as true
@@ -47,19 +47,19 @@ end
 
 local p_time = "[%H:%M:%S] "
 
--- print
+-- imprime
 ---@param message any
 function util.print(message) term.write(tostring(message)) end
 
--- print line
+-- imprime linha
 ---@param message any
 function util.println(message) print(tostring(message)) end
 
--- timestamped print
+-- imprime com timestamp
 ---@param message any
 function util.print_ts(message) term.write(os.date(p_time) .. tostring(message)) end
 
--- timestamped print line
+-- imprime linha com timestamp
 ---@param message any
 function util.println_ts(message) print(os.date(p_time) .. tostring(message)) end
 
@@ -67,21 +67,21 @@ function util.println_ts(message) print(os.date(p_time) .. tostring(message)) en
 
 --#region STRING TOOLS
 
--- get a value as a string
+-- obtém um valor como string
 ---@nodiscard
 ---@param val any
 ---@return string
 function util.strval(val)
     local t = type(val)
     if t == "string" then return val end
-    -- this depends on Lua short-circuiting the or check for metatables (note: metatables won't have metatables)
+    -- isso depende do curto-circuito do Lua na verificação 'or' para metatables (nota: metatables não terão metatables)
     if (t == "table" and (getmetatable(val) == nil or getmetatable(val).__tostring == nil)) or t == "function" then
         return t_concat{"[", tostring(val), "]"}
     else return tostring(val) end
 end
 
--- tokenize a string by a separator<br>
--- does not behave exactly like C's strtok
+-- tokeniza uma string por um separador<br>
+-- não se comporta exatamente como o strtok do C
 ---@param str string string to tokenize
 ---@param sep string separator to tokenize by
 ---@return string[] token_list
@@ -91,13 +91,13 @@ function util.strtok(str, sep)
     return list
 end
 
--- repeat a space n times
+-- repete um espaço n vezes
 ---@nodiscard
 ---@param n integer
 ---@return string
 function util.spaces(n) return string.rep(" ", n) end
 
--- pad text to a minimum width
+-- preenche o texto com espaços até uma largura mínima (centralizado)
 ---@nodiscard
 ---@param str string text
 ---@param n integer minimum width
@@ -110,7 +110,7 @@ function util.pad(str, n)
     return t_concat{util.spaces(lpad), str, util.spaces(rpad)}
 end
 
--- trim leading and trailing whitespace
+-- remove espaços em branco no início e no fim
 ---@nodiscard
 ---@param s string text
 ---@return string
@@ -119,7 +119,7 @@ function util.trim(s)
     return str
 end
 
--- wrap a string into a table of lines
+-- quebra uma string em uma tabela de linhas
 ---@nodiscard
 ---@param str string
 ---@param limit integer line limit, must be greater than 0
@@ -129,14 +129,14 @@ function util.strwrap(str, limit)
     return cc_strings.wrap(str, limit)
 end
 
--- make sure a string is at least 'width' long
+-- garante que uma string tenha pelo menos 'width' de comprimento
 ---@nodiscard
 ---@param str string
 ---@param width integer minimum width
 ---@return string string
 function util.strminw(str, width) return cc_strings.ensure_width(str, width) end
 
--- concatenation with built-in to string
+-- concatenação com conversão integrada para string
 ---@nodiscard
 ---@param ... any
 ---@return string
@@ -146,17 +146,17 @@ function util.concat(...)
     return t_concat(strings)
 end
 
--- alias
+-- apelido (alias)
 util.c = util.concat
 
--- sprintf implementation
+-- implementação de sprintf
 ---@nodiscard
 ---@param format string
 ---@param ... any
 function util.sprintf(format, ...) return string.format(format, ...) end
 
--- format a number string with commas as the thousands separator<br>
--- subtracts from spaces at the start if present for each comma used
+-- formata uma string numérica com vírgulas como separador de milhar<br>
+-- subtrai dos espaços no início, se presentes, para cada vírgula usada
 ---@nodiscard
 ---@param num string number string
 ---@return string
@@ -182,24 +182,24 @@ end
 
 --#region MATH
 
--- is a value an integer
+-- verifica se um valor é um inteiro
 ---@nodiscard
 ---@param x any value
 ---@return boolean is_integer
 function util.is_int(x) return type(x) == "number" and x == math.floor(x) end
 
--- get the sign of a number
+-- obtém o sinal de um número
 ---@nodiscard
 ---@param x number value
 ---@return integer sign (-1 for < 0, 1 otherwise)
 function util.sign(x) return util.trinary(x < 0, -1, 1) end
 
--- round a number to an integer
+-- arredonda um número para um inteiro
 ---@nodiscard
 ---@return integer rounded
 function util.round(x) return math.floor(x + 0.5) end
 
--- create a new moving average object (FIR filter)
+-- cria um novo objeto de média móvel (filtro FIR)
 ---@nodiscard
 ---@param length integer history length
 function util.mov_avg(length)
@@ -210,7 +210,7 @@ function util.mov_avg(length)
     ---@class moving_average
     local public = {}
 
-    -- reset all to a given value, or clear all data if no value is given
+    -- redefine tudo para um determinado valor, ou limpa todos os dados se nenhum valor for fornecido
     ---@param x number? value
     function public.reset(x)
         index = 1
@@ -221,7 +221,7 @@ function util.mov_avg(length)
         end
     end
 
-    -- record a new value
+    -- registra um novo valor
     ---@param x number new value
     ---@param t number? optional last update time to prevent duplicated entries
     function public.record(x, t)
@@ -234,7 +234,7 @@ function util.mov_avg(length)
         if index > length then index = 1 end
     end
 
-    -- compute the moving average
+    -- calcula a média móvel
     ---@nodiscard
     ---@return number average
     function public.compute()
@@ -251,7 +251,7 @@ function util.mov_avg(length)
     return public
 end
 
--- create a new exponential moving average object (IIR filter)
+-- cria um novo objeto de média móvel exponencial (filtro IIR)
 ---@nodiscard
 ---@param alpha number EMA filter alpha value
 function util.ema_filter(alpha)
@@ -261,11 +261,11 @@ function util.ema_filter(alpha)
     ---@class ema_filter
     local public = {}
 
-    -- reset the filter state, optionally initializing it to the given value
+    -- redefine o estado do filtro, opcionalmente inicializando-o com o valor fornecido
     ---@param x number? value
     function public.reset(x) state = x end
 
-    -- update the filter state with a new value
+    -- atualiza o estado do filtro com um novo valor
     ---@param x number new value
     ---@param t number? optional last update time to prevent duplicated entries
     function public.update(x, t)
@@ -278,7 +278,7 @@ function util.ema_filter(alpha)
         last_t = t
     end
 
-    -- get the moving average
+    -- obtém a média móvel
     ---@nodiscard
     ---@return number average
     function public.get() return state or 0.0 end
@@ -290,22 +290,22 @@ end
 
 --#region TIME
 
--- current time
+-- tempo atual
 ---@nodiscard
 ---@return integer milliseconds
 function util.time_ms() return os.epoch("local") end
 
--- current time
+-- tempo atual
 ---@nodiscard
 ---@return number seconds
 function util.time_s() return os.epoch("local") / 1000.0 end
 
--- current time
+-- tempo atual
 ---@nodiscard
 ---@return integer milliseconds
 function util.time() return util.time_ms() end
 
--- check the TPS by yielding for one tick and timing how long that takes
+-- verifica o TPS cedendo por um tick e cronometrando quanto tempo isso leva
 ---@nodiscard
 --- EVENT_CONSUMER: this function consumes events
 function util.get_tps()
@@ -320,13 +320,13 @@ end
 
 --#region OS
 
--- OS pull event raw wrapper with types
+-- wrapper de os.pullEventRaw com tipos
 ---@nodiscard
 ---@param target_event? string event to wait for
 ---@return os_event event, any param1, any param2, any param3, any param4, any param5
 function util.pull_event(target_event) return os.pullEventRaw(target_event) end
 
--- OS queue event raw wrapper with types
+-- wrapper de os.queueEvent com tipos
 ---@param event os_event
 ---@param param1 any
 ---@param param2 any
@@ -337,13 +337,13 @@ function util.push_event(event, param1, param2, param3, param4, param5)
     return os.queueEvent(event, param1, param2, param3, param4, param5)
 end
 
--- start an OS timer
+-- inicia um temporizador do SO
 ---@nodiscard
 ---@param t number timer duration in seconds
 ---@return integer timer ID
 function util.start_timer(t) return os.startTimer(t) end
 
--- cancel an OS timer
+-- cancela um temporizador do SO
 ---@param timer integer timer ID
 function util.cancel_timer(timer) os.cancelTimer(timer) end
 
@@ -351,19 +351,19 @@ function util.cancel_timer(timer) os.cancelTimer(timer) end
 
 --#region PARALLELIZATION
 
--- protected sleep call so we still are in charge of catching termination<br>
--- returns the result of pcall
+-- chamada sleep protegida para que ainda sejamos responsáveis por capturar o encerramento<br>
+-- retorna o resultado de pcall
 ---@param t number seconds
 ---@return boolean success, any result, any ...
 --- EVENT_CONSUMER: this function consumes events
 function util.psleep(t) return pcall(os.sleep, t) end
 
--- no-op to provide a brief pause (1 tick) to yield<br>
+-- no-op para fornecer uma breve pausa (1 tick) para ceder (yield)<br>
 --- EVENT_CONSUMER: this function consumes events
 function util.nop() util.psleep(0.05) end
 
--- attempt to maintain a minimum loop timing (duration of execution)<br>
--- note: will not yield for time periods less than 50ms
+-- tenta manter um tempo mínimo de loop (duração da execução)<br>
+-- nota: não cederá por períodos de tempo inferiores a 50ms
 ---@nodiscard
 ---@param target_timing integer minimum amount of milliseconds to wait for
 ---@param last_update integer millisecond time of last update
@@ -371,7 +371,7 @@ function util.nop() util.psleep(0.05) end
 --- EVENT_CONSUMER: this function consumes events
 function util.adaptive_delay(target_timing, last_update)
     local sleep_for = target_timing - (util.time() - last_update)
-    -- only if >50ms since worker loops already yield 0.05s
+    -- apenas se >50ms, pois os loops de trabalho já cedem 0.05s
     if sleep_for >= 50 then util.psleep(sleep_for / 1000.0) end
     return util.time()
 end
@@ -380,8 +380,8 @@ end
 
 --#region TABLE UTILITIES
 
--- delete elements from a table if the passed function returns false when passed a table element<br>
--- put briefly: deletes elements that return false, keeps elements that return true
+-- exclui elementos de uma tabela se a função passada retornar false quando receber um elemento da tabela<br>
+-- resumindo: exclui elementos que retornam false, mantém elementos que retornam true
 ---@generic Type
 ---@param t Type[] table to remove elements from
 ---@param f fun(t_elem: Type) : boolean should return false to delete an element when passed the element
@@ -405,7 +405,7 @@ function util.filter_table(t, f, on_delete)
     end
 end
 
--- check if a table contains the provided element
+-- verifica se uma tabela contém o elemento fornecido
 ---@generic Type
 ---@nodiscard
 ---@param t Type[] table to check
@@ -418,7 +418,7 @@ function util.table_contains(t, element)
     return false
 end
 
--- count the length of a table, even if the values are not sequential or contain named keys
+-- conta o tamanho de uma tabela, mesmo que os valores não sejam sequenciais ou contenham chaves nomeadas
 ---@nodiscard
 ---@param t table
 ---@return integer length
@@ -432,20 +432,20 @@ end
 
 --#region MEKANISM MATH
 
--- convert Joules to FE (or RF)
+-- converte Joules para FE (ou RF)
 ---@nodiscard
 ---@param J number Joules
 ---@return number FE Forge Energy or Redstone Flux
 function util.joules_to_fe_rf(J) return (J * 0.4) end
 
--- convert FE (or RF) to Joules
+-- converte FE (ou RF) para Joules
 ---@nodiscard
 ---@param FE number Forge Energy or Redstone Flux
 ---@return number J Joules
 function util.fe_rf_to_joules(FE) return (FE * 2.5) end
 
--- format a power value into XXX.XX UNIT format<br>
--- example for FE: FE, kFE, MFE, GFE, TFE, PFE, EFE, ZFE
+-- formata um valor de energia no formato XXX.XX UNIDADE<br>
+-- exemplo para FE: FE, kFE, MFE, GFE, TFE, PFE, EFE, ZFE
 ---@nodiscard
 ---@param e number energy value
 ---@param label string energy scale label
@@ -478,11 +478,11 @@ function util.power_format(e, label, combine_label, format)
         unit = "P"
         value = e / 1000000000000000.0
     elseif a < 1000000000000000000000.0 then
-        -- if you accomplish this please touch grass
+        -- se você conseguir isso, por favor vá tocar na grama
         unit = "E"
         value = e / 1000000000000000000.0
     else
-        -- how & why did you do this?
+        -- como e por que você fez isso?
         unit = "Z"
         value = e / 1000000000000000000000.0
     end
@@ -496,7 +496,7 @@ function util.power_format(e, label, combine_label, format)
     end
 end
 
--- compute Mekanism's rotation rate for a turbine
+-- calcula a taxa de rotação do Mekanism para uma turbina
 ---@nodiscard
 ---@param turbine turbinev_session_db turbine data
 function util.turbine_rotation(turbine)
@@ -518,8 +518,8 @@ end
 
 -- WATCHDOG --
 
--- OS timer based watchdog<br>
--- triggers a timer event if not fed within 'timeout' seconds
+-- watchdog baseado em temporizador do SO<br>
+-- dispara um evento de temporizador se não for alimentado dentro de 'timeout' segundos
 ---@nodiscard
 ---@param timeout number timeout duration
 function util.new_watchdog(timeout)
@@ -528,18 +528,18 @@ function util.new_watchdog(timeout)
     ---@class watchdog
     local public = {}
 
-    -- check if a timer is this watchdog
+    -- verifica se um temporizador é este watchdog
     ---@nodiscard
     ---@param timer number event timer ID
     function public.is_timer(timer) return self.wd_timer == timer end
 
-    -- satiate the beast
+    -- sacia a fera
     function public.feed()
         public.cancel()
         self.wd_timer = util.start_timer(self.timeout)
     end
 
-    -- cancel the watchdog
+    -- cancela o watchdog
     function public.cancel()
         if self.wd_timer ~= nil then util.cancel_timer(self.wd_timer) end
     end
@@ -547,10 +547,10 @@ function util.new_watchdog(timeout)
     return public
 end
 
--- LOOP CLOCK --
+-- RELÓGIO DE LOOP (LOOP CLOCK) --
 
--- OS timer based loop clock<br>
--- fires a timer event at the specified period, does not start at construct time
+-- relógio de loop baseado em temporizador do SO<br>
+-- dispara um evento de temporizador no período especificado, não inicia no momento da construção
 ---@nodiscard
 ---@param period number clock period
 function util.new_clock(period)
@@ -559,21 +559,21 @@ function util.new_clock(period)
     ---@class clock
     local public = {}
 
-    -- check if a timer is this clock
+    -- verifica se um temporizador é este relógio
     ---@nodiscard
     ---@param timer number timer event timer ID
     function public.is_clock(timer) return self.timer == timer end
 
-    -- start the clock
+    -- inicia o relógio
     function public.start() self.timer = util.start_timer(self.period) end
 
     return public
 end
 
--- FIELD VALIDATOR --
+-- VALIDADOR DE CAMPOS --
 
--- create a new type validator<br>
--- can execute sequential checks and check valid() to see if it is still valid
+-- cria um novo validador de tipos<br>
+-- pode executar verificações sequenciais e verificar valid() para ver se ainda é válido
 ---@nodiscard
 function util.new_validator()
     local valid = true
@@ -598,7 +598,7 @@ function util.new_validator()
 
     function public.assert_channel(channel) valid = valid and util.is_int(channel) and channel >= 0 and channel <= 65535 end
 
-    -- check if all assertions passed successfully
+    -- verifica se todas as asserções passaram com sucesso
     ---@nodiscard
     function public.valid() return valid end
 

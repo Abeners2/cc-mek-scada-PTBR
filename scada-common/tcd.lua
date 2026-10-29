@@ -1,5 +1,5 @@
 --
--- Timer Callback Dispatcher
+-- Despachante de Callbacks de Temporizador (TCD)
 --
 
 local log  = require("scada-common.log")
@@ -10,7 +10,7 @@ local tcd = {}
 ---@type { callback: function, duration: number, expiry: number }[]
 local registry = {}
 
--- request a function to be called after the specified time
+-- solicita que uma função seja chamada após o tempo especificado
 ---@param time number seconds
 ---@param f function callback function
 function tcd.dispatch(time, f)
@@ -22,17 +22,17 @@ function tcd.dispatch(time, f)
     }
 end
 
--- request a function to be called after the specified time, aborting any registered instances of that function reference
+-- solicita que uma função seja chamada após o tempo especificado, abortando quaisquer instâncias registradas dessa referência de função
 ---@param time number seconds
 ---@param f function callback function
 function tcd.dispatch_unique(time, f)
-    -- cancel if already registered
+    -- cancela se já estiver registrada
     for timer, entry in pairs(registry) do
         if entry.callback == f then
-            -- found an instance of this function reference, abort it
-            log.debug(util.c("TCD: aborting duplicate timer callback [timer: ", timer, ", ", f, "]"))
+            -- encontrou uma instância desta referência de função, aborta-a
+            log.debug(util.c("TCD: abortando callback de temporizador duplicado [timer: ", timer, ", ", f, "]"))
 
-            -- cancel event and remove from registry (even if it fires it won't call)
+            -- cancela o evento e remove do registro (mesmo que dispare, não chamará)
             util.cancel_timer(timer)
             registry[timer] = nil
         end
@@ -46,31 +46,31 @@ function tcd.dispatch_unique(time, f)
     }
 end
 
--- abort a requested callback
+-- aborta um callback solicitado
 ---@param f function callback function
 function tcd.abort(f)
     for timer, entry in pairs(registry) do
         if entry.callback == f then
-            -- cancel event and remove from registry (even if it fires it won't call)
+            -- cancela o evento e remove do registro (mesmo que dispare, não chamará)
             util.cancel_timer(timer)
             registry[timer] = nil
         end
     end
 end
 
--- lookup a timer event and execute the callback if found
+-- procura um evento de temporizador e executa o callback se encontrado
 ---@param event integer timer event timer ID
 function tcd.handle(event)
     if registry[event] ~= nil then
         local callback = registry[event].callback
-        -- clear first so that dispatch_unique call from inside callback won't throw a debug message
+        -- limpa primeiro para que a chamada dispatch_unique de dentro do callback não gere uma mensagem de depuração
         registry[event] = nil
         callback()
     end
 end
 
--- print callbacks to help identify any overdue callbacks<br>
--- note: prints to log debug output
+-- imprime callbacks para ajudar a identificar quaisquer callbacks atrasados<br>
+-- nota: imprime na saída de depuração do log
 function tcd.diagnostics()
     local count = 0
 
@@ -79,14 +79,14 @@ function tcd.diagnostics()
 
         if entry.expiry < util.time_s() then
             local overtime = util.time_s() - entry.expiry
-            log.debug(util.c("TCD: unserviced timer ", timer, " for callback ", entry.callback, " is at least ", overtime, "s late"))
+            log.debug(util.c("TCD: temporizador nao atendido ", timer, " para callback ", entry.callback, " esta pelo menos ", overtime, "s atrasado"))
         else
             local time = entry.expiry - util.time_s()
-            log.debug(util.c("TCD: pending timer ", timer, " for callback ", entry.callback, " (call after ", entry.duration, "s, expires ", time, ")"))
+            log.debug(util.c("TCD: temporizador pendente ", timer, " para callback ", entry.callback, " (chamar apos ", entry.duration, "s, expira em ", time, ")"))
         end
     end
 
-    log.debug(util.c("TCD: ", count, " total registered callback(s)"))
+    log.debug(util.c("TCD: ", count, " callback(s) registrado(s) no total"))
 end
 
 return tcd

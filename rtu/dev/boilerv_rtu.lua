@@ -2,39 +2,39 @@ local rtu = require("rtu.rtu")
 
 local boilerv_rtu = {}
 
--- create new boiler device
+-- criar novo dispositivo de caldeira
 ---@nodiscard
 ---@param boiler Boiler|ppm_generic
 ---@return rtu_device interface, boolean faulted
 function boilerv_rtu.new(boiler)
     local unit = rtu.init_unit(boiler)
 
-    -- discrete inputs --
+    -- entradas discretas --
     unit.connect_di("isFormed")
 
-    -- coils --
-    -- none
+    -- bobinas --
+    -- nenhuma
 
-    -- input registers --
-    -- multiblock properties
+    -- registradores de entrada --
+    -- propriedades do multibloco
     unit.connect_input_reg("getLength")
     unit.connect_input_reg("getWidth")
     unit.connect_input_reg("getHeight")
     unit.connect_input_reg("getMinPos")
     unit.connect_input_reg("getMaxPos")
-    -- build properties
+    -- propriedades de construção
     unit.connect_input_reg("getBoilCapacity")
     unit.connect_input_reg("getSteamCapacity")
     unit.connect_input_reg("getWaterCapacity")
     unit.connect_input_reg("getHeatedCoolantCapacity")
     unit.connect_input_reg("getCooledCoolantCapacity")
     unit.connect_input_reg("getSuperheaters")
-    -- current state
+    -- estado atual
     unit.connect_input_reg("getTemperature")
     unit.connect_input_reg("getBoilRate")
     unit.connect_input_reg("getMaxBoilRate")
     unit.connect_input_reg("getEnvironmentalLoss")
-    -- tanks
+    -- tanques
     unit.connect_input_reg("getSteam")
     unit.connect_input_reg("getSteamNeeded")
     unit.connect_input_reg("getSteamFilledPercentage")
@@ -48,8 +48,8 @@ function boilerv_rtu.new(boiler)
     unit.connect_input_reg("getCooledCoolantNeeded")
     unit.connect_input_reg("getCooledCoolantFilledPercentage")
 
-    -- holding registers --
-    -- none
+    -- registradores de retenção --
+    -- nenhum
 
     return unit.interface(), false
 end

@@ -12,16 +12,16 @@ local function blue() term.setTextColor(colors.blue) end
 local function white() term.setTextColor(colors.white) end
 local function lgray() term.setTextColor(colors.lightGray) end
 
--- get command line option in list
+-- obter opção de linha de comando na lista
 local function get_opt(opt, options)
     for _, v in pairs(options) do if opt == v then return v end end
     return nil
 end
 
--- wait for any key to be pressed
+-- aguardar o pressionamento de qualquer tecla
 local function any_key() os.pullEvent("key_up") end
 
--- ask the user yes or no
+-- perguntar ao usuário sim ou não
 local function ask_y_n(question, default)
     print(question)
     if default == true then print(" (Y/n)? ") else print(" (y/N)? ") end
@@ -32,7 +32,7 @@ local function ask_y_n(question, default)
     else return nil end
 end
 
--- read the local manifest file
+-- ler o arquivo de manifesto local
 local function read_local_manifest()
     local local_ok = false
     local local_manifest = {}
@@ -44,7 +44,7 @@ local function read_local_manifest()
     return local_ok, local_manifest
 end
 
--- recursively build a tree out of the file manifest
+-- construir recursivamente uma árvore a partir do manifesto de arquivos
 local function gen_tree(manifest, log)
     local function _tree_add(tree, split)
         if #split > 1 then
@@ -57,7 +57,7 @@ local function gen_tree(manifest, log)
 
     local list, tree = { log }, {}
 
-    -- make a list of each and every file
+    -- fazer uma lista de todos os arquivos
     for _, files in pairs(manifest.files) do for i = 1, #files do table.insert(list, files[i]) end end
 
     for i = 1, #list do
@@ -83,15 +83,15 @@ local function _clean_dir(dir, tree)
         local path = dir.."/"..val
         if fs.isDir(path) then
             _clean_dir(path, tree[val])
-            if #fs.list(path) == 0 then fs.delete(path);println("deleted "..path) end
+            if #fs.list(path) == 0 then fs.delete(path);println("excluído "..path) end
         elseif (not _in_array(val, tree)) and (val ~= "config.lua" ) then
             fs.delete(path)
-            println("deleted "..path)
+            println("excluído "..path)
         end
     end
 end
 
--- go through app/common directories to delete unused files
+-- percorrer diretórios do aplicativo/comuns para excluir arquivos não utilizados
 local function clean(manifest)
     local log = nil
     if fs.exists(app..".settings") and settings.load(app..".settings") then
@@ -107,49 +107,49 @@ local function clean(manifest)
     local ls = fs.list("/")
     for _, val in pairs(ls) do
         if fs.isDriveRoot(val) then
-            yellow();println("skipped mount '"..val.."'")
+            yellow();println("montagem ignorada '"..val.."'")
         elseif fs.isDir(val) then
             if tree[val] ~= nil then lgray();_clean_dir("/"..val, tree[val])
-            else white(); if ask_y_n("delete the unused directory '"..val.."'") then lgray();_clean_dir("/"..val) end end
-            if #fs.list(val) == 0 then fs.delete(val);lgray();println("deleted empty directory '"..val.."'") end
+            else white(); if ask_y_n("excluir o diretório não utilizado '"..val.."'") then lgray();_clean_dir("/"..val) end end
+            if #fs.list(val) == 0 then fs.delete(val);lgray();println("diretório vazio excluído '"..val.."'") end
         elseif not _in_array(val, tree) and (string.find(val, ".settings") == nil) then
-            white();if ask_y_n("delete the unused file '"..val.."'") then fs.delete(val);lgray();println("deleted "..val) end
+            white();if ask_y_n("excluir o arquivo não utilizado '"..val.."'") then fs.delete(val);lgray();println("excluído "..val) end
         end
     end
 
     white()
 end
 
--- get and validate command line options
+-- obter e validar opções de linha de comando
 
-println("-- CC Mekanism SCADA Install Manager (Off-Line) --")
+println("-- Gerenciador de Instalação CC Mekanism SCADA (Off-Line) --")
 
 if #opts == 0 or opts[1] == "help" then
-    println("usage: ccmsim <mode>")
-    println("<mode>")
+    println("uso: ccmsim <modo>")
+    println("<modo>")
     lgray()
-    println(" check     - check your installed versions")
-    println(" update-rm - delete everything except the config,")
-    println("             so that you can upload files for a")
-    println("             new two-file off-line update")
-    println(" uninstall - delete all app files and config")
+    println(" check     - verificar suas versões instaladas")
+    println(" update-rm - excluir tudo exceto a configuração,")
+    println("             para que você possa enviar arquivos para uma")
+    println("             nova atualização off-line de dois arquivos")
+    println(" uninstall - excluir todos os arquivos do app e configuração")
     return
 else
     mode = get_opt(opts[1], { "check", "update-rm", "uninstall" })
     if mode == nil then
-        red();println("Unrecognized mode.");white()
+        red();println("Modo não reconhecido.");white()
         return
     end
 end
 
--- run selected mode
+-- executar modo selecionado
 if mode == "check" then
     local local_ok, manifest = read_local_manifest()
     if not local_ok then
-        yellow();println("failed to load local installation information");white()
+        yellow();println("falha ao carregar informações da instalação local");white()
     end
 
-    -- list all versions
+    -- listar todas as versões
     for key, value in pairs(manifest.versions) do
         term.setTextColor(colors.purple)
         print(string.format("%-14s", "["..key.."]"))
@@ -158,33 +158,33 @@ if mode == "check" then
 elseif mode == "update-rm" or mode == "uninstall" then
     local ok, manifest = read_local_manifest()
     if not ok then
-        red();println("Error parsing local installation manifest.");white()
+        red();println("Erro ao analisar o manifesto de instalação local.");white()
         return
     end
 
     app = manifest.depends[#manifest.depends]
 
     if mode == "uninstall" then
-        orange();println("Uninstalling all app files...")
+        orange();println("Desinstalando todos os arquivos do app...")
     else
-        orange();println("Deleting all app files except for configuration...")
+        orange();println("Excluindo todos os arquivos do app exceto a configuração...")
     end
 
-    -- ask for confirmation
-    if not ask_y_n("Continue", false) then return end
+    -- pedir confirmação
+    if not ask_y_n("Continuar", false) then return end
 
-    -- delete unused files first
+    -- excluir arquivos não utilizados primeiro
     clean(manifest)
 
     local file_list = manifest.files
     local dependencies = manifest.depends
 
-    -- delete all installed files
+    -- excluir todos os arquivos instalados
     lgray()
     for _, dependency in pairs(dependencies) do
         local files = file_list[dependency]
         for _, file in pairs(files) do
-            if fs.exists(file) then fs.delete(file);println("deleted "..file) end
+            if fs.exists(file) then fs.delete(file);println("excluído "..file) end
         end
 
         local folder = files[1]
@@ -195,11 +195,11 @@ elseif mode == "update-rm" or mode == "uninstall" then
 
         if fs.isDir(folder) then
             fs.delete(folder)
-            println("deleted directory "..folder)
+            println("diretório excluído "..folder)
         end
     end
 
-    -- delete log file
+    -- excluir arquivo de log
     local log_deleted = false
     local settings_file = app..".settings"
 
@@ -209,28 +209,28 @@ elseif mode == "update-rm" or mode == "uninstall" then
             log_deleted = true
             if fs.exists(log) then
                 fs.delete(log)
-                println("deleted log file "..log)
+                println("arquivo de log excluído "..log)
             end
         end
     end
 
     if not log_deleted then
-        red();println("Failed to delete log file (it may not exist).");lgray()
+        red();println("Falha ao excluir o arquivo de log (ele pode não existir).");lgray()
     end
 
     if mode == "uninstall" then
         if fs.exists(settings_file) then
-            fs.delete(settings_file);println("deleted "..settings_file)
+            fs.delete(settings_file);println("excluído "..settings_file)
         end
 
         fs.delete("install_manifest.json")
-        println("deleted install_manifest.json")
+        println("excluído install_manifest.json")
 
         fs.delete("ccmsim.lua")
-        println("deleted ccmsim.lua")
+        println("excluído ccmsim.lua")
     end
 
-    green();println("Done!")
+    green();println("Concluído!")
 end
 
 white()

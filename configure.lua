@@ -1,4 +1,4 @@
-print("CONFIGURE> SCANNING FOR CONFIGURATOR...")
+print("CONFIGURAR> PROCURANDO POR CONFIGURADOR...")
 
 for _, app in ipairs({ "reactor-plc", "rtu", "supervisor", "coordinator", "pocket" }) do
     if fs.exists(app .. "/configure.lua") then
@@ -8,5 +8,5 @@ for _, app in ipairs({ "reactor-plc", "rtu", "supervisor", "coordinator", "pocke
     end
 end
 
-print("CONFIGURE> NO CONFIGURATOR FOUND")
-print("CONFIGURE> EXIT")
+print("CONFIGURAR> NENHUM CONFIGURADOR ENCONTRADO")
+print("CONFIGURAR> SAIR")

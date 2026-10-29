@@ -1,5 +1,5 @@
 --
--- Coordinator System Core Peripheral Backplane
+-- Backplane de Periféricos Principais do Sistema Coordenador
 --
 
 local log         = require("scada-common.log")
@@ -44,10 +44,10 @@ local _bp = {
     }
 }
 
--- network interfaces indexed by peripheral names
+-- interfaces de rede indexadas por nomes de periféricos
 backplane.nics = _bp.nic_map
 
--- initialize the display peripheral backplane
+-- inicializa o backplane de periféricos de exibição
 ---@param config crd_config
 ---@return boolean success, string error_msg
 function backplane.init_displays(config)
@@ -57,7 +57,7 @@ function backplane.init_displays(config)
 
     log.info("BKPLN: DISPLAY INIT")
 
-    -- monitor configuration verification
+    -- verificação de configuração dos monitores
 
     local mon_cfv = util.new_validator()
 
@@ -70,12 +70,12 @@ function backplane.init_displays(config)
     end
 
     if not mon_cfv.valid() then
-        return false, "Monitor configuration invalid."
+        return false, "Configuração de monitores inválida."
     end
 
-    -- setup and check display peripherals
+    -- configura e verifica periféricos de exibição
 
-    -- main display
+    -- monitor principal
 
     local disp, iface = ppm.get_periph(config.MainDisplay), config.MainDisplay
 
@@ -88,17 +88,17 @@ function backplane.init_displays(config)
     ioctl.fp_monitor_state("main", util.trinary(disp, 2, 1))
 
     if not disp then
-        return false, "Main monitor is not connected."
+        return false, "O monitor principal não está conectado."
     end
 
     disp.setTextScale(0.5)
     w, _ = ppm.monitor_block_size(disp.getSize())
     if w ~= 8 then
         log.info("BKPLN: DISPLAY MAIN/" .. iface .. " BAD RESOLUTION")
-        return false, util.c("Main monitor width is incorrect (was ", w, ", must be 8).")
+        return false, util.c("A largura do monitor principal está incorreta (era ", w, ", deve ser 8).")
     end
 
-    -- flow display
+    -- monitor de fluxo
 
     disp, iface = ppm.get_periph(config.FlowDisplay), config.FlowDisplay
 
@@ -111,17 +111,17 @@ function backplane.init_displays(config)
     ioctl.fp_monitor_state("flow", util.trinary(disp, 2, 1))
 
     if not disp then
-        return false, "Flow monitor is not connected."
+        return false, "O monitor de fluxo não está conectado."
     end
 
     disp.setTextScale(0.5)
     w, _ = ppm.monitor_block_size(disp.getSize())
     if w ~= 8 then
         log.info("BKPLN: DISPLAY FLOW/" .. iface .. " BAD RESOLUTION")
-        return false, util.c("Flow monitor width is incorrect (was ", w, ", must be 8).")
+        return false, util.c("A largura do monitor de fluxo está incorreta (era ", w, ", deve ser 8).")
     end
 
-    -- unit display(s)
+    -- monitor(es) de unidade
 
     for i = 1, config.UnitCount do
         disp, iface = ppm.get_periph(config.UnitDisplays[i]), config.UnitDisplays[i]
@@ -135,14 +135,14 @@ function backplane.init_displays(config)
         ioctl.fp_monitor_state(i, util.trinary(disp, 2, 1))
 
         if not disp then
-            return false, "Unit " .. i .. " monitor is not connected."
+            return false, "O monitor da Unidade " .. i .. " não está conectado."
         end
 
         disp.setTextScale(0.5)
         w, h = ppm.monitor_block_size(disp.getSize())
         if w ~= 4 or h ~= 4 then
             log.info("BKPLN: DISPLAY UNIT_" .. i .. "/" .. iface .. " BAD RESOLUTION")
-            return false, util.c("Unit ", i, " monitor size is incorrect (was ", w, " by ", h,", must be 4 by 4).")
+            return false, util.c("O tamanho do monitor da Unidade ", i, " está incorreto (era ", w, " por ", h,", deve ser 4 por 4).")
         end
     end
 
@@ -151,7 +151,7 @@ function backplane.init_displays(config)
     return true, ""
 end
 
--- initialize the system peripheral backplane
+-- inicializa o backplane de periféricos do sistema
 ---@param config crd_config
 ---@param __shared_memory crd_shared_memory
 ---@return boolean success
@@ -160,18 +160,18 @@ function backplane.init(config, __shared_memory)
     _bp.wlan_pref = config.PreferWireless
     _bp.lan_iface = config.WiredModem
 
-    -- Modem Init
+    -- Inicialização de Modems
 
-    -- init wired NIC
+    -- inicializa NIC cabeada
     if type(_bp.lan_iface) == "string" then
         local modem  = ppm.get_modem(_bp.lan_iface)
         local wd_nic = network.nic(modem, config.SVR_Channel)
 
         log.info("BKPLN: WIRED PHY_" .. util.trinary(modem, "UP ", "DOWN ") .. _bp.lan_iface)
-        log_comms("wired comms modem " .. util.trinary(modem, "connected", "not found"))
+        log_comms("modem de comunic. cabeado " .. util.trinary(modem, "conectado", "não encontrado"))
 
         _bp.wd_nic  = wd_nic
-        _bp.act_nic = wd_nic -- set this as active for now
+        _bp.act_nic = wd_nic -- define este como ativo por enquanto
         _bp.nic_map[_bp.lan_iface] = wd_nic
 
         wd_nic.closeAll()
@@ -180,15 +180,15 @@ function backplane.init(config, __shared_memory)
         ioctl.fp_has_wd_modem(modem ~= nil)
     end
 
-    -- init wireless NIC(s)
+    -- inicializa NIC(s) sem fio
     if config.WirelessModem then
         local modem, iface = ppm.get_wireless_modem()
         local wl_nic       = network.nic(modem, config.SVR_Channel)
 
         log.info("BKPLN: WIRELESS PHY_" .. util.trinary(modem, "UP ", "DOWN") .. (iface or ""))
-        log_comms("wireless comms modem " .. util.trinary(modem, "connected", "not found"))
+        log_comms("modem de comunic. sem fio " .. util.trinary(modem, "conectado", "não encontrado"))
 
-        -- set this as active if connected or if both modems are disconnected and this is preferred
+        -- define este como ativo se conectado ou se ambos estiverem desconectados e este for o preferencial
         if (modem and _bp.wlan_pref) or not (_bp.act_nic and _bp.act_nic.is_connected()) then
             _bp.act_nic = wl_nic
             log.info("BKPLN: switched active to preferred wireless")
@@ -203,15 +203,15 @@ function backplane.init(config, __shared_memory)
         ioctl.fp_has_wl_modem(modem ~= nil)
     end
 
-    -- at least one comms modem is required
+    -- pelo menos um modem de comunicação é necessário
     if not ((_bp.wd_nic and _bp.wd_nic.is_connected()) or (_bp.wl_nic and _bp.wl_nic.is_connected())) then
-        log_comms("no comms modem found")
-        println("startup> no comms modem found")
+        log_comms("nenhum modem de comunicação encontrado")
+        println("startup> nenhum modem de comunicação encontrado")
         log.warning("BKPLN: no comms modem on startup")
         return false
     end
 
-    -- Speaker Init
+    -- Inicialização do Alto-falante
 
     local speaker = ppm.get_device("speaker")
 
@@ -219,21 +219,21 @@ function backplane.init(config, __shared_memory)
     _bp.speaker = speaker
 
     if not _bp.speaker then
-        log_boot("annunciator alarm speaker not found")
+        log_boot("alto-falante de alarme do anunciador não encontrado")
 
-        println("startup> speaker not found")
+        println("startup> alto-falante não encontrado")
         log.fatal("BKPLN: no annunciator alarm speaker found")
 
         return false
     else
         log.info("BKPLN: SPEAKER LINK_UP " .. ppm.get_iface(_bp.speaker))
-        log_boot("annunciator alarm speaker connected")
+        log_boot("alto-falante de alarme do anunciador conectado")
 
         local sounder_start = util.time_ms()
         sounder.init(_bp.speaker, config.SpeakerVolume)
 
-        log_boot("tone generation took " .. (util.time_ms() - sounder_start) .. "ms")
-        log_sys("annunciator alarm configured")
+        log_boot("geração de tons levou " .. (util.time_ms() - sounder_start) .. "ms")
+        log_sys("alarme do anunciador configurado")
 
         ioctl.fp_has_speaker(true)
     end
@@ -241,26 +241,26 @@ function backplane.init(config, __shared_memory)
     return true
 end
 
--- get the active NIC
+-- obtém a NIC ativa
 function backplane.active_nic() return _bp.act_nic end
 
--- get the standby NIC
+-- obtém a NIC de espera (standby)
 ---@return nic|nil
 function backplane.standby_nic() return util.trinary(_bp.act_nic == _bp.wl_nic, _bp.wd_nic, _bp.wl_nic) end
 
--- get the wireless NIC
+-- obtém a NIC sem fio
 function backplane.wireless_nic() return _bp.wl_nic end
 
--- get the configured displays
+-- obtém os monitores configurados
 function backplane.displays() return _bp.displays end
 
--- periodic backplane peripheral tasks
+-- tarefas periódicas de periféricos do backplane
 function backplane.periodic()
     if _bp.wd_nic then ioctl.fp_has_wd_net(_bp.wd_nic.periodic()) end
     if _bp.wl_nic then ioctl.fp_has_wl_net(_bp.wl_nic.periodic()) end
 end
 
--- handle a backplane peripheral attach
+-- processa a conexão de um periférico ao backplane
 ---@param type string
 ---@param device ppm_generic
 ---@param iface string
@@ -279,49 +279,49 @@ function backplane.attach(type, device, iface)
         log.info(util.c("BKPLN: ", util.trinary(m_is_wl, "WIRELESS", "WIRED"), " PHY_ATTACH ", iface))
 
         if wd_nic and (_bp.lan_iface == iface) then
-            -- connect this as the wired NIC
+            -- conecta este como a NIC cabeada
             wd_nic.connect(device)
             _bp.nic_map[iface] = wd_nic
 
             log.info("BKPLN: WIRED PHY_UP " .. iface)
-            log_sys("wired comms modem reconnected")
+            log_sys("modem de comunic. cabeado reconectado")
 
             ioctl.fp_has_wd_modem(true)
 
             if (_bp.act_nic ~= wd_nic) and not _bp.wlan_pref then
-                -- switch back to preferred wired
+                -- volta para o cabeado preferencial
                 _bp.act_nic = wd_nic
 
                 comms.switch_nic(_bp.act_nic)
                 log.info("BKPLN: switched comms to wired modem (preferred)")
             end
         elseif wl_nic and (not wl_nic.is_connected()) and m_is_wl then
-            -- connect this as the wireless NIC
+            -- conecta este como a NIC sem fio
             wl_nic.connect(device)
             _bp.nic_map[iface] = wl_nic
 
             log.info("BKPLN: WIRELESS PHY_UP " .. iface)
-            log_sys("wireless comms modem reconnected")
+            log_sys("modem de comunic. sem fio reconectado")
 
             ioctl.fp_has_wl_modem(true)
 
             if (_bp.act_nic ~= wl_nic) and _bp.wlan_pref then
-                -- switch back to preferred wireless
+                -- volta para o sem fio preferencial
                 _bp.act_nic = wl_nic
 
                 comms.switch_nic(_bp.act_nic)
                 log.info("BKPLN: switched comms to wireless modem (preferred)")
             end
         elseif wl_nic and m_is_wl then
-            -- the wireless NIC already has a modem
+            -- a NIC sem fio já possui um modem
             device.closeAll()
 
-            log_sys("standby wireless modem connected")
+            log_sys("modem sem fio de espera conectado")
             log.info("BKPLN: standby wireless modem connected")
         else
             device.closeAll()
 
-            log_sys("unassigned modem connected")
+            log_sys("modem não atribuído conectado")
             log.warning("BKPLN: unassigned modem connected")
         end
     elseif type == "monitor" then
@@ -359,12 +359,12 @@ function backplane.attach(type, device, iface)
             end
         end
 
-        -- notify renderer if it is using it
+        -- notifica o renderizador se estiver usando o monitor
         if is_used then
-            log_sys(util.c("configured monitor ", iface, " reconnected"))
+            log_sys(util.c("monitor configurado ", iface, " reconectado"))
             _bp.smem.q.mq_render.push_data(MQ__RENDER_DATA.MON_CONNECT, iface)
         else
-            log_sys(util.c("unused monitor ", iface, " connected"))
+            log_sys(util.c("monitor não utilizado ", iface, " conectado"))
         end
     elseif type == "speaker" then
         ---@cast device Speaker
@@ -373,13 +373,13 @@ function backplane.attach(type, device, iface)
 
         sounder.reconnect(device)
 
-        log_sys("alarm sounder speaker reconnected")
+        log_sys("alto-falante do alarme sonoro reconectado")
 
         ioctl.fp_has_speaker(true)
     end
 end
 
--- handle a backplane peripheral detach
+-- processa a desconexão de um periférico do backplane
 ---@param type string
 ---@param device ppm_generic
 ---@param iface string
@@ -410,18 +410,18 @@ function backplane.detach(type, device, iface)
             ioctl.fp_has_wl_modem(false)
         end
 
-        -- we only care if this is our active comms modem
+        -- só importa se este for nosso modem de comunicação ativo
         if _bp.act_nic.is_modem(device) then
-            log_sys("active comms modem disconnected")
+            log_sys("modem de comunicação ativo desconectado")
             log.warning("BKPLN: active comms modem disconnected")
 
-            -- failover and try to find a new comms modem
+            -- executa failover e tenta encontrar um novo modem de comunicação
             if _bp.act_nic == wl_nic then
-                -- wireless active disconnected
-                -- try to find another wireless modem, otherwise switch to wired
+                -- sem fio ativo desconectado
+                -- tenta encontrar outro modem sem fio, caso contrário alterna para cabeado
                 local modem, m_iface = ppm.get_wireless_modem()
                 if wl_nic and modem then
-                    log_sys("found another wireless modem, using it for comms")
+                    log_sys("outro modem sem fio encontrado, usando-o para comunic.")
                     log.info("BKPLN: found another wireless modem, using it for comms")
 
                     wl_nic.connect(modem)
@@ -436,35 +436,35 @@ function backplane.detach(type, device, iface)
                     comms.switch_nic(_bp.act_nic)
                     log.info("BKPLN: switched comms to wired modem")
                 else
-                    -- close out main UI
+                    -- fecha a UI principal
                     _bp.smem.q.mq_render.push_command(MQ__RENDER_CMD.CLOSE_MAIN_UI)
                     comms.close()
 
-                    -- alert user to status
-                    log_sys("awaiting comms modem reconnect...")
+                    -- alerta o usuário sobre o status
+                    log_sys("aguardando reconexão de modem de comunic....")
                 end
             elseif wl_nic and wl_nic.is_connected() then
-                -- wired active disconnected, wireless available
+                -- cabeado ativo desconectado, sem fio disponível
                 _bp.act_nic = wl_nic
 
                 _bp.smem.q.mq_render.push_command(MQ__RENDER_CMD.CLOSE_MAIN_UI)
                 comms.switch_nic(_bp.act_nic)
                 log.info("BKPLN: switched comms to wireless modem")
             else
-                -- wired active disconnected, wireless unavailable
+                -- cabeado ativo desconectado, sem fio indisponível
                 _bp.smem.q.mq_render.push_command(MQ__RENDER_CMD.CLOSE_MAIN_UI)
                 comms.close()
             end
         elseif wd_nic and wd_nic.is_modem(device) then
-            -- wired, but not active
-            log_sys("standby wired modem disconnected")
+            -- cabeado, mas não ativo
+            log_sys("modem cabeado de espera desconectado")
             log.info("BKPLN: standby wired modem disconnected")
         elseif wl_nic and wl_nic.is_modem(device) then
-            -- wireless, but not active
-            log_sys("standby wireless modem disconnected")
+            -- sem fio, mas não ativo
+            log_sys("modem sem fio de espera desconectado")
             log.info("BKPLN: standby wireless modem disconnected")
         else
-            log_sys("unassigned modem disconnected")
+            log_sys("modem não atribuído desconectado")
             log.warning("BKPLN: unassigned modem disconnected")
         end
     elseif type == "monitor" then
@@ -496,19 +496,19 @@ function backplane.detach(type, device, iface)
             end
         end
 
-        -- notify renderer if it was using it
+        -- notifica o renderizador se estava usando o monitor
         if is_used then
-            log_sys("lost a configured monitor")
+            log_sys("monitor configurado perdido")
             _bp.smem.q.mq_render.push_data(MQ__RENDER_DATA.MON_DISCONNECT, iface)
         else
-            log_sys("lost an unused monitor")
+            log_sys("monitor não utilizado perdido")
         end
     elseif type == "speaker" then
         ---@cast device Speaker
 
         log.info("BKPLN: SPEAKER LINK_DOWN " .. iface)
 
-        log_sys("alarm sounder speaker disconnected")
+        log_sys("alto-falante do alarme sonoro desconectado")
 
         ioctl.fp_has_speaker(false)
     end

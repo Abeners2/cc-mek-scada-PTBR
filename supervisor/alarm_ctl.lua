@@ -5,11 +5,11 @@ local util  = require("scada-common.util")
 local ALARM_STATE = types.ALARM_STATE
 
 ---@class alarm_def
----@field state ALARM_INT_STATE internal alarm state
----@field trip_time integer time (ms) when first tripped
----@field hold_time integer time (s) to hold before tripping
----@field id ALARM alarm ID
----@field tier integer alarm urgency tier (0 = highest)
+---@field state ALARM_INT_STATE estado interno do alarme
+---@field trip_time integer tempo (ms) quando disparado pela primeira vez
+---@field hold_time integer tempo (s) para reter antes de disparar
+---@field id ALARM ID do alarme
+---@field tier integer nível de urgência do alarme (0 = mais alto)
 
 local AISTATE_NAMES = {
     "INACTIVE",
@@ -35,18 +35,18 @@ local alarm_ctl = {}
 alarm_ctl.AISTATE = AISTATE
 alarm_ctl.AISTATE_NAMES = AISTATE_NAMES
 
--- update an alarm state based on its current status and if it is tripped
----@param caller_tag string tag to use in log messages
----@param alarm_states { [ALARM]: ALARM_STATE } unit instance
----@param tripped boolean if the alarm condition is sti ll active
----@param alarm alarm_def alarm table
----@param no_ring_back boolean? true to skip the ring back state, returning to inactive instead
----@return boolean new_trip if the alarm just changed to being tripped
+-- atualizar o estado de um alarme com base no seu status atual e se está disparado
+---@param caller_tag string tag para usar em mensagens de log
+---@param alarm_states { [ALARM]: ALARM_STATE } instância da unidade
+---@param tripped boolean se a condição de alarme ainda está ativa
+---@param alarm alarm_def tabela de alarme
+---@param no_ring_back boolean? true para pular o estado ring back, retornando para inativo em vez disso
+---@return boolean new_trip se o alarme acabou de mudar para disparado
 function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, no_ring_back)
     local int_state = alarm.state
     local ext_state = alarm_states[alarm.id]
 
-    -- alarm inactive
+    -- alarme inativo
     if int_state == AISTATE.INACTIVE then
         if tripped then
             alarm.trip_time = util.time_ms()
@@ -63,7 +63,7 @@ function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, 
             alarm.trip_time = util.time_ms()
             alarm_states[alarm.id] = ALARM_STATE.INACTIVE
         end
-    -- alarm condition met, but not yet for required hold time
+    -- condição de alarme atendida, mas ainda não pelo tempo de retenção necessário
     elseif (int_state == AISTATE.TRIPPING) or (int_state == AISTATE.RING_BACK_TRIPPING) then
         if tripped then
             local elapsed = util.time_ms() - alarm.trip_time
@@ -82,11 +82,11 @@ function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, 
             alarm.state = AISTATE.INACTIVE
             alarm_states[alarm.id] = ALARM_STATE.INACTIVE
         end
-    -- alarm tripped and alarming
+    -- alarme disparado e soando
     elseif int_state == AISTATE.TRIPPED then
         if tripped then
             if ext_state == ALARM_STATE.ACKED then
-                -- was acked by coordinator
+                -- foi reconhecido pelo coordenador
                 alarm.state = AISTATE.ACKED
             end
         elseif no_ring_back then
@@ -96,7 +96,7 @@ function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, 
             alarm.state = AISTATE.RING_BACK
             alarm_states[alarm.id] = ALARM_STATE.RING_BACK
         end
-    -- alarm acknowledged but still tripped
+    -- alarme reconhecido mas ainda disparado
     elseif int_state == AISTATE.ACKED then
         if not tripped then
             if no_ring_back then
@@ -107,7 +107,7 @@ function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, 
                 alarm_states[alarm.id] = ALARM_STATE.RING_BACK
             end
         end
-    -- alarm no longer tripped, operator must reset to clear
+    -- alarme não mais disparado, operador deve redefinir para limpar
     elseif int_state == AISTATE.RING_BACK then
         if tripped then
             alarm.trip_time = util.time_ms()
@@ -118,15 +118,15 @@ function alarm_ctl.update_alarm_state(caller_tag, alarm_states, tripped, alarm, 
                 alarm_states[alarm.id] = ALARM_STATE.TRIPPED
             end
         elseif ext_state == ALARM_STATE.INACTIVE then
-            -- was reset by coordinator
+            -- foi redefinido pelo coordenador
             alarm.state = AISTATE.INACTIVE
             alarm.trip_time = 0
         end
     else
-        log.error(util.c(caller_tag, " invalid alarm state for alarm ", alarm.id), true)
+        log.error(util.c(caller_tag, " estado de alarme inválido para o alarme ", alarm.id), true)
     end
 
-    -- check for state change
+    -- verificar mudança de estado
     if alarm.state ~= int_state then
         local change_str = util.c(AISTATE_NAMES[int_state], " -> ", AISTATE_NAMES[alarm.state])
         log.debug(util.c(caller_tag, " ALARM ", alarm.id, " (", types.ALARM_NAMES[alarm.id], "): ", change_str))

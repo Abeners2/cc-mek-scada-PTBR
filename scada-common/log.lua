@@ -1,10 +1,10 @@
 --
--- File System Logger
+-- Registrador do Sistema de Arquivos (Logger)
 --
 
 local util = require("scada-common.util")
 
--- constant strings for speed
+-- strings constantes para velocidade
 local DBG_TAG, INF_TAG, WRN_TAG, ERR_TAG, FTL_TAG = "[DBG] ", "[INF] ", "[WRN] ", "[ERR] ", "[FTL] "
 local COLON, FUNC, ARROW = ":", "():", " > "
 
@@ -40,14 +40,14 @@ local free_space = fs.getFreeSpace
 -- PRIVATE FUNCTIONS --
 -----------------------
 
--- check if the provided error indicates out of space or if insufficient space available
+-- verifica se o erro fornecido indica falta de espaço ou se o espaço disponível é insuficiente
 ---@param err_msg string|nil error message
 ---@return boolean out_of_space
 local function check_out_of_space(err_msg)
     return (free_space(_log.path) < MIN_SPACE) or ((err_msg ~= nil) and (string.find(err_msg, OUT_OF_SPACE) ~= nil))
 end
 
--- private log write function
+-- função privada de escrita no log
 ---@param msg_bits any[]
 local function write_log(msg_bits)
     if _log.not_ready then return end
@@ -55,27 +55,27 @@ local function write_log(msg_bits)
     local time_stamp = os.date(TIME_FMT)
     local stamped    = util.c(time_stamp, table.unpack(msg_bits))
 
-    -- attempt to write log
+    -- tenta escrever no log
     local status, result = pcall(function ()
         _log.file.writeLine(stamped)
         _log.file.flush()
     end)
 
-    -- if we don't have space, we need to create a new log file
+    -- se não tivermos espaço, precisamos criar um novo arquivo de log
     if check_out_of_space() then
-        -- delete the old log file before opening a new one
+        -- exclui o arquivo de log antigo antes de abrir um novo
         _log.file.close()
         fs.delete(_log.path)
 
-        -- re-init logger and pass dmesg_out so that it doesn't change
+        -- reinicializa o logger e passa dmesg_out para que não mude
         log.init(_log.path, _log.mode, _log.debug, _log.dmesg_out)
 
-        -- log the message and recycle warning
-        _log.file.writeLine(time_stamp .. WRN_TAG .. "recycled log file")
+        -- registra a mensagem e o aviso de reciclagem
+        _log.file.writeLine(time_stamp .. WRN_TAG .. "arquivo de log reciclado")
         _log.file.writeLine(stamped)
         _log.file.flush()
     elseif (not status) and (result ~= nil) then
-        util.println("unexpected error writing to the log file: " .. result)
+        util.println("erro inesperado ao escrever no arquivo de log: " .. result)
     end
 end
 
@@ -83,7 +83,7 @@ end
 -- PUBLIC FUNCTIONS --
 ----------------------
 
--- initialize logger
+-- inicializa o logger
 ---@param path string file path
 ---@param write_mode LOG_MODE file write mode
 ---@param include_debug boolean whether or not to include debug logs
@@ -102,10 +102,10 @@ function log.init(path, write_mode, include_debug, dmesg_redirect)
         _log.dmesg_out = term.current()
     end
 
-    -- check for space issues
+    -- verifica problemas de espaço
     local out_of_space = check_out_of_space(err_msg)
 
-    -- try to handle problems
+    -- tenta lidar com problemas
     if _log.file == nil or out_of_space then
         if out_of_space then
             if fs.exists(_log.path) then
@@ -114,24 +114,24 @@ function log.init(path, write_mode, include_debug, dmesg_redirect)
                 _log.file, err_msg = fs.open(path, util.trinary(_log.mode == MODE.APPEND, "a", "w"))
 
                 if _log.file then
-                    _log.file.writeLine(os.date(TIME_FMT) .. WRN_TAG .. "init recycled log file")
+                    _log.file.writeLine(os.date(TIME_FMT) .. WRN_TAG .. "arquivo de log reciclado na inicializacao")
                     _log.file.flush()
-                else error("failed to setup the log file: " .. err_msg) end
-            else error("failed to make space for the log file, please delete unused files") end
-        else error("unexpected error setting up the log file: " .. err_msg) end
+                else error("falha ao configurar o arquivo de log: " .. err_msg) end
+            else error("falha ao liberar espaco para o arquivo de log, exclua arquivos nao utilizados") end
+        else error("erro inesperado ao configurar o arquivo de log: " .. err_msg) end
     end
 
     _log.not_ready = false
 end
 
--- close the log file handle
+-- fecha o identificador do arquivo de log
 function log.close() _log.file.close() end
 
--- direct dmesg output to a monitor/window
+-- direciona a saída dmesg para um monitor/janela
 ---@param window Window window or terminal reference
 function log.direct_dmesg(window) _log.dmesg_out = window end
 
--- dmesg style logging for boot because I like linux-y things
+-- registro estilo dmesg para inicialização porque gosto de coisas estilo linux
 ---@param msg any message
 ---@param tag? string log tag
 ---@param tag_color? integer log tag color
@@ -151,7 +151,7 @@ function log.dmesg(msg, tag, tag_color)
 
         local lines = { msg }
 
-        -- wrap if needed
+        -- quebra a linha se necessário
         if string.len(msg) > out_w then
             local remaining = true
             local s_start = 1
@@ -175,7 +175,7 @@ function log.dmesg(msg, tag, tag_color)
             end
         end
 
-        -- start output with tag and time, assuming we have enough width for this to be on one line
+        -- inicia a saída com tag e tempo, assumindo que temos largura suficiente para ficar em uma linha
         local cur_x, cur_y = out.getCursorPos()
 
         if cur_x > 1 then
@@ -188,7 +188,7 @@ function log.dmesg(msg, tag, tag_color)
             end
         end
 
-        -- colored time
+        -- tempo colorido
         local initial_color = out.getTextColor()
         out.setTextColor(colors.white)
         out.write("[")
@@ -199,7 +199,7 @@ function log.dmesg(msg, tag, tag_color)
         out.setTextColor(colors.white)
         out.write("] ")
 
-        -- print optionally colored tag
+        -- imprime tag opcionalmente colorida
         if tag ~= "" then
             out.write("[")
             if tag_color then out.setTextColor(tag_color) end
@@ -210,7 +210,7 @@ function log.dmesg(msg, tag, tag_color)
 
         out.setTextColor(initial_color)
 
-        -- output message
+        -- exibe a mensagem
         for i = 1, #lines do
             cur_x, cur_y = out.getCursorPos()
 
@@ -235,7 +235,7 @@ function log.dmesg(msg, tag, tag_color)
     return ts_coord
 end
 
--- print a dmesg message, but then show remaining seconds instead of timestamp
+-- imprime uma mensagem dmesg, mas mostra os segundos restantes em vez do timestamp
 ---@nodiscard
 ---@param msg string message
 ---@param tag? string log tag
@@ -293,10 +293,10 @@ function log.dmesg_working(msg, tag, tag_color)
 
             if ok or ok == nil then
                 out.setTextColor(colors.green)
-                out.write(util.pad("DONE", width))
+                out.write(util.pad("OK", width))
             else
                 out.setTextColor(colors.red)
-                out.write(util.pad("FAIL", width))
+                out.write(util.pad("FALHA", width))
             end
 
             out.setTextColor(initial_color)
@@ -310,7 +310,7 @@ function log.dmesg_working(msg, tag, tag_color)
     end
 end
 
--- log debug messages
+-- registra mensagens de depuração (debug)
 ---@param msg any message
 ---@param trace? boolean include file trace
 function log.debug(msg, trace)
@@ -329,15 +329,15 @@ function log.debug(msg, trace)
     end
 end
 
--- log info messages
+-- registra mensagens informativas (info)
 ---@param msg any message
 function log.info(msg) write_log{INF_TAG, msg} end
 
--- log warning messages
+-- registra mensagens de aviso (warning)
 ---@param msg any message
 function log.warning(msg) write_log{WRN_TAG, msg} end
 
--- log error messages
+-- registra mensagens de erro (error)
 ---@param msg any message
 ---@param trace? boolean include file trace
 function log.error(msg, trace)
@@ -354,7 +354,7 @@ function log.error(msg, trace)
     end
 end
 
--- log fatal errors
+-- registra erros fatais (fatal)
 ---@param msg any message
 function log.fatal(msg) write_log{FTL_TAG, msg} end
 

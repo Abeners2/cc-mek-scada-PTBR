@@ -1,5 +1,5 @@
 --
--- Process Control Management
+-- Gerenciamento de Controle de Processo
 --
 
 local comms = require("scada-common.comms")
@@ -51,10 +51,10 @@ local pctl = {
 ---@field timeout integer expiration time of this command request
 ---@field requestors function[] list of callbacks from the requestors
 
--- write auto process control to config file
+-- grava o controle de processo automático no arquivo de configuração
 ---@return boolean saved
 local function _write_auto_config()
-    -- save config
+    -- salva a configuração
     settings.set("ControlStates", pctl.control_states)
     local saved = settings.save("/coordinator.settings")
     if not saved then
@@ -66,14 +66,14 @@ end
 
 --#region Core
 
--- initialize the process controller
+-- inicializa o controlador de processo
 ---@param crd_io crd_io iocontrol system
 ---@param coord_comms coord_comms coordinator communications
 function process.init(crd_io, coord_comms)
     pctl.io = crd_io
     pctl.comms = coord_comms
 
-    -- create command handling objects
+    -- cria objetos de gerenciamento de comandos
     for _, v in pairs(F_CMD) do pctl.commands.fac[v]  = { active = false, timeout = 0, requestors = {} } end
     for i = 1, pctl.io.facility.num_units do
         pctl.commands.unit[i] = {}
@@ -90,16 +90,16 @@ function process.init(crd_io, coord_comms)
     local config = ctrl_states.process
     local f_ps = crd_io.facility.ps
 
-    -- facility auto control configuration
+    -- configuração de controle automático da instalação
     if type(config) == "table" then
-        -- update each field if present in the config
+        -- atualiza cada campo se estiver presente na configuração
         for key, _ in pairs(ctl_proc) do
             ctl_proc[key] = config[key] or ctl_proc[key]
         end
 
         log.info("PROCESS: loaded auto control settings")
 
-        -- notify supervisor of auto waste config
+        -- notifica o supervisor sobre a configuração automática de rejeitos
         pctl.comms.send_fac_command(F_CMD.SET_WASTE_MODE, ctl_proc.waste_product)
         pctl.comms.send_fac_command(F_CMD.SET_PU_FB, ctl_proc.pu_fallback)
         pctl.comms.send_fac_command(F_CMD.SET_SPS_LP, ctl_proc.sps_low_power)
@@ -121,7 +121,7 @@ function process.init(crd_io, coord_comms)
         unit.unit_ps.publish("burn_limit", ctl_proc.limits[id])
     end
 
-    -- unit waste states
+    -- estados de rejeito das unidades
     local waste_modes = ctrl_states.waste_modes
     if type(waste_modes) == "table" then
         for id, mode in pairs(waste_modes) do
@@ -132,7 +132,7 @@ function process.init(crd_io, coord_comms)
         log.info("PROCESS: loaded unit waste mode settings")
     end
 
-    -- unit priority groups
+    -- grupos de prioridade das unidades
     local prio_groups = ctrl_states.priority_groups
     if type(prio_groups) == "table" then
         for id, group in pairs(prio_groups) do
@@ -143,19 +143,19 @@ function process.init(crd_io, coord_comms)
         log.info("PROCESS: loaded priority groups settings")
     end
 
-    -- report to the supervisor all initial configuration data has been sent
-    -- startup resume can occur if needed
+    -- informa ao supervisor que todos os dados de configuração inicial foram enviados
+    -- a retomada de inicialização pode ocorrer se necessário
     local p    = ctl_proc
     local mode = util.trinary(p.alt_mode and p.mode == PROCESS.CHARGE, PROCESS.RANGE_CONTROL, p.mode)
     pctl.comms.send_ready({ mode, p.burn_target, p.range_start, p.range_stop, p.charge_target, p.gen_target, p.limits })
 end
 
--- create a handle to process control for usage of commands that get acknowledgements
+-- cria um manipulador para o controle de processo para uso de comandos que recebem confirmações
 function process.create_handle()
     ---@class process_handle
     local handle = {}
 
-    -- add this handle to the requestors and activate the command if inactive
+    -- adiciona este manipulador aos solicitantes e ativa o comando se estiver inativo
     ---@param cmd process_command_state
     ---@param ack function
     local function request(cmd, ack)
@@ -176,7 +176,7 @@ function process.create_handle()
 
     --#region Facility Commands
 
-    -- facility SCRAM command
+    -- comando SCRAM da instalação
     function handle.fac_scram()
         if f_request(F_CMD.SCRAM_ALL, handle.fac_ack.on_scram) then
             pctl.comms.send_fac_command(F_CMD.SCRAM_ALL)
@@ -184,7 +184,7 @@ function process.create_handle()
         end
     end
 
-    -- facility alarm acknowledge command
+    -- comando de reconhecimento de alarmes da instalação
     function handle.fac_ack_alarms()
         if f_request(F_CMD.ACK_ALL_ALARMS, handle.fac_ack.on_ack_alarms) then
             pctl.comms.send_fac_command(F_CMD.ACK_ALL_ALARMS)
@@ -192,7 +192,7 @@ function process.create_handle()
         end
     end
 
-    -- start automatic process control with current settings
+    -- inicia o controle de processo automático com as configurações atuais
     function handle.process_start()
         if f_request(F_CMD.START, handle.fac_ack.on_start) then
             local p    = pctl.control_states.process
@@ -203,7 +203,7 @@ function process.create_handle()
         end
     end
 
-    -- start automatic process control with remote settings that haven't been set on the coordinator
+    -- inicia o controle de processo automático com configurações remotas que ainda não foram definidas no coordenador
     ---@param settings auto_ctl_cfg auto control settings
     function handle.process_start_remote(settings)
         if f_request(F_CMD.START, handle.fac_ack.on_start) then
@@ -212,7 +212,7 @@ function process.create_handle()
         end
     end
 
-    -- stop process control
+    -- para o controle de processo
     function handle.process_stop()
         if f_request(F_CMD.STOP, handle.fac_ack.on_stop) then
             pctl.comms.send_fac_command(F_CMD.STOP)
@@ -224,22 +224,22 @@ function process.create_handle()
 
     -- luacheck: no unused args
 
-    -- facility SCRAM ack, override to implement
+    -- confirmação de SCRAM da instalação, sobrescreva para implementar
     ---@param success boolean
     ---@diagnostic disable-next-line: unused-local
     function handle.fac_ack.on_scram(success) end
 
-    -- facility acknowledge all alarms ack, override to implement
+    -- confirmação de reconhecer todos os alarmes da instalação, sobrescreva para implementar
     ---@param success boolean
     ---@diagnostic disable-next-line: unused-local
     function handle.fac_ack.on_ack_alarms(success) end
 
-    -- facility auto control start ack, override to implement
+    -- confirmação de início de controle automático da instalação, sobrescreva para implementar
     ---@param success boolean
     ---@diagnostic disable-next-line: unused-local
     function handle.fac_ack.on_start(success) end
 
-    -- facility auto control stop ack, override to implement
+    -- confirmação de parada de controle automático da instalação, sobrescreva para implementar
     ---@param success boolean
     ---@diagnostic disable-next-line: unused-local
     function handle.fac_ack.on_stop(success) end
@@ -250,7 +250,7 @@ function process.create_handle()
 
     --#region Unit Commands
 
-    -- start a reactor
+    -- inicia um reator
     ---@param id integer unit ID
     function handle.start(id)
         if u_request(id, U_CMD.START, handle.unit_ack[id].on_start) then
@@ -260,7 +260,7 @@ function process.create_handle()
         end
     end
 
-    -- SCRAM reactor
+    -- executa SCRAM no reator
     ---@param id integer unit ID
     function handle.scram(id)
         if u_request(id, U_CMD.SCRAM, handle.unit_ack[id].on_scram) then
@@ -270,7 +270,7 @@ function process.create_handle()
         end
     end
 
-    -- reset reactor protection system
+    -- redefine o sistema de proteção do reator (RPS)
     ---@param id integer unit ID
     function handle.reset_rps(id)
         if u_request(id, U_CMD.RESET_RPS, handle.unit_ack[id].on_rps_reset) then
@@ -279,7 +279,7 @@ function process.create_handle()
         end
     end
 
-    -- acknowledge all alarms
+    -- reconhece todos os alarmes
     ---@param id integer unit ID
     function handle.ack_all_alarms(id)
         if u_request(id, U_CMD.ACK_ALL_ALARMS, handle.unit_ack[id].on_ack_alarms) then
@@ -288,7 +288,7 @@ function process.create_handle()
         end
     end
 
-    -- unit command acknowledgement callbacks, indexed by unit ID
+    -- callbacks de confirmação de comandos de unidade, indexados por ID de unidade
     ---@type process_unit_ack[]
     handle.unit_ack = {}
 
@@ -301,22 +301,22 @@ function process.create_handle()
 
         -- luacheck: no unused args
 
-        -- unit start ack, override to implement
+        -- confirmação de início da unidade, sobrescreva para implementar
         ---@param success boolean
         ---@diagnostic disable-next-line: unused-local
         function u_ack.on_start(success) end
 
-        -- unit SCRAM ack, override to implement
+        -- confirmação de SCRAM da unidade, sobrescreva para implementar
         ---@param success boolean
         ---@diagnostic disable-next-line: unused-local
         function u_ack.on_scram(success) end
 
-        -- unit RPS reset ack, override to implement
+        -- confirmação de redefinição do RPS da unidade, sobrescreva para implementar
         ---@param success boolean
         ---@diagnostic disable-next-line: unused-local
         function u_ack.on_rps_reset(success) end
 
-        -- unit acknowledge all alarms ack, override to implement
+        -- confirmação de reconhecer todos os alarmes da unidade, sobrescreva para implementar
         ---@param success boolean
         ---@diagnostic disable-next-line: unused-local
         function u_ack.on_ack_alarms(success) end
@@ -329,13 +329,13 @@ function process.create_handle()
     return handle
 end
 
--- clear outstanding process commands that have timed out
+-- limpa comandos de processo pendentes cujo tempo limite expirou
 function process.clear_timed_out()
     local now = util.time_ms()
     local objs = { pctl.commands.fac, table.unpack(pctl.commands.unit) }
 
     for _, obj in pairs(objs) do
-        -- cancel expired requests
+        -- cancela solicitações expiradas
         for _, cmd in pairs(obj) do
             if cmd.active and now > cmd.timeout then
                 cmd.active = false
@@ -345,7 +345,7 @@ function process.clear_timed_out()
     end
 end
 
--- get the control states table
+-- obtém a tabela de estados de controle
 ---@nodiscard
 function process.get_control_states() return pctl.control_states end
 
@@ -353,14 +353,14 @@ function process.get_control_states() return pctl.control_states end
 
 --#region Command Handling
 
--- handle a command acknowledgement
+-- processa a confirmação de um comando
 ---@param cmd_state process_command_state
 ---@param success boolean if the command was successful
 local function cmd_ack(cmd_state, success)
     if cmd_state.active then
         cmd_state.active = false
 
-        -- call all acknowledge callback functions
+        -- chama todas as funções de callback de confirmação
         for i = 1, #cmd_state.requestors do
             cmd_state.requestors[i](success)
         end
@@ -369,14 +369,14 @@ local function cmd_ack(cmd_state, success)
     end
 end
 
--- handle a facility command acknowledgement
+-- processa a confirmação de um comando da instalação
 ---@param command FAC_COMMAND command
 ---@param success boolean if the command was successful
 function process.fac_ack(command, success)
     cmd_ack(pctl.commands.fac[command], success)
 end
 
--- handle a unit command acknowledgement
+-- processa a confirmação de um comando de unidade
 ---@param unit integer unit ID
 ---@param command UNIT_COMMAND command
 ---@param success boolean if the command was successful
@@ -386,7 +386,7 @@ end
 
 --#region One-Way Commands (no acknowledgements)
 
--- set burn rate
+-- define a taxa de queima
 ---@param id integer unit ID
 ---@param rate number burn rate
 function process.set_rate(id, rate)
@@ -394,7 +394,7 @@ function process.set_rate(id, rate)
     log.debug(util.c("PROCESS: UNIT[", id, "] SET BURN ", rate))
 end
 
--- assign a unit to a group
+-- atribui uma unidade a um grupo
 ---@param unit_id integer unit ID
 ---@param group_id integer|0 group ID or 0 for independent
 function process.set_group(unit_id, group_id)
@@ -409,11 +409,11 @@ function process.set_group(unit_id, group_id)
     end
 end
 
--- set waste mode
+-- define o modo de rejeito
 ---@param id integer unit ID
 ---@param mode integer waste mode
 function process.set_unit_waste(id, mode)
-    -- publish so that if it fails then it gets reset
+    -- publica para que, se falhar, seja redefinido
     pctl.io.units[id].unit_ps.publish("U_WasteMode", mode)
 
     pctl.comms.send_unit_command(U_CMD.SET_WASTE, id, mode)
@@ -427,7 +427,7 @@ function process.set_unit_waste(id, mode)
     end
 end
 
--- acknowledge an alarm
+-- reconhece um alarme
 ---@param id integer unit ID
 ---@param alarm integer alarm ID
 function process.ack_alarm(id, alarm)
@@ -435,7 +435,7 @@ function process.ack_alarm(id, alarm)
     log.debug(util.c("PROCESS: UNIT[", id, "] ACK ALARM ", alarm))
 end
 
--- reset an alarm
+-- redefine um alarme
 ---@param id integer unit ID
 ---@param alarm integer alarm ID
 function process.reset_alarm(id, alarm)
@@ -446,31 +446,31 @@ end
 --#endregion
 
 --------------------------
--- AUTO PROCESS CONTROL --
+-- CONTROLE AUTOMÁTICO  --
 --------------------------
 
--- set automatic process control waste mode
+-- define o modo de rejeito do controle de processo automático
 ---@param product WASTE_PRODUCT waste product for auto control
 function process.set_process_waste(product)
     pctl.comms.send_fac_command(F_CMD.SET_WASTE_MODE, product)
     log.debug(util.c("PROCESS: SET WASTE ", product))
 end
 
--- set automatic process control plutonium fallback
+-- define o fallback de plutônio do controle de processo automático
 ---@param enabled boolean whether to enable plutonium fallback
 function process.set_pu_fallback(enabled)
     pctl.comms.send_fac_command(F_CMD.SET_PU_FB, enabled)
     log.debug(util.c("PROCESS: SET PU FALLBACK ", enabled))
 end
 
--- set automatic process control SPS usage at low power
+-- define o uso do SPS em baixa energia no controle de processo automático
 ---@param enabled boolean whether to enable SPS usage at low power
 function process.set_sps_low_power(enabled)
     pctl.comms.send_fac_command(F_CMD.SET_SPS_LP, enabled)
     log.debug(util.c("PROCESS: SET SPS LOW POWER ", enabled))
 end
 
--- save process control settings
+-- salva as configurações do controle de processo
 ---@param mode PROCESS process control mode
 ---@param alt_mode boolean true if using range control instead of charge control
 ---@param burn_target number burn rate target
@@ -482,7 +482,7 @@ end
 function process.save(mode, alt_mode, burn_target, range_start, range_stop, charge_target, gen_target, limits)
     log.debug("PROCESS: SAVE")
 
-    -- update config table
+    -- atualiza a tabela de configuração
     local p = pctl.control_states.process
     p.mode = mode
     p.alt_mode = alt_mode
@@ -493,11 +493,11 @@ function process.save(mode, alt_mode, burn_target, range_start, range_stop, char
     p.gen_target = gen_target
     p.limits = limits
 
-    -- save config
+    -- salva a configuração
     pctl.io.facility.save_cfg_ack(_write_auto_config())
 end
 
--- handle a start command acknowledgement
+-- processa uma confirmação de comando de início
 ---@param response auto_start_ack ack and configuration reply
 function process.start_ack_handle(response)
     local ack = response[1]
@@ -537,30 +537,30 @@ function process.start_ack_handle(response)
     process.fac_ack(F_CMD.START, ack)
 end
 
--- record waste product settting after attempting to change it
+-- registra a configuração de produto de rejeito após tentar alterá-la
 ---@param response WASTE_PRODUCT supervisor waste product settting
 function process.waste_ack_handle(response)
-    -- update config table and save
+    -- atualiza a tabela de configuração e salva
     pctl.control_states.process.waste_product = response
     _write_auto_config()
 
     pctl.io.facility.ps.publish("process_waste_product", response)
 end
 
--- record plutonium fallback settting after attempting to change it
+-- registra a configuração de fallback de plutônio após tentar alterá-la
 ---@param response boolean supervisor plutonium fallback settting
 function process.pu_fb_ack_handle(response)
-    -- update config table and save
+    -- atualiza a tabela de configuração e salva
     pctl.control_states.process.pu_fallback = response
     _write_auto_config()
 
     pctl.io.facility.ps.publish("process_pu_fallback", response)
 end
 
--- record SPS low power settting after attempting to change it
+-- registra a configuração de baixa energia do SPS após tentar alterá-la
 ---@param response boolean supervisor SPS low power settting
 function process.sps_lp_ack_handle(response)
-    -- update config table and save
+    -- atualiza a tabela de configuração e salva
     pctl.control_states.process.sps_low_power = response
     _write_auto_config()
 

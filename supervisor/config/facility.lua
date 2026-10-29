@@ -29,9 +29,9 @@ local self = {
 
 local facility = {}
 
--- generate the tank list and tank connections tables
----@param mode integer facility tank mode
----@param defs integer[] facility tank definitions
+-- gerar as tabelas de lista de tanques e conexões de tanques
+---@param mode integer modo de tanque da instalação
+---@param defs integer[] definições de tanques da instalação
 ---@return integer[] tank_list, integer[] tank_conns
 function facility.generate_tank_list_and_conns(mode, defs)
     local tank_mode = mode
@@ -49,13 +49,13 @@ function facility.generate_tank_list_and_conns(mode, defs)
         return first
     end
 
-    -- set units using their own tanks as connected to their respective unit tank
+    -- definir unidades usando seus próprios tanques como conectadas ao seu respectivo tanque de unidade
     for i = 1, #tank_defs do
         if tank_defs[i] == 1 then tank_conns[i] = i end
     end
 
     if tank_mode == 1 then
-        -- (1) 1 total facility tank (A A A A)
+        -- (1) 1 tanque da instalação no total (A A A A)
         local first_fdef = calc_fdef(1, #tank_defs)
         for i = 1, #tank_defs do
             if (i >= first_fdef) and (tank_defs[i] == 2) then
@@ -65,7 +65,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 2 then
-        -- (2) 2 total facility tanks (A A A B)
+        -- (2) 2 tanques da instalação no total (A A A B)
         local first_fdef = calc_fdef(1, math.min(3, #tank_defs))
         for i = 1, #tank_defs do
             if (i >= first_fdef) and (tank_defs[i] == 2) then
@@ -79,7 +79,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 3 then
-        -- (3) 2 total facility tanks (A A B B)
+        -- (3) 2 tanques da instalação no total (A A B B)
         for _, a in pairs({ 1, 3 }) do
             local b = a + 1
 
@@ -95,7 +95,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 4 then
-        -- (4) 2 total facility tanks (A B B B)
+        -- (4) 2 tanques da instalação no total (A B B B)
         local first_fdef = calc_fdef(2, #tank_defs)
         for i = 1, #tank_defs do
             if tank_defs[i] == 2 then
@@ -109,7 +109,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 5 then
-        -- (5) 3 total facility tanks (A A B C)
+        -- (5) 3 tanques da instalação no total (A A B C)
         local first_fdef = calc_fdef(1, math.min(2, #tank_defs))
         for i = 1, #tank_defs do
             if (i >= first_fdef) and (tank_defs[i] == 2) then
@@ -123,7 +123,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 6 then
-        -- (6) 3 total facility tanks (A B B C)
+        -- (6) 3 tanques da instalação no total (A B B C)
         local first_fdef = calc_fdef(2, math.min(3, #tank_defs))
         for i = 1, #tank_defs do
             if tank_defs[i] == 2 then
@@ -137,7 +137,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 7 then
-        -- (7) 3 total facility tanks (A B C C)
+        -- (7) 3 tanques da instalação no total (A B C C)
         local first_fdef = calc_fdef(3, #tank_defs)
         for i = 1, #tank_defs do
             if tank_defs[i] == 2 then
@@ -151,7 +151,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
             end
         end
     elseif tank_mode == 8 then
-        -- (8) 4 total facility tanks (A B C D)
+        -- (8) 4 tanques da instalação no total (A B C D)
         for i = 1, #tank_defs do
             if tank_defs[i] == 2 then tank_conns[i] = i end
         end
@@ -160,7 +160,7 @@ function facility.generate_tank_list_and_conns(mode, defs)
     return tank_list, tank_conns
 end
 
--- create the facility configuration view
+-- criar a visualização de configuração da instalação
 ---@param tool_ctl _svr_cfg_tool_ctl
 ---@param main_pane MultiPane
 ---@param cfg_sys [ svr_config, svr_config, svr_config, table, function ]
@@ -175,7 +175,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
     local nav_fg_bg     = style.nav_fg_bg
     local btn_act_fg_bg = style.btn_act_fg_bg
 
-    --#region Facility
+    --#region Instalação
 
     local fac_c_1 = Div{parent=fac_cfg,x=2,y=4,width=49}
     local fac_c_2 = Div{parent=fac_cfg,x=2,y=4,width=49}
@@ -192,16 +192,16 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
 
     local fac_pane = MultiPane{parent=fac_cfg,y=4,panes={fac_c_1,fac_c_2,fac_c_3,fac_c_4,fac_c_5,fac_c_6,fac_c_7,fac_c_8,fac_c_9,fac_c_10,fac_c_11,fac_c_12}}
 
-    TextBox{parent=fac_cfg,y=2,text=" Facility Configuration",fg_bg=cpair(colors.black,colors.yellow)}
+    TextBox{parent=fac_cfg,y=2,text=" Configuração da Instalação",fg_bg=cpair(colors.black,colors.yellow)}
 
-    --#region Unit Count
+    --#region Contagem de Unidades
 
-    TextBox{parent=fac_c_1,y=1,height=3,text="Please enter the number of reactors you have, also referred to as reactor units or 'units' for short. A maximum of 4 is currently supported."}
+    TextBox{parent=fac_c_1,y=1,height=3,text="Digite o número de reatores que você tem, também chamados de unidades de reator ou 'unidades'. Atualmente, o máximo suportado é 4."}
     tool_ctl.num_units = NumberField{parent=fac_c_1,y=5,width=5,max_chars=2,default=ini_cfg.UnitCount,min=1,max=4,fg_bg=bw_fg_bg}
-    TextBox{parent=fac_c_1,x=7,y=5,text="reactors"}
-    TextBox{parent=fac_c_1,y=7,height=3,text="If you already configured your Coordinator, make sure you update the Coordinator's configured unit count.",fg_bg=cpair(colors.yellow,colors._INHERIT)}
+    TextBox{parent=fac_c_1,x=7,y=5,text="reatores"}
+    TextBox{parent=fac_c_1,y=7,height=3,text="Se você já configurou seu Coordenador, certifique-se de atualizar a contagem de unidades configurada no Coordenador.",fg_bg=cpair(colors.yellow,colors._INHERIT)}
 
-    local nu_error = TextBox{parent=fac_c_1,x=8,y=14,width=35,text="Please set the number of reactors.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local nu_error = TextBox{parent=fac_c_1,x=10,y=14,width=31,text="Defina o número de reatores.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_num_units()
         local count = tonumber(tool_ctl.num_units.get_value())
@@ -226,14 +226,14 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         else nu_error.show() end
     end
 
-    PushButton{parent=fac_c_1,y=14,text="\x1b Back",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_1,x=44,y=14,text="Next \x1a",callback=submit_num_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_1,y=14,text="\x1b Voltar",callback=function()main_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_1,x=42,y=14,text="Avançar \x1a",callback=submit_num_units,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Cooling Configuration
+    --#region Configuração de Resfriamento
 
-    TextBox{parent=fac_c_2,y=1,height=4,text="Please provide the reactor cooling configuration below. This includes the number of turbines, boilers, and if that reactor has a connection to a dynamic tank for emergency coolant."}
-    TextBox{parent=fac_c_2,y=6,text="UNIT    TURBINES   BOILERS   HAS TANK CONNECTION?",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_2,y=1,height=4,text="Forneça a configuração de resfriamento do reator abaixo. Isso inclui o número de turbinas, caldeiras e se o reator tem conexão com um tanque dinâmico para refrigerante de emergência."}
+    TextBox{parent=fac_c_2,y=6,text="UNID    TURBINAS   CALDEIRAS TEM CONEXÃO TANQUE?",fg_bg=g_lg_fg_bg}
 
     for i = 1, 4 do
         local num_t, num_b, has_t = 1, 0, false
@@ -247,15 +247,15 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
 
         local line = Div{parent=fac_c_2,y=7+i,height=1}
 
-        TextBox{parent=line,text="Unit "..i,width=6}
+        TextBox{parent=line,text="Unid "..i,width=6}
         local turbines = NumberField{parent=line,x=9,y=1,width=5,max_chars=2,default=num_t,min=1,max=3,fg_bg=bw_fg_bg}
         local boilers = NumberField{parent=line,x=20,y=1,width=5,max_chars=2,default=num_b,min=0,max=2,fg_bg=bw_fg_bg}
-        local tank = Checkbox{parent=line,x=30,y=1,label="Is Connected",default=has_t,box_fg_bg=cpair(colors.yellow,colors.black)}
+        local tank = Checkbox{parent=line,x=30,y=1,label="Está Conectado",default=has_t,box_fg_bg=cpair(colors.yellow,colors.black)}
 
         tool_ctl.cooling_elems[i] = { line = line, turbines = turbines, boilers = boilers, tank = tank }
     end
 
-    local cool_err = TextBox{parent=fac_c_2,x=8,y=14,width=33,text="Please fill out all fields.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local cool_err = TextBox{parent=fac_c_2,x=10,y=14,width=31,text="Preencha todos os campos.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function submit_cooling()
         local any_missing = false
@@ -273,7 +273,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
             tmp_cfg.CoolingConfig = {}
             for i = 1, tmp_cfg.UnitCount do
                 local conf = tool_ctl.cooling_elems[i]
-                -- already verified fields are numbers
+                -- campos já verificados como números
                 tmp_cfg.CoolingConfig[i] = {
                     TurbineCount = tonumber(conf.turbines.get_value()) --[[@as number]],
                     BoilerCount = tonumber(conf.boilers.get_value()) --[[@as number]],
@@ -309,16 +309,16 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         end
     end
 
-    PushButton{parent=fac_c_2,y=14,text="\x1b Back",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_2,x=44,y=14,text="Next \x1a",callback=submit_cooling,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_2,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(1)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_2,x=42,y=14,text="Avançar \x1a",callback=submit_cooling,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Facility Tanks Option
+    --#region Opção de Tanques da Instalação
 
-    TextBox{parent=fac_c_3,y=1,height=6,text="You have set one or more of your units to use dynamic tanks for emergency coolant. You have two paths for configuration. The first is to assign dynamic tanks to reactor units; one tank per reactor, only connected to that reactor. RTU configurations must also assign it as such."}
-    TextBox{parent=fac_c_3,y=8,height=3,text="Alternatively, you can configure them as facility tanks to connect to multiple reactor units. These can intermingle with unit-specific tanks."}
+    TextBox{parent=fac_c_3,y=1,height=6,text="Você definiu uma ou mais unidades para usar tanques dinâmicos como refrigerante de emergência. Há dois caminhos de configuração. O primeiro é atribuir tanques dinâmicos às unidades de reator; um tanque por reator, conectado apenas a ele. Configurações de RTU também devem atribuí-lo assim."}
+    TextBox{parent=fac_c_3,y=8,height=3,text="Alternativamente, você pode configurá-los como tanques da instalação para conectar a várias unidades de reator. Eles podem se misturar com tanques de unidades."}
 
-    tool_ctl.en_fac_tanks = Checkbox{parent=fac_c_3,y=12,label="Use Facility Dynamic Tanks",default=ini_cfg.FacilityTankMode>0,box_fg_bg=cpair(colors.yellow,colors.black)}
+    tool_ctl.en_fac_tanks = Checkbox{parent=fac_c_3,y=12,label="Usar Tanques Dinâmicos da Instalação",default=ini_cfg.FacilityTankMode>0,box_fg_bg=cpair(colors.yellow,colors.black)}
 
     local function submit_en_fac_tank()
         if tool_ctl.en_fac_tanks.get_value() then
@@ -328,7 +328,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
             tmp_cfg.FacilityTankMode = 0
             tmp_cfg.FacilityTankDefs = {}
 
-            -- on facility tank mode 0, setup tank defs to match unit tank option
+            -- no modo de tanque da instalação 0, configurar definições de tanque para corresponder à opção de tanque de unidade
             for i = 1, tmp_cfg.UnitCount do
                 tmp_cfg.FacilityTankDefs[i] = tri(tmp_cfg.CoolingConfig[i].TankConnection, 1, 0)
             end
@@ -341,27 +341,27 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         end
     end
 
-    PushButton{parent=fac_c_3,y=14,text="\x1b Back",callback=function()fac_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_3,x=44,y=14,text="Next \x1a",callback=submit_en_fac_tank,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_3,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(2)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_3,x=42,y=14,text="Avançar \x1a",callback=submit_en_fac_tank,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Facility Tank Connections
+    --#region Conexões de Tanques da Instalação
 
-    TextBox{parent=fac_c_4,y=1,height=4,text="Please set unit connections to dynamic tanks, selecting at least one facility tank. The layout for facility tanks will be configured next."}
+    TextBox{parent=fac_c_4,y=1,height=4,text="Defina as conexões das unidades aos tanques dinâmicos, selecionando ao menos um tanque da instalação. O layout dos tanques da instalação será configurado a seguir."}
 
     for i = 1, 4 do
         local val = math.max(1, ini_cfg.FacilityTankDefs[i] or 2)
         local div = Div{parent=fac_c_4,y=3+(2*i),height=2}
 
-        TextBox{parent=div,y=1,width=33,text="Unit "..i.." will be connected to..."}
+        TextBox{parent=div,y=1,width=33,text="Unid "..i.." será conectada a..."}
         TextBox{parent=div,x=6,y=2,width=3,text="..."}
-        local tank_opt = Radio2D{parent=div,x=9,y=2,rows=1,columns=2,default=val,options={"its own Unit Tank","a Facility Tank"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
-        local no_tank = TextBox{parent=div,x=9,y=2,width=34,text="no tank (as you set two steps ago)",fg_bg=cpair(colors.gray,colors.lightGray),hidden=true}
+        local tank_opt = Radio2D{parent=div,x=9,y=2,rows=1,columns=2,default=val,options={"seu Tanque de Unid","Tanque da Instal."},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
+        local no_tank = TextBox{parent=div,x=9,y=2,width=38,text="nenhum tanque (definido há 2 passos)",fg_bg=cpair(colors.gray,colors.lightGray),hidden=true}
 
         tool_ctl.tank_elems[i] = { div = div, tank_opt = tank_opt, no_tank = no_tank }
     end
 
-    local tank_err = TextBox{parent=fac_c_4,x=8,y=14,width=33,text="You selected no facility tanks.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
+    local tank_err = TextBox{parent=fac_c_4,x=10,y=14,width=31,text="Nenhum tanque da inst. selec.",fg_bg=cpair(colors.red,colors.lightGray),hidden=true}
 
     local function hide_fconn(i)
         if i > 1 then self.vis_ftanks[i].pipe_conn.hide(true)
@@ -382,7 +382,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
 
             if def == 1 then
                 self.vis_utanks[i].line.show()
-                self.vis_utanks[i].label.set_value("Tank U" .. i)
+                self.vis_utanks[i].label.set_value("Tanq U" .. i)
                 hide_fconn(i)
             else
                 if def == 2 then
@@ -407,35 +407,35 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         else tank_err.show() end
     end
 
-    PushButton{parent=fac_c_4,y=14,text="\x1b Back",callback=function()fac_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_4,x=44,y=14,text="Next \x1a",callback=submit_tank_defs,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_4,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(3)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_4,x=42,y=14,text="Avançar \x1a",callback=submit_tank_defs,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Facility Tank Mode
+    --#region Modo de Tanque da Instalação
 
-    TextBox{parent=fac_c_5,y=1,text="Please select your dynamic tank layout."}
-    TextBox{parent=fac_c_5,x=12,y=3,text="Facility Tanks             Unit Tanks",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_5,y=1,text="Selecione o layout do seu tanque dinâmico."}
+    TextBox{parent=fac_c_5,x=12,y=3,text="Tanques Instal.            Tanques Unid.",fg_bg=g_lg_fg_bg}
 
-    --#region Tank Layout Visualizer
+    --#region Visualizador de Layout de Tanque
 
     local pipe_cpair = cpair(colors.blue,colors.lightGray)
 
     local vis = Div{parent=fac_c_5,x=14,y=5,height=7}
 
-    local vis_unit_list = TextBox{parent=vis,x=15,y=1,width=6,height=7,text="Unit 1\n\nUnit 2\n\nUnit 3\n\nUnit 4"}
+    local vis_unit_list = TextBox{parent=vis,x=15,y=1,width=6,height=7,text="Unid 1\n\nUnid 2\n\nUnid 3\n\nUnid 4"}
 
-    -- draw unit tanks and their pipes
+    -- desenhar tanques de unidades e suas tubulações
     for i = 1, 4 do
         local line = Div{parent=vis,x=22,y=(i*2)-1,width=13,height=1}
         TextBox{parent=line,width=5,text=string.rep("\x8c",5),fg_bg=pipe_cpair}
-        local label = TextBox{parent=line,x=7,y=1,width=7,text="Tank ?"}
+        local label = TextBox{parent=line,x=7,y=1,width=7,text="Tanq ?"}
         self.vis_utanks[i] = { line = line, label = label }
     end
 
-    -- draw facility tank connections
+    -- desenhar conexões de tanques da instalação
 
     local ftank_1 = Div{parent=vis,y=1,width=13,height=1}
-    TextBox{parent=ftank_1,width=7,text="Tank F1"}
+    TextBox{parent=ftank_1,width=7,text="Tanq F1"}
     self.vis_ftanks[1] = {
         line = ftank_1, pipe_direct = TextBox{parent=ftank_1,x=9,y=1,width=5,text=string.rep("\x8c",5),fg_bg=pipe_cpair}
     }
@@ -449,17 +449,17 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         self.vis_ftanks[i] = { line = line, pipe_conn = pipe_conn, pipe_chain = pipe_chain, pipe_direct = pipe_direct, label = label }
     end
 
-    -- draw the pipe visualization
-    ---@param mode integer pipe mode
+    -- desenhar a visualização da tubulação
+    ---@param mode integer modo de tubulação
     function self.vis_draw(mode)
-        -- is a facility tank connected to this unit
-        ---@param i integer unit 1 - 4
+        -- um tanque da instalação está conectado a esta unidade
+        ---@param i integer unidade 1 - 4
         ---@return boolean connected
         local function is_ft(i) return tmp_cfg.FacilityTankDefs[i] == 2 end
 
         local u_text = ""
         for i = 1, tmp_cfg.UnitCount do
-            u_text = u_text .. "Unit " .. i .. "\n\n"
+            u_text = u_text .. "Unid " .. i .. "\n\n"
         end
 
         vis_unit_list.set_value(u_text)
@@ -481,7 +481,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         local _2_46_need_chain = (mode == 4 and (is_ft(3) or is_ft(4))) or (mode == 6 and is_ft(3))
 
         if is_ft(2) then
-            vis_ftanks[2].label.set_value("Tank F" .. next_idx)
+            vis_ftanks[2].label.set_value("Tanq F" .. next_idx)
 
             if (mode < 4 or mode == 5) and is_ft(1) then
                 vis_ftanks[2].label.hide(true)
@@ -517,7 +517,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         end
 
         if is_ft(3) then
-            vis_ftanks[3].label.set_value("Tank F" .. next_idx)
+            vis_ftanks[3].label.set_value("Tanq F" .. next_idx)
 
             if (mode < 3 and (is_ft(1) or is_ft(2))) or ((mode == 4 or mode == 6) and is_ft(2)) then
                 vis_ftanks[3].label.hide(true)
@@ -553,7 +553,7 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         end
 
         if is_ft(4) then
-            vis_ftanks[4].label.set_value("Tank F" .. next_idx)
+            vis_ftanks[4].label.set_value("Tanq F" .. next_idx)
 
             if (mode == 1 and (is_ft(1) or is_ft(2) or is_ft(3))) or ((mode == 3 or mode == 7) and is_ft(3)) or (mode == 4 and (is_ft(2) or is_ft(3))) then
                 vis_ftanks[4].label.hide(true)
@@ -576,13 +576,13 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         self.vis_draw(mode)
     end
 
-    local tank_modes = { "Mode 1", "Mode 2", "Mode 3", "Mode 4", "Mode 5", "Mode 6", "Mode 7", "Mode 8" }
+    local tank_modes = { "Modo 1", "Modo 2", "Modo 3", "Modo 4", "Modo 5", "Modo 6", "Modo 7", "Modo 8" }
     tool_ctl.tank_mode = RadioButton{parent=fac_c_5,y=4,callback=change_mode,default=math.max(1,ini_cfg.FacilityTankMode),options=tank_modes,radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow}
 
     --#endregion
 
     local function next_from_tank_mode()
-        -- determine tank list and connections
+        -- determinar lista de tanques e conexões
         tmp_cfg.FacilityTankList, tmp_cfg.FacilityTankConns = facility.generate_tank_list_and_conns(tmp_cfg.FacilityTankMode, tmp_cfg.FacilityTankDefs)
 
         self.draw_fluid_ops()
@@ -590,24 +590,24 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         fac_pane.set_value(7)
     end
 
-    PushButton{parent=fac_c_5,y=14,text="\x1b Back",callback=function()fac_pane.set_value(4)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_5,x=44,y=14,text="Next \x1a",callback=next_from_tank_mode,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_5,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(4)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_5,x=42,y=14,text="Avançar \x1a",callback=next_from_tank_mode,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
-    PushButton{parent=fac_c_5,x=8,y=14,min_width=7,text="About",callback=function()fac_pane.set_value(6)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
-
-    --#endregion
-    --#region Facility Tank Mode About
-
-    TextBox{parent=fac_c_6,height=3,text="This visualization tool shows the pipe connections required for a particular dynamic tank configuration you have selected."}
-    TextBox{parent=fac_c_6,y=5,height=4,text="Examples: A U2 tank should be configured on an RTU as the dynamic tank for unit #2. An F3 tank should be configured on an RTU as the #3 dynamic tank for the facility."}
-    TextBox{parent=fac_c_6,y=10,height=3,text="Some modes may look the same if you are not using 4 total reactor units. The wiki has details. Modes that look the same will function the same.",fg_bg=g_lg_fg_bg}
-
-    PushButton{parent=fac_c_6,y=14,text="\x1b Back",callback=function()fac_pane.set_value(5)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_5,x=10,y=14,min_width=7,text="Sobre",callback=function()fac_pane.set_value(6)end,fg_bg=cpair(colors.black,colors.lightBlue),active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Dynamic Tank Fluid Types
+    --#region Sobre o Modo de Tanque da Instalação
 
-    TextBox{parent=fac_c_7,height=3,text="Specify each tank's coolant type, for display use only. Water is the only option if one or more of the connected units is water cooled."}
+    TextBox{parent=fac_c_6,height=3,text="Esta ferramenta de visualização mostra as conexões de tubulação necessárias para uma configuração de tanque dinâmico selecionada."}
+    TextBox{parent=fac_c_6,y=5,height=4,text="Exemplos: Um tanque U2 deve ser configurado em uma RTU como o tanque dinâmico para a unidade #2. Um tanque F3 deve ser configurado em uma RTU como o tanque dinâmico #3 para a instalação."}
+    TextBox{parent=fac_c_6,y=10,height=3,text="Alguns modos podem parecer iguais se você não estiver usando um total de 4 unidades de reator. A wiki tem detalhes. Modos que parecem iguais funcionarão da mesma forma.",fg_bg=g_lg_fg_bg}
+
+    PushButton{parent=fac_c_6,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(5)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+
+    --#endregion
+    --#region Tipos de Fluido dos Tanques Dinâmicos
+
+    TextBox{parent=fac_c_7,height=3,text="Especifique o tipo de refrigerante de cada tanque, apenas para exibição. Água é a única opção se uma ou mais das unidades conectadas for resfriada a água."}
 
     local tank_fluid_list = Div{parent=fac_c_7,y=5,height=8}
 
@@ -629,10 +629,10 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
             if tank_list[i] == 1 then
                 local row = Div{parent=tank_fluid_list,height=2}
 
-                TextBox{parent=row,width=11,text="Unit Tank "..i}
-                TextBox{parent=row,text="Connected to: Unit "..i,fg_bg=cpair(colors.gray,colors.lightGray)}
+                TextBox{parent=row,width=13,text="Tanq. Unid. "..i}
+                TextBox{parent=row,text="Conectado a: Unid "..i,fg_bg=cpair(colors.gray,colors.lightGray)}
 
-                local tank_fluid = Radio2D{parent=row,x=34,y=1,rows=1,columns=2,default=type,options={"Water","Sodium"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
+                local tank_fluid = Radio2D{parent=row,x=34,y=1,rows=1,columns=2,default=type,options={"Água","Sódio"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
 
                 if tmp_cfg.CoolingConfig[i].BoilerCount == 0 then
                     tank_fluid.set_value(1)
@@ -643,21 +643,21 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
             elseif tank_list[i] == 2 then
                 local row = Div{parent=tank_fluid_list,height=2}
 
-                TextBox{parent=row,width=15,text="Facility Tank "..next_f}
+                TextBox{parent=row,width=15,text="Tanq. Instal. "..next_f}
 
                 local conns = ""
                 local any_bwr = false
 
                 for u = 1, #tank_conns do
                     if tank_conns[u] == i then
-                        conns = conns .. tri(conns == "", "", ", ") .. "Unit " .. u
+                        conns = conns .. tri(conns == "", "", ", ") .. "Unid " .. u
                         any_bwr = any_bwr or (tmp_cfg.CoolingConfig[u].BoilerCount == 0)
                     end
                 end
 
-                TextBox{parent=row,text="Connected to: "..conns,fg_bg=cpair(colors.gray,colors.lightGray)}
+                TextBox{parent=row,text="Conectado a: "..conns,fg_bg=cpair(colors.gray,colors.lightGray)}
 
-                local tank_fluid = Radio2D{parent=row,x=34,y=1,rows=1,columns=2,default=type,options={"Water","Sodium"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
+                local tank_fluid = Radio2D{parent=row,x=34,y=1,rows=1,columns=2,default=type,options={"Água","Sódio"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow,disable_color=colors.gray,disable_fg_bg=g_lg_fg_bg}
 
                 if any_bwr then
                     tank_fluid.set_value(1)
@@ -687,19 +687,19 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         fac_pane.set_value(8)
     end
 
-    PushButton{parent=fac_c_7,y=14,text="\x1b Back",callback=back_from_fluids,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_7,x=44,y=14,text="Next \x1a",callback=submit_tank_fluids,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_7,y=14,text="\x1b Voltar",callback=back_from_fluids,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_7,x=42,y=14,text="Avançar \x1a",callback=submit_tank_fluids,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Auxiliary Coolant
+    --#region Refrigerante Auxiliar
 
-    TextBox{parent=fac_c_8,height=5,text="Auxiliary water coolant can be enabled for units to provide extra water during turbine ramp-up. For water cooled reactors, this goes to the reactor. For sodium cooled reactors, water goes to the boiler."}
+    TextBox{parent=fac_c_8,height=5,text="O resfriamento auxiliar a água pode ser ativado nas unidades para fornecer água extra durante a aceleração da turbina. Em reatores a água, isso vai para o reator. Em reatores a sódio, a água vai para a caldeira."}
 
     for i = 1, 4 do
         local line = Div{parent=fac_c_8,y=7+i,height=1}
 
-        TextBox{parent=line,text="Unit "..i.." -",width=8}
-        local aux_cool = Checkbox{parent=line,x=10,y=1,label="Has Auxiliary Coolant",default=ini_cfg.AuxiliaryCoolant[i],box_fg_bg=cpair(colors.yellow,colors.black)}
+        TextBox{parent=line,text="Unid "..i.." -",width=8}
+        local aux_cool = Checkbox{parent=line,x=10,y=1,label="Possui Refrigerante Auxiliar",default=ini_cfg.AuxiliaryCoolant[i],box_fg_bg=cpair(colors.yellow,colors.black)}
 
         tool_ctl.aux_cool_elems[i] = { line = line, enable = aux_cool }
     end
@@ -718,79 +718,79 @@ function facility.create(tool_ctl, main_pane, cfg_sys, fac_cfg, style)
         fac_pane.set_value(9)
     end
 
-    PushButton{parent=fac_c_8,y=14,text="\x1b Back",callback=back_from_aux_cool,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_8,x=44,y=14,text="Next \x1a",callback=submit_aux_cool,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_8,y=14,text="\x1b Voltar",callback=back_from_aux_cool,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_8,x=42,y=14,text="Avançar \x1a",callback=submit_aux_cool,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Extended Idling
+    --#region Espera Estendida
 
-    TextBox{parent=fac_c_9,height=6,text="Charge level control provides automatic control to maintain an induction matrix charge level. In order to have smoother control, reactors that were activated will be held on at 0.01 mB/t for a short period before allowing them to turn off. This minimizes overshooting the charge target."}
-    TextBox{parent=fac_c_9,y=8,height=3,text="You can extend this to a full minute to minimize reactors flickering on/off, but there may be more overshoot of the target."}
+    TextBox{parent=fac_c_9,height=6,text="O controle de nível de carga fornece controle automático para manter o nível de carga de uma matriz de indução. Para um controle mais suave, reatores ativados serão mantidos ligados a 0.01 mB/t por um curto período antes de desligarem. Isso minimiza ultrapassar a meta de carga."}
+    TextBox{parent=fac_c_9,y=8,height=3,text="Você pode estender isso para um minuto inteiro para minimizar reatores ligando/desligando rapidamente, mas pode haver maior ultrapassagem da meta."}
 
-    tool_ctl.ext_idling = Checkbox{parent=fac_c_9,y=12,label="Enable Extended Idling",default=ini_cfg.ExtChargeIdling,box_fg_bg=cpair(colors.yellow,colors.black)}
+    tool_ctl.ext_idling = Checkbox{parent=fac_c_9,y=12,label="Ativar Espera Estendida",default=ini_cfg.ExtChargeIdling,box_fg_bg=cpair(colors.yellow,colors.black)}
 
     local function submit_idling()
         tmp_cfg.ExtChargeIdling = tool_ctl.ext_idling.get_value()
         fac_pane.set_value(10)
     end
 
-    PushButton{parent=fac_c_9,y=14,text="\x1b Back",callback=function()fac_pane.set_value(8)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_9,x=44,y=14,text="Next \x1a",callback=submit_idling,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_9,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(8)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_9,x=42,y=14,text="Avançar \x1a",callback=submit_idling,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region SNA Statistics
+    --#region Estatísticas de SNA
 
-    TextBox{parent=fac_c_10,height=3,text="The flow display and other data displays use connected Solar Neutron Activators (SNAs) for indicating Polonium production values."}
-    TextBox{parent=fac_c_10,y=5,height=3,text="If you are not using SNAs, you can unselect this option to have the Supervisor compute an estimate based on the current burn rate."}
+    TextBox{parent=fac_c_10,height=3,text="A tela de fluxo e outras telas de dados usam Ativadores de Nêutrons Solares (SNAs) conectados para indicar valores de produção de Polônio."}
+    TextBox{parent=fac_c_10,y=5,height=3,text="Se não estiver usando SNAs, você pode desmarcar esta opção para que o Supervisor calcule uma estimativa com base na taxa de queima atual."}
 
-    tool_ctl.sna_stats = Checkbox{parent=fac_c_10,y=9,label="Use SNAs for Po Statistics",default=ini_cfg.UseSNAStatistics,box_fg_bg=cpair(colors.yellow,colors.black)}
+    tool_ctl.sna_stats = Checkbox{parent=fac_c_10,y=9,label="Usar SNAs para Estatísticas de Po",default=ini_cfg.UseSNAStatistics,box_fg_bg=cpair(colors.yellow,colors.black)}
 
-    TextBox{parent=fac_c_10,y=11,height=3,text="Both modes depend on correct waste ratios in the Mekanism Configuration section.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_10,y=11,height=3,text="Ambos os modos dependem de proporções corretas de resíduos na seção Configuração do Mekanism.",fg_bg=g_lg_fg_bg}
 
     local function submit_sna_stats()
         tmp_cfg.UseSNAStatistics = tool_ctl.sna_stats.get_value()
         fac_pane.set_value(11)
     end
 
-    PushButton{parent=fac_c_10,y=14,text="\x1b Back",callback=function()fac_pane.set_value(9)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_10,x=44,y=14,text="Next \x1a",callback=submit_sna_stats,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_10,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(9)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_10,x=42,y=14,text="Avançar \x1a",callback=submit_sna_stats,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Combined Facility Waste
+    --#region Resíduos Combinados da Instalação
 
-    TextBox{parent=fac_c_11,height=3,text="The standard setup expects waste processing (SNAs and PRCs) to be per-unit for statistics and individual Pu fallback management."}
-    TextBox{parent=fac_c_11,y=5,height=3,text="If your setup combines all nuclear waste from MULTIPLE units before processing, please select combined facility waste management below."}
-    TextBox{parent=fac_c_11,y=9,text="Both options expect one combined facility SPS.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_11,height=3,text="A configuração padrão espera que o processamento de resíduos (SNAs e PRCs) seja por unidade para estatísticas e gerenciamento individual de reserva de Pu."}
+    TextBox{parent=fac_c_11,y=5,height=3,text="Se a sua configuração combina todo o resíduo nuclear de MÚLTIPLAS unidades antes do processamento, selecione o gerenciamento combinado abaixo."}
+    TextBox{parent=fac_c_11,y=9,text="Ambas as opções esperam uma SPS combinada na instalação.",fg_bg=g_lg_fg_bg}
 
-    tool_ctl.com_waste = Checkbox{parent=fac_c_11,y=11,label="Combined Facility Waste",default=ini_cfg.CombinedWaste,box_fg_bg=cpair(colors.yellow,colors.black)}
+    tool_ctl.com_waste = Checkbox{parent=fac_c_11,y=11,label="Resíduos Combinados da Instalação",default=ini_cfg.CombinedWaste,box_fg_bg=cpair(colors.yellow,colors.black)}
 
     local function submit_com_waste()
         tmp_cfg.CombinedWaste = tool_ctl.com_waste.get_value()
         fac_pane.set_value(12)
     end
 
-    PushButton{parent=fac_c_11,y=14,text="\x1b Back",callback=function()fac_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_11,x=44,y=14,text="Next \x1a",callback=submit_com_waste,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_11,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(10)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_11,x=42,y=14,text="Avançar \x1a",callback=submit_com_waste,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
-    --#region Energy Storage
+    --#region Armazenamento de Energia
 
-    TextBox{parent=fac_c_12,height=2,text="Please select the energy storage system you are using for this facility."}
+    TextBox{parent=fac_c_12,height=2,text="Selecione o sistema de armazenamento de energia que você está usando nesta instalação."}
 
-    TextBox{parent=fac_c_12,y=4,text="Energy Storage System (ESS)"}
-    tool_ctl.ess_opt = RadioButton{parent=fac_c_12,y=5,default=math.max(1,ini_cfg.EnergyStorageSystem),options={"Induction Matrix (Mekanism)","Energy Core (Draconic Evolution)"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow}
+    TextBox{parent=fac_c_12,y=4,text="Sistema de Armazenamento de Energia (ESS)"}
+    tool_ctl.ess_opt = RadioButton{parent=fac_c_12,y=5,default=math.max(1,ini_cfg.EnergyStorageSystem),options={"Matriz de Indução (Mekanism)","Núcleo de Energia (Draconic Evolution)"},radio_colors=cpair(colors.lightGray,colors.black),select_color=colors.yellow}
 
     local function submit_ess()
         tmp_cfg.EnergyStorageSystem = tool_ctl.ess_opt.get_value()
         main_pane.set_value(3)
     end
 
-    TextBox{parent=fac_c_12,y=9,height=4,text="In most interfaces, this device will be referred to as the Energy Storage System or the ESS, rather than as an Induction Matrix or Energy Core, so you should be aware of these terms.",fg_bg=g_lg_fg_bg}
-    TextBox{parent=fac_c_12,x=11,y=10,width=21,height=1,text="Energy Storage System",fg_bg=cpair(colors.blue,colors._INHERIT)}
-    TextBox{parent=fac_c_12,x=40,y=10,width=3,height=1,text="ESS",fg_bg=cpair(colors.blue,colors._INHERIT)}
+    TextBox{parent=fac_c_12,y=9,height=4,text="Na maioria das interfaces, este disp. será chamado de Energy Storage System ou de ESS, em vez de Matriz de Indução ou Núcleo de Energia, então você deve estar ciente desses termos.",fg_bg=g_lg_fg_bg}
+    TextBox{parent=fac_c_12,x=7,y=10,width=21,height=1,text="Energy Storage System",fg_bg=cpair(colors.blue,colors._INHERIT)}
+    TextBox{parent=fac_c_12,x=35,y=10,width=3,height=1,text="ESS",fg_bg=cpair(colors.blue,colors._INHERIT)}
 
-    PushButton{parent=fac_c_12,y=14,text="\x1b Back",callback=function()fac_pane.set_value(11)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    PushButton{parent=fac_c_12,x=44,y=14,text="Next \x1a",callback=submit_ess,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_12,y=14,text="\x1b Voltar",callback=function()fac_pane.set_value(11)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    PushButton{parent=fac_c_12,x=42,y=14,text="Avançar \x1a",callback=submit_ess,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
 
     --#endregion
 

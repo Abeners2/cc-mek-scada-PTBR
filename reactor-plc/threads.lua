@@ -18,27 +18,27 @@ local RPS_SLEEP     = 250 -- 250ms, 5 ticks
 local COMMS_SLEEP   = 150 -- 150ms, 3 ticks
 local SP_CTRL_SLEEP = 100 -- 100ms, 2 ticks
 
--- main thread
+-- thread principal
 ---@nodiscard
 ---@param smem plc_shared_memory
 function threads.thread__main(smem)
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprime uma mensagem de log no terminal enquanto a UI não estiver em execução
     local function println_ts(message) if not smem.plc_state.fp_ok then util.println_ts(message) end end
 
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         databus.tx_rt_status("main", true)
-        log.debug("OS: main thread start")
+        log.debug("OS: thread principal iniciada")
 
         local LINK_TICKS = 2
         local ticks_to_update = 0
 
         local loop_clock = util.new_clock(MAIN_CLOCK)
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local networked     = smem.networked
         local plc_state     = smem.plc_state
 
@@ -49,18 +49,18 @@ function threads.thread__main(smem)
         local MQ__RPS_CMD   = smem.q_types.MQ__RPS_CMD
         local MQ__COMM_CMD  = smem.q_types.MQ__COMM_CMD
 
-        -- main loop periodic tasks
+        -- tarefas periódicas do loop principal
         local function loop_tick()
-            -- blink heartbeat indicator
+            -- pisca o indicador de heartbeat
             databus.heartbeat()
 
-            -- start next clock timer
+            -- inicia o próximo temporizador do relógio
             loop_clock.start()
 
-            -- periodic hardware tasks
+            -- tarefas periódicas de hardware
             backplane.periodic()
 
-            -- send updated data or try to link
+            -- envia dados atualizados ou tenta vincular
             if networked then
                 if plc_comms.is_linked() then
                     smem.q.mq_comms_tx.push_command(MQ__COMM_CMD.SEND_STATUS)
@@ -81,98 +81,98 @@ function threads.thread__main(smem)
                 end
             end
 
-            -- check for formed state change
+            -- verifica mudança no estado de formação
             if (not plc_state.reactor_formed) and rps.is_formed() then
-                -- reactor now formed
+                -- reator agora formado
                 plc_state.reactor_formed = true
 
-                println_ts("reactor is now formed")
-                log.info("reactor is now formed")
+                println_ts("reator agora esta formado")
+                log.info("reator agora esta formado")
 
-                -- determine if we are still in a degraded state
+                -- determina se ainda estamos em um estado degradado
                 if (not networked) or backplane.active_nic().is_connected() then
                     plc_state.degraded = false
                 end
 
-                -- partial reset of RPS, specific to becoming formed
-                -- without this, auto control can't resume on chunk load
+                -- redefinição parcial do RPS, específica para quando se torna formado
+                -- sem isso, o controle automático não pode retomar ao carregar o chunk
                 smem.q.mq_rps.push_command(MQ__RPS_CMD.RESET_REATTACH)
             elseif plc_state.reactor_formed and (rps.is_formed() == false) then
-                -- reactor no longer formed
-                println_ts("reactor is no longer formed")
-                log.info("reactor is no longer formed")
+                -- reator não está mais formado
+                println_ts("reator nao esta mais formado")
+                log.info("reator nao esta mais formado")
 
                 plc_state.reactor_formed = false
                 plc_state.degraded = true
             end
 
-            -- update indicators
+            -- atualiza os indicadores
             databus.tx_hw_status(plc_state)
         end
 
-        -- start clock
+        -- inicia o relógio
         loop_clock.start()
 
-        -- event loop
+        -- loop de eventos
         while true do
             local event, param1, param2, param3, param4, param5 = util.pull_event()
 
-            -- handle event
+            -- trata o evento
             if event == "modem_message" and networked then
-                -- got a packet
+                -- recebeu um pacote
                 local packet = plc_comms.parse_packet(param1, param2, param3, param4, param5)
                 if packet ~= nil then
-                    -- pass the packet onto the comms message queue
+                    -- passa o pacote para a fila de mensagens de comunicação
                     smem.q.mq_comms_rx.push_network(packet)
                 end
             elseif event == "timer" then
-                -- pass this timer event onto the right handler
+                -- passa este evento de temporizador para o manipulador correto
                 if loop_clock.is_clock(param1) then
-                    -- main loop tick
+                    -- tick do loop principal
                     loop_tick()
                 elseif networked and conn_watchdog.is_timer(param1) then
-                    -- supervisor connection timed out
+                    -- tempo limite da conexão do supervisor esgotado
                     plc_comms.close()
                     smem.q.mq_rps.push_command(MQ__RPS_CMD.TRIP_TIMEOUT)
                 else
-                    -- notify timer callback dispatcher, no other handler claimed this event
+                    -- notifica o despachante de callbacks de temporizador, nenhum outro manipulador reivindicou este evento
                     tcd.handle(param1)
                 end
             elseif event == "mouse_click" or event == "mouse_up" or event == "mouse_drag" or event == "mouse_scroll" or
                    event == "double_click" then
-                -- handle a mouse event
+                -- trata um evento de mouse
                 renderer.handle_mouse(core.events.new_mouse_event(event, param1, param2, param3))
             elseif event == "peripheral" then
-                -- peripheral connect
+                -- conexão de periférico
                 local type, device = ppm.mount(param1)
                 if type ~= nil and device ~= nil then
                     backplane.attach(param1, type, device, println_ts)
                 end
 
-                -- update indicators
+                -- atualiza os indicadores
                 databus.tx_hw_status(plc_state)
             elseif event == "peripheral_detach" then
-                -- peripheral disconnect
+                -- desconexão de periférico
                 local type, device = ppm.handle_unmount(param1)
                 if type ~= nil and device ~= nil then
                     backplane.detach(param1, type, device, println_ts)
                 end
 
-                -- update indicators
+                -- atualiza os indicadores
                 databus.tx_hw_status(plc_state)
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if event == "terminate" or ppm.should_terminate() then
-                log.info("OS: terminate requested, main thread exiting")
-                -- rps handles reactor shutdown
+                log.info("OS: encerramento solicitado, thread principal saindo")
+                -- o rps trata o desligamento do reator
                 plc_state.shutdown = true
                 break
             end
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local plc_state = smem.plc_state
 
@@ -184,11 +184,11 @@ function threads.thread__main(smem)
 
             databus.tx_rt_status("main", false)
 
-            -- if status is true, then we are probably exiting, so this won't matter
-            -- if not, we need to restart the clock
-            -- this thread cannot be slept because it will miss events (namely "terminate" otherwise)
+            -- se o status for true, provavelmente estamos saindo, então isso não importará
+            -- se não, precisamos reiniciar o relógio
+            -- esta thread não pode dormir porque perderá eventos (especialmente "terminate", caso contrário)
             if not plc_state.shutdown then
-                log.info("OS: main thread restarting now...")
+                log.info("OS: thread principal reiniciando agora...")
             end
         end
     end
@@ -196,22 +196,22 @@ function threads.thread__main(smem)
     return public
 end
 
--- RPS operation thread
+-- thread de operação do RPS
 ---@nodiscard
 ---@param smem plc_shared_memory
 function threads.thread__rps(smem)
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprime uma mensagem de log no terminal enquanto a UI não estiver em execução
     local function println_ts(message) if not smem.plc_state.fp_ok then util.println_ts(message) end end
 
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         databus.tx_rt_status("rps", true)
-        log.debug("OS: rps thread start")
+        log.debug("OS: thread rps iniciada")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local networked   = smem.networked
         local plc_state   = smem.plc_state
 
@@ -225,9 +225,9 @@ function threads.thread__rps(smem)
         local was_linked  = false
         local last_update = util.time()
 
-        -- thread loop
+        -- loop da thread
         while true do
-            -- SCRAM if no open connection
+            -- SCRAM se não houver conexão aberta
             if networked and not plc_comms.is_linked() then
                 if was_linked then
                     was_linked = false
@@ -235,82 +235,82 @@ function threads.thread__rps(smem)
                 end
             else was_linked = true end
 
-            -- check reactor status
+            -- verifica o status do reator
             if (not plc_state.no_reactor) and rps.is_formed() then
                 local active = rps.check_active()
 
                 databus.tx_reactor_state(active)
 
-                -- if we tried to SCRAM but failed, keep trying
-                -- in that case, SCRAM won't be called until it reconnects (this is the expected use of this check)
+                -- se tentamos dar SCRAM mas falhou, continua tentando
+                -- nesse caso, o SCRAM não será chamado até que se reconecte (este é o uso esperado desta verificação)
                 if rps.is_tripped() and active then rps.scram() end
             end
 
-            -- if we are in standalone mode and the front panel isn't working, continuously reset RPS
-            -- RPS will trip again if there are faults, but if it isn't cleared, the user can't re-enable
+            -- se estivermos no modo autônomo e o painel frontal não estiver funcionando, redefine continuamente o RPS
+            -- o RPS desarmará novamente se houver falhas, mas se não for limpo, o usuário não poderá reativar
             if not (networked or smem.plc_state.fp_ok) then rps.reset(true) end
 
-            -- check safety (SCRAM occurs if tripped)
+            -- verifica a segurança (o SCRAM ocorre se desarmado)
             local rps_tripped, rps_status_string, rps_first = rps.check(not plc_state.no_reactor)
             if rps_tripped and rps_first then
-                println_ts("RPS: SCRAM on safety trip (" .. rps_status_string .. ")")
+                println_ts("RPS: SCRAM em desarme de seguranca (" .. rps_status_string .. ")")
                 if networked then plc_comms.send_rps_alarm(rps_status_string) end
             end
 
-            -- check for messages in the message queue
+            -- verifica mensagens na fila de mensagens
             while rps_queue.ready() and not plc_state.shutdown do
                 local msg = rps_queue.pop()
 
                 if msg ~= nil then
                     if msg.qtype == mqueue.TYPE.COMMAND then
-                        -- received a command
+                        -- recebeu um comando
                         if msg.message == MQ__RPS_CMD.SCRAM then
                             -- SCRAM
-                            log.info("RPS: OS requested SCRAM")
+                            log.info("RPS: SO solicitou SCRAM")
                             rps.scram()
                         elseif msg.message == MQ__RPS_CMD.DEGRADED_SCRAM then
-                            -- lost peripheral(s)
-                            log.info("RPS: received PLC degraded alert")
+                            -- perdeu periférico(s)
+                            log.info("RPS: recebeu alerta de PLC degradado")
                             rps.trip_fault()
                         elseif msg.message == MQ__RPS_CMD.TRIP_TIMEOUT then
-                            -- watchdog tripped
-                            println_ts("RPS: supervisor timeout")
-                            log.warning("RPS: received supervisor timeout alert")
+                            -- watchdog desarmou
+                            println_ts("RPS: tempo esgotado do supervisor")
+                            log.warning("RPS: recebeu alerta de tempo esgotado do supervisor")
                             rps.trip_timeout()
                         elseif msg.message == MQ__RPS_CMD.RESET_REATTACH then
-                            -- reset on reactor re-connect
+                            -- redefine ao reconectar o reator
                             rps.reset_reattach()
                         end
                     end
                 end
 
-                -- quick yield
+                -- yield rápido
                 util.nop()
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if plc_state.shutdown then
-                -- safe exit
-                log.info("OS: rps thread shutdown initiated")
+                -- saída segura
+                log.info("OS: desligamento da thread rps iniciado")
 
                 if rps.scram() then
-                    println_ts("exiting, reactor disabled")
-                    log.info("OS: rps thread reactor SCRAM OK on exit")
+                    println_ts("saindo, reator desativado")
+                    log.info("OS: SCRAM do reator da thread rps OK ao sair")
                 else
-                    println_ts("exiting, reactor failed to disable")
-                    log.error("OS: rps thread failed to SCRAM reactor on exit")
+                    println_ts("saindo, falha ao desativar o reator")
+                    log.error("OS: thread rps falhou ao dar SCRAM no reator ao sair")
                 end
 
-                log.info("OS: rps thread exiting")
+                log.info("OS: thread rps saindo")
                 break
             end
 
-            -- delay before next check
+            -- atraso antes da próxima verificação
             last_update = util.adaptive_delay(RPS_SLEEP, last_update)
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local plc_state = smem.plc_state
 
@@ -324,7 +324,7 @@ function threads.thread__rps(smem)
 
             if not plc_state.shutdown then
                 smem.plc_sys.rps.scram()
-                log.info("OS: rps thread restarting in 5 seconds...")
+                log.info("OS: thread rps reiniciando em 5 segundos...")
                 util.psleep(5)
             end
         end
@@ -333,19 +333,19 @@ function threads.thread__rps(smem)
     return public
 end
 
--- communications sender thread
+-- thread de envio de comunicações
 ---@nodiscard
 ---@param smem plc_shared_memory
 function threads.thread__comms_tx(smem)
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         databus.tx_rt_status("comms_tx", true)
-        log.debug("OS: comms tx thread start")
+        log.debug("OS: thread comms tx iniciada")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local plc_state    = smem.plc_state
         local plc_comms    = smem.plc_sys.plc_comms
 
@@ -355,39 +355,39 @@ function threads.thread__comms_tx(smem)
 
         local last_update = util.time()
 
-        -- thread loop
+        -- loop da thread
         while true do
-            -- check for messages in the message queue
+            -- verifica mensagens na fila de mensagens
             while comms_queue.ready() and not plc_state.shutdown do
                 local msg = comms_queue.pop()
 
                 if msg ~= nil then
                     if msg.qtype == mqueue.TYPE.COMMAND then
-                        -- received a command
+                        -- recebeu um comando
                         if msg.message == MQ__COMM_CMD.SEND_STATUS then
-                            -- send PLC/RPS status
+                            -- envia status do PLC/RPS
                             plc_comms.send_status(plc_state.no_reactor, plc_state.reactor_formed)
                             plc_comms.send_rps_status()
                         end
                     end
                 end
 
-                -- quick yield
+                -- yield rápido
                 util.nop()
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if plc_state.shutdown then
-                log.info("OS: comms tx thread exiting")
+                log.info("OS: thread comms tx saindo")
                 break
             end
 
-            -- delay before next check
+            -- atraso antes da próxima verificação
             last_update = util.adaptive_delay(COMMS_SLEEP, last_update)
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local plc_state = smem.plc_state
 
@@ -400,7 +400,7 @@ function threads.thread__comms_tx(smem)
             databus.tx_rt_status("comms_tx", false)
 
             if not plc_state.shutdown then
-                log.info("OS: comms tx thread restarting in 5 seconds...")
+                log.info("OS: thread comms tx reiniciando em 5 segundos...")
                 util.psleep(5)
             end
         end
@@ -409,22 +409,22 @@ function threads.thread__comms_tx(smem)
     return public
 end
 
--- communications handler thread
+-- thread de manipulação de comunicações
 ---@nodiscard
 ---@param smem plc_shared_memory
 function threads.thread__comms_rx(smem)
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprime uma mensagem de log no terminal enquanto a UI não estiver em execução
     local function println_ts(message) if not smem.plc_state.fp_ok then util.println_ts(message) end end
 
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         databus.tx_rt_status("comms_rx", true)
-        log.debug("OS: comms rx thread start")
+        log.debug("OS: thread comms rx iniciada")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local plc_state   = smem.plc_state
 
         local plc_comms   = smem.plc_sys.plc_comms
@@ -433,35 +433,35 @@ function threads.thread__comms_rx(smem)
 
         local last_update = util.time()
 
-        -- thread loop
+        -- loop da thread
         while true do
-            -- check for messages in the message queue
+            -- verifica mensagens na fila de mensagens
             while comms_queue.ready() and not plc_state.shutdown do
                 local msg = comms_queue.pop()
 
                 if msg ~= nil then
                     if msg.qtype == mqueue.TYPE.NETWORK then
-                        -- received a packet, handle the packet
+                        -- recebeu um pacote, trata o pacote
                         plc_comms.handle_packet(msg.message, println_ts)
                     end
                 end
 
-                -- quick yield
+                -- yield rápido
                 util.nop()
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if plc_state.shutdown then
-                log.info("OS: comms rx thread exiting")
+                log.info("OS: thread comms rx saindo")
                 break
             end
 
-            -- delay before next check
+            -- atraso antes da próxima verificação
             last_update = util.adaptive_delay(COMMS_SLEEP, last_update)
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local plc_state = smem.plc_state
 
@@ -474,7 +474,7 @@ function threads.thread__comms_rx(smem)
             databus.tx_rt_status("comms_rx", false)
 
             if not plc_state.shutdown then
-                log.info("OS: comms rx thread restarting in 5 seconds...")
+                log.info("OS: thread comms rx reiniciando em 5 segundos...")
                 util.psleep(5)
             end
         end
@@ -483,34 +483,34 @@ function threads.thread__comms_rx(smem)
     return public
 end
 
--- ramp control outputs to desired setpoints
+-- controla as saídas em rampa para os setpoints desejados
 ---@nodiscard
 ---@param smem plc_shared_memory
 function threads.thread__setpoint_control(smem)
     ---@class parallel_thread
     local public = {}
 
-    -- execute thread
+    -- executa a thread
     function public.exec()
         databus.tx_rt_status("spctl", true)
-        log.debug("OS: setpoint control thread start")
+        log.debug("OS: thread de controle de setpoint iniciada")
 
-        -- load in from shared memory
+        -- carrega da memória compartilhada
         local plc_state = smem.plc_state
         local plc_dev   = smem.plc_dev
 
         local last_update = util.time()
 
-        -- do not use the actual elapsed time, it could spike
-        -- we do not want to have big jumps as that is what we are trying to avoid in the first place
+        -- não usa o tempo decorrido real, pois pode ter picos
+        -- não queremos grandes saltos, pois é exatamente isso que estamos tentando evitar
         local nom_elapsed_s = SP_CTRL_SLEEP / 1000.0
 
         local tick = 0
 
-        -- init controller
+        -- inicializa o controlador
         spctl.init(smem)
 
-        -- thread loop
+        -- loop da thread
         while true do
             if not plc_state.no_reactor then
                 tick = tick + 1
@@ -518,18 +518,18 @@ function threads.thread__setpoint_control(smem)
                 spctl.update(plc_dev.reactor, tick, nom_elapsed_s)
             end
 
-            -- check for termination request
+            -- verifica solicitação de encerramento
             if plc_state.shutdown then
-                log.info("OS: setpoint control thread exiting")
+                log.info("OS: thread de controle de setpoint saindo")
                 break
             end
 
-            -- delay before next check
+            -- atraso antes da próxima verificação
             last_update = util.adaptive_delay(SP_CTRL_SLEEP, last_update)
         end
     end
 
-    -- execute the thread in a protected mode, retrying it on return if not shutting down
+    -- executa a thread em modo protegido, tentando novamente no retorno se não estiver desligando
     function public.p_exec()
         local plc_state = smem.plc_state
 
@@ -542,7 +542,7 @@ function threads.thread__setpoint_control(smem)
             databus.tx_rt_status("spctl", false)
 
             if not plc_state.shutdown then
-                log.info("OS: setpoint control thread restarting in 5 seconds...")
+                log.info("OS: thread de controle de setpoint reiniciando em 5 segundos...")
                 util.psleep(5)
             end
         end

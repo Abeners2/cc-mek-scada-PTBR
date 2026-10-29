@@ -2,31 +2,31 @@ local rtu = require("rtu.rtu")
 
 local ecore_rtu = {}
 
--- create new draconic evolution energy core device
+-- criar novo dispositivo de núcleo de energia do Draconic Evolution
 ---@nodiscard
 ---@param ecore DraconicEnergyCore|ppm_generic
 ---@return rtu_device interface, boolean faulted
 function ecore_rtu.new(ecore)
     local unit = rtu.init_unit(ecore)
 
-    -- discrete inputs --
-    -- none
+    -- entradas discretas --
+    -- nenhuma
 
-    -- coils --
-    -- none
+    -- bobinas --
+    -- nenhuma
 
-    -- input registers --
-    -- build properties
+    -- registradores de entrada --
+    -- propriedades de construção
     unit.connect_input_reg("getMaxEnergyStored")
-    -- I/O rates
+    -- taxas de E/S
     unit.connect_input_reg("getInputPerTick")
     unit.connect_input_reg("getOutputPerTick")
     unit.connect_input_reg("getTransferPerTick")
-    -- tanks
+    -- tanques
     unit.connect_input_reg("getEnergyStored")
 
-    -- holding registers --
-    -- none
+    -- registradores de retenção --
+    -- nenhum
 
     return unit.interface(), false
 end

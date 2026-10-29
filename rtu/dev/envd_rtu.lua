@@ -2,31 +2,31 @@ local rtu = require("rtu.rtu")
 
 local envd_rtu = {}
 
--- create new environment detector device
+-- criar novo dispositivo detector de ambiente
 ---@nodiscard
 ---@param envd EnvironmentDetector|ppm_generic
 ---@return rtu_device interface, boolean faulted
 function envd_rtu.new(envd)
     local unit = rtu.init_unit(envd)
 
-    -- disable auto fault clearing
+    -- desativar limpeza automática de falhas
     envd.__p_clear_fault()
     envd.__p_disable_afc()
 
-    -- discrete inputs --
-    -- none
+    -- entradas discretas --
+    -- nenhuma
 
-    -- coils --
-    -- none
+    -- bobinas --
+    -- nenhuma
 
-    -- input registers --
+    -- registradores de entrada --
     unit.connect_input_reg(envd.getRadiation)
     unit.connect_input_reg(envd.getRadiationRaw)
 
-    -- holding registers --
-    -- none
+    -- registradores de retenção --
+    -- nenhum
 
-    -- check if any calls faulted
+    -- verificar se alguma chamada falhou
     local faulted = envd.__p_is_faulted()
     envd.__p_clear_fault()
     envd.__p_enable_afc()

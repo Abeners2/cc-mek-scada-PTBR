@@ -1,18 +1,18 @@
 --[[
-CC-MEK-SCADA Installer (CCMSI) Utility
+Utilitário Instalador CC-MEK-SCADA (CCMSI)
 
 Copyright (c) 2023 - 2026 Mikayla Fischler
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
+A permissão é concedida, gratuitamente, a qualquer pessoa que obtenha uma cópia deste software e
+arquivos de documentação associados (o "Software"), para lidar com o Software sem restrições,
+incluindo, sem limitação, os direitos de usar, copiar, modificar, mesclar, publicar, distribuir, sublicenciar,
+e/ou vender cópias do Software, e permitir que as pessoas a quem o Software é fornecido o façam.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
-LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO
+SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UMA FINALIDADE ESPECÍFICA E NÃO VIOLAÇÃO.
+EM NENHUM CASO OS AUTORES OU DETENTORES DOS DIREITOS AUTORAIS SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANOS OU OUTRA RESPONSABILIDADE,
+SEJA EM UMA AÇÃO DE CONTRATO, ATO ILÍCITO OU DE OUTRA FORMA, DECORRENTE DE, FORA DE OU EM CONEXÃO COM O
+SOFTWARE OU O USO OU OUTRAS NEGOCIAÇÕES NO SOFTWARE.
 ]]--
 
 local ccs = require("cc.strings")
@@ -48,14 +48,14 @@ local function lgray() tsc(colors.lightGray) end
 
 local function pln(msg) print(tostring(msg)) end
 
--- stripped down & modified copy of log.dmesg
+-- cópia simplificada e modificada de log.dmesg
 local function print(msg)
 	msg = tostring(msg)
 
 	local cur_x, cur_y = term.getCursorPos()
 
 	if cur_x == out_w then
-		-- jump to next line
+		-- pular para a próxima linha
 		cur_x = 1
 		if cur_y == out_h then
 			term.scroll(1)
@@ -91,7 +91,7 @@ local function print(msg)
 	end
 end
 
--- reset cursor to before a print of s occurred
+-- redefinir o cursor para antes da impressão de s ocorrer
 local function print_reset(s)
 	local _, y = term.getCursorPos()
 	for i = 1, #ccs.wrap(s, out_w) do
@@ -99,7 +99,7 @@ local function print_reset(s)
 	end
 end
 
--- show progress and percentage at the bottom of the screen
+-- mostrar progresso e porcentagem na parte inferior da tela
 local function show_progress(p)
 	local _, y = term.getCursorPos()
 	term.setCursorPos(1, out_h)
@@ -114,7 +114,7 @@ local function show_progress(p)
 	term.setCursorPos(1, y);lgray()
 end
 
--- hide progress and percentage at the bottom of the screen
+-- ocultar progresso e porcentagem na parte inferior da tela
 local function hide_progress()
 	local _, y = term.getCursorPos()
 	term.setCursorPos(1, out_h)
@@ -123,16 +123,16 @@ local function hide_progress()
 	term.setCursorPos(1, y)
 end
 
--- get command line option in list
+-- obter opção de linha de comando na lista
 local function get_opt(opt, options)
 	for _, v in pairs(options) do if opt == v then return v end end
 	return nil
 end
 
--- wait for any key press
+-- aguardar o pressionamento de qualquer tecla
 local function any_key() os.pullEvent("key_up") end
 
--- ask the user yes or no
+-- perguntar ao usuário sim ou não
 local function ask_y_n(question, default)
 	print(question)
 	if default == true then print(" (Y/n)? ") else print(" (y/N)? ") end
@@ -144,13 +144,13 @@ local function ask_y_n(question, default)
 	else return nil end
 end
 
--- get major, minor, patch version numbers
+-- obter números de versão principal, secundária e de correção (major, minor, patch)
 local function v_nums(v)
 	local a, b, c = v:match("^[vV]?(%d+)%.(%d+)%.?(%d*)$")
 	return tonumber(a), tonumber(b), tonumber(c) or 0
 end
 
--- 1 = update, 0 = same, -1 = downgrade
+-- 1 = atualização, 0 = igual, -1 = reversão (downgrade)
 local function is_update(l, r)
 	local l1, l2, l3 = v_nums(l)
 	local r1, r2, r3 = v_nums(r)
@@ -161,7 +161,7 @@ local function is_update(l, r)
 	return 0
 end
 
--- package version message
+-- mensagem de versão do pacote
 local function pkg_v_msg(n, m, va, vb)
 	purple();print("["..n.."] ");white()
 	if m == "\x1e" then cyan() elseif m == "\x1f" then red() end
@@ -170,29 +170,29 @@ local function pkg_v_msg(n, m, va, vb)
 	white()
 end
 
--- package info/warn message
+-- mensagem de informação/aviso do pacote
 local function pkg_msg(n, m, w)
 	purple();print("["..n.."] ")
 	if w then yellow() else white() end
 	pln(m.." ")
 end
 
--- indicate actions to be taken based on package differences for installs/updates
+-- indicar ações a serem tomadas com base nas diferenças dos pacotes para instalações/atualizações
 local function show_pkg_change(name, v)
 	if v.v_local then
 		local is_up = is_update(v.v_local, v.v_remote)
 		if is_up ~= 0 then
-			local updn = (is_up > 0) and (IS_PKT and "\x1e" or "updating") or (IS_PKT and "\x1f" or "downgrading")
+			local updn = (is_up > 0) and (IS_PKT and "\x1e" or "atualizando") or (IS_PKT and "\x1f" or "revertendo")
 			pkg_v_msg(name, updn, v.v_local, v.v_remote)
 		elseif mode == "install" then
-			pkg_v_msg(name, IS_PKT and "reinstall" or "reinstalling", v.v_local)
+			pkg_v_msg(name, IS_PKT and "reinstalar" or "reinstalando", v.v_local)
 		end
-	else pkg_v_msg(name, IS_PKT and "install" or "new install of", v.v_remote) end
+	else pkg_v_msg(name, IS_PKT and "instalar" or "nova instalação de", v.v_remote) end
 
 	return v.v_local ~= v.v_remote
 end
 
--- read the local manifest file
+-- ler o arquivo de manifesto local
 local function read_local_manifest()
 	local ok, manifest, f = false, {}, fs.open("install_manifest.json", "r")
 	if f ~= nil then
@@ -202,22 +202,22 @@ local function read_local_manifest()
 	return ok, manifest
 end
 
--- read the manifest from GitHub
+-- ler o manifesto do GitHub
 local function read_remote_manifest()
 	local resp, err = http.get(manifest_url)
 	if resp == nil then
-		orange();pln("Failed to read installation manifest from GitHub, cannot update or install.")
-		red();pln("HTTP error: "..err);white()
+		orange();pln("Falha ao ler o manifesto de instalação do GitHub, não é possível atualizar ou instalar.")
+		red();pln("Erro HTTP: "..err);white()
 		return false, {}
 	end
 
 	local ok, manifest = pcall(function () return textutils.unserializeJSON(resp.readAll()) end)
-	if not ok then red();pln("error parsing remote installation manifest");white() end
+	if not ok then red();pln("erro ao analisar o manifesto de instalação remoto");white() end
 
 	return ok, manifest
 end
 
--- record the local installation manifest
+-- registrar o manifesto de instalação local
 local function write_install_manifest(manifest, deps)
 	local versions = {}
 	for k, v in pairs(manifest.versions) do
@@ -236,13 +236,13 @@ local function write_install_manifest(manifest, deps)
 	f.write(textutils.serializeJSON(manifest));f.close()
 end
 
--- try at most 3 times to download a file from the repository and write into w_path base directory
----@return 0|1|2|3 success 0: ok, 1: download fail, 2: file open fail, 3: out of space
+-- tentar no máximo 3 vezes baixar um arquivo do repositório e gravar no diretório base w_path
+---@return 0|1|2|3 sucesso 0: ok, 1: falha no download, 2: falha ao abrir arquivo, 3: sem espaço
 local function http_get_file(file, w_path)
 	for i = 1, 3 do
 		local dl, err = http.get(build_url..file)
 		if dl then
-			if i > 1 then green();pln("success!");lgray() end
+			if i > 1 then green();pln("sucesso!");lgray() end
 
 			local f = fs.open(w_path..file, "w")
 			if not f then return 2 end
@@ -251,15 +251,15 @@ local function http_get_file(file, w_path)
 			f.close()
 			if not ok then
 				if string.find(msg or "", "Out of space") ~= nil then
-					red();pln("[out of space]");lgray()
+					red();pln("[sem espaço]");lgray()
 					return 3
 				else return 2 end
 			end
 			break
 		else
-			red();pln("HTTP Error: "..err)
+			red();pln("Erro HTTP: "..err)
 			if i < 3 then
-				lgray();print("> retrying...")
+				lgray();print("> tentando novamente...")
 				os.sleep(i/3)
 			else return 1 end
 		end
@@ -267,7 +267,7 @@ local function http_get_file(file, w_path)
 	return 0
 end
 
--- recursively build a tree out of the file manifest
+-- construir recursivamente uma árvore a partir do manifesto de arquivos
 local function gen_tree(manifest, log)
 	local function _tree_add(tree, split)
 		if #split > 1 then
@@ -304,14 +304,14 @@ local function _clean_dir(dir, tree)
 		local path = dir.."/"..l
 		if fs.isDir(path) then
 			_clean_dir(path, tree[l])
-			if #fs.list(path) == 0 then fs.delete(path);pln("deleted "..path) end
+			if #fs.list(path) == 0 then fs.delete(path);pln("excluído "..path) end
 		elseif (not _in_array(l, tree)) and l ~= "config.lua" then
-			fs.delete(path);pln("deleted "..path)
+			fs.delete(path);pln("excluído "..path)
 		end
 	end
 end
 
--- go through app/common directories to delete unused files
+-- percorrer diretórios do aplicativo/comuns para excluir arquivos não utilizados
 local function clean(manifest)
 	local log, cfg = nil, app..".settings"
 	if fs.exists(cfg) and settings.load(cfg) then
@@ -327,52 +327,52 @@ local function clean(manifest)
 	local ls = fs.list("/")
 	for _, val in pairs(ls) do
 		if fs.isDriveRoot(val) then
-			yellow();pln("skipped mount '"..val.."'")
+			yellow();pln("montagem ignorada '"..val.."'")
 		elseif fs.isDir(val) then
 			if tree[val] ~= nil then lgray();_clean_dir("/"..val, tree[val])
-			else white(); if ask_y_n("delete the unused directory '"..val.."'") then lgray();_clean_dir("/"..val) end end
-			if #fs.list(val) == 0 then fs.delete(val);lgray();pln("deleted empty directory '"..val.."'") end
+			else white(); if ask_y_n("excluir o diretório não utilizado '"..val.."'") then lgray();_clean_dir("/"..val) end end
+			if #fs.list(val) == 0 then fs.delete(val);lgray();pln("diretório vazio excluído '"..val.."'") end
 		elseif not _in_array(val, tree) and (string.find(val, ".settings") == nil) then
-			white();if ask_y_n("delete the unused file '"..val.."'") then fs.delete(val);lgray();pln("deleted "..val) end
+			white();if ask_y_n("excluir o arquivo não utilizado '"..val.."'") then fs.delete(val);lgray();pln("excluído "..val) end
 		end
 	end
 
 	white()
 end
 
--- startup header
+-- cabeçalho de inicialização
 
 tsc(colors.magenta)
-if IS_PKT then pln("- SCADA Installer v"..CCMSI_VERSION.." -")
-else pln("-- ComputerCraft Mekanism SCADA Installer v"..CCMSI_VERSION.." --") end
+if IS_PKT then pln("- Instalador SCADA v"..CCMSI_VERSION.." -")
+else pln("-- Instalador ComputerCraft Mekanism SCADA v"..CCMSI_VERSION.." --") end
 white()
 
--- handle command line options
+-- lidar com opções de linha de comando
 
 if #OPTS == 0 or OPTS[1] == "help" then
-	pln("usage: ccmsi <mode> <app> <branch>")
+	pln("uso: ccmsi <modo> <app> <branch>")
 
-	blue();pln("<mode>")
+	blue();pln("<modo>")
 	if IS_PKT then
-		lgray();pln(" check - check latest\n install - fresh install\n update - update app\n uninstall - remove app")
+		lgray();pln(" check - verificar mais recente\n install - nova instalação\n update - atualizar app\n uninstall - remover app")
 		blue();pln("<app>")
-		lgray();pln(" pocket\n installer (update only)")
+		lgray();pln(" pocket\n installer (apenas atualização)")
 		blue();pln("<branch>")
 	else
-		lgray();pln(" check       - check latest versions available")
-		yellow();pln("               ccmsi check <branch> (skip <app>)")
-		lgray();pln(" install     - fresh install\n update      - update files\n uninstall   - delete files INCLUDING config/logs")
-		blue();print("<app>");cyan();pln(" omit to auto-detect installed app")
-		lgray();pln(" reactor-plc - Fission Reactor PLC firmware\n rtu         - RTU Gateway firmware\n supervisor  - Supervisor server application\n coordinator - Coordinator application\n pocket      - Pocket application\n installer   - CCMSI installer (update only)")
-		blue();print("<branch>");cyan();pln(" omit for 'main'")
+		lgray();pln(" check       - verificar versões mais recentes disponíveis")
+		yellow();pln("               ccmsi check <branch> (pular <app>)")
+		lgray();pln(" install     - nova instalação\n update      - atualizar arquivos\n uninstall   - excluir arquivos INCLUINDO config/logs")
+		blue();print("<app>");cyan();pln(" omita para detectar automaticamente o app instalado")
+		lgray();pln(" reactor-plc - Firmware do CLP do Reator de Fissão\n rtu         - Firmware do Gateway RTU\n supervisor  - Aplicação do servidor Supervisor\n coordinator - Aplicação do Coordenador\n pocket      - Aplicação Pocket\n installer   - Instalador CCMSI (apenas atualização)")
+		blue();print("<branch>");cyan();pln(" omita para 'main'")
 	end
-	lgray();pln(" main (default) | devel");white()
+	lgray();pln(" main (padrão) | devel");white()
 
 	return
 else
 	mode = get_opt(OPTS[1], { "check", "install", "update", "uninstall" })
 	if mode == nil then
-		red();pln("Invalid mode.");white()
+		red();pln("Modo inválido.");white()
 		return
 	end
 
@@ -386,18 +386,18 @@ else
 	end
 
 	if app == nil and mode ~= "check" then
-		red();pln("Invalid application.");white()
+		red();pln("Aplicação inválida.");white()
 		return
 	elseif mode == "check" then
 		next_opt = 2
 	elseif app == "installer" and mode ~= "update" then
-		red();pln("Installer only supports 'update'.");white()
+		red();pln("O instalador suporta apenas 'update'.");white()
 		return
 	end
 
 	target = OPTS[next_opt] or "main"
 	if target ~= "main" and target ~= "devel" then
-		red();pln("Invalid branch target.");white()
+		red();pln("Branch de destino inválida.");white()
 		return
 	end
 
@@ -405,7 +405,7 @@ else
 	build_url = BUILD_DIR..target.."/"
 end
 
--- main operation
+-- operação principal
 
 local ok, r_manifest, l_manifest
 
@@ -415,7 +415,7 @@ if mode == "check" then
 
 	ok, l_manifest = read_local_manifest()
 	if not ok then
-		yellow();pln("failed to load local installation information");white()
+		yellow();pln("falha ao carregar informações da instalação local");white()
 		l_manifest = { versions = { installer = CCMSI_VERSION } }
 	else
 		l_manifest.versions.installer = CCMSI_VERSION
@@ -423,7 +423,7 @@ if mode == "check" then
 
 	if not IS_PKT then pln("") end
 
-	-- list all versions
+	-- listar todas as versões
 	for k, r_v in pairs(r_manifest.versions) do
 		local l_v, tag = l_manifest.versions[k], string.format("%-14s", "["..k.."]")
 		purple()
@@ -435,17 +435,17 @@ if mode == "check" then
 			if r_v ~= l_v then
 				if is_update(l_v, r_v) > 0 then cyan();print(" \x1e ")
 				else red();print(" \x1f ") end
-				print(r_v);white();pln(" available")
-			else green();print(" \x07");white();pln(" up to date") end
+				print(r_v);white();pln(" disponível")
+			else green();print(" \x07");white();pln(" atualizado") end
 		elseif not (IS_PKT and _in_array(k, { "reactor-plc", "rtu", "supervisor", "coordinator" })) then
-			if IS_PKT then print("["..k.."] ");lgray();pln("not installed")
-			else print(tag);lgray();print("not installed");white();print(" -") end
-			lblue();print(" \x04 "..r_v);white();pln(" available")
+			if IS_PKT then print("["..k.."] ");lgray();pln("não instalado")
+			else print(tag);lgray();print("não instalado");white();print(" -") end
+			lblue();print(" \x04 "..r_v);white();pln(" disponível")
 		end
 	end
 
 	if r_manifest.versions.installer ~= l_manifest.versions.installer and not IS_PKT then
-		yellow();pln("\nA different version of the installer is available, it is STRONGLY recommended to update (use 'ccmsi update installer').");white()
+		yellow();pln("\nUma versão diferente do instalador está disponível, é FORTEMENTE recomendado atualizar (use 'ccmsi update installer').");white()
 	end
 elseif mode == "install" or mode == "update" then
 	local update_installer = app == "installer"
@@ -462,7 +462,7 @@ elseif mode == "install" or mode == "update" then
 		lockbox = { v_local = nil, v_remote = nil, changed = false }
 	}
 
-	-- try to load local versions
+	-- tentar carregar versões locais
 	ok, l_manifest = read_local_manifest()
 	if ok then
 		ver.boot.v_local = l_manifest.versions.bootloader
@@ -473,35 +473,35 @@ elseif mode == "install" or mode == "update" then
 		ver.lockbox.v_local = l_manifest.versions.lockbox
 
 		if l_manifest.versions[app] == nil and not update_installer then
-			red();pln("Another application is already installed, please uninstall it before installing a new application.");white()
+			red();pln("Outra aplicação já está instalada, por favor desinstale-a antes de instalar uma nova aplicação.");white()
 			return
 		end
 	elseif mode == "update" and not update_installer then
-		red();pln("Failed to load local installation information, cannot update.");white()
+		red();pln("Falha ao carregar informações da instalação local, não é possível atualizar.");white()
 		return
 	end
 
-	-- installer update handling
+	-- tratamento de atualização do instalador
 	if r_manifest.versions.installer ~= CCMSI_VERSION then
-		if not update_installer then yellow();pln("A different version of the installer is available, it is STRONGLY recommended to update to it.");white() end
-		if update_installer or ask_y_n("Would you like to update it now", true) then
+		if not update_installer then yellow();pln("Uma versão diferente do instalador está disponível, é FORTEMENTE recomendado atualizar para ela.");white() end
+		if update_installer or ask_y_n("Gostaria de atualizá-lo agora", true) then
 			lgray();pln("GET ccmsi.lua")
 			local dl, err = http.get(build_url.."ccmsi.lua")
 
 			if dl == nil then
-				red();pln("HTTP Error: "..err)
-				pln("Installer download failed.")
+				red();pln("Erro HTTP: "..err)
+				pln("Falha no download do instalador.")
 			else
-				local f = fs.open(debug.getinfo(1, "S").source:sub(2), "w") -- this file
+				local f = fs.open(debug.getinfo(1, "S").source:sub(2), "w") -- este arquivo
 				f.write(dl.readAll());f.close()
-				green();pln("Installer updated successfully.")
+				green();pln("Instalador atualizado com sucesso.")
 			end
 
 			white()
 			return
 		end
 	elseif update_installer then
-		green();pln("Installer already up-to-date.");white()
+		green();pln("O instalador já está atualizado.");white()
 		return
 	end
 
@@ -513,20 +513,20 @@ elseif mode == "install" or mode == "update" then
 	ver.lockbox.v_remote = r_manifest.versions.lockbox
 
 	green()
-	if mode == "install" then print("Installing ") else print("Updating ") end
-	pln(app.." files...");white()
+	if mode == "install" then print("Instalando arquivos de ") else print("Atualizando arquivos de ") end
+	pln(app.."...");white()
 
 	ver.boot.changed = show_pkg_change("bootloader", ver.boot)
 	ver.common.changed = show_pkg_change("common", ver.common)
 	ver.comms.changed = show_pkg_change("comms", ver.comms)
 	if ver.comms.changed and ver.comms.v_local ~= nil then
-		pkg_msg("comms", "all networked devices must be updated", true)
+		pkg_msg("comms", "todos os dispositivos na rede devem ser atualizados", true)
 	end
 	ver.app.changed = show_pkg_change(app, ver.app)
 	ver.graphics.changed = show_pkg_change("graphics", ver.graphics)
 	ver.lockbox.changed = show_pkg_change("lockbox", ver.lockbox)
 
-	-- start install/update
+	-- iniciar instalação/atualização
 
 	local space_req = r_manifest.sizes.manifest
 	local space_avail = fs.getFreeSpace("/")
@@ -536,7 +536,7 @@ elseif mode == "install" or mode == "update" then
 
 	table.insert(deps, app)
 
-	-- helper function to check if a dependency is unchanged
+	-- função auxiliar para verificar se uma dependência não foi alterada
 	local function unchanged(dep)
 		if dep == "system" then return not ver.boot.changed
 		elseif dep == "graphics" then return not ver.graphics.changed
@@ -556,18 +556,18 @@ elseif mode == "install" or mode == "update" then
 	end
 
 	if mode == "update" and not any_change then
-		yellow();pln("Nothing to do, everything is already up-to-date!");white()
+		yellow();pln("Nada a fazer, tudo já está atualizado!");white()
 		return
 	end
 
-	-- ask for confirmation
-	if not ask_y_n("Continue", false) then return end
+	-- pedir confirmação
+	if not ask_y_n("Continuar", false) then return end
 
 	local single_file_mode = space_avail < space_req
 
 	local success = true
 
-	-- delete a file if the capitalization changes so that things work on Windows
+	-- excluir um arquivo se a capitalização mudar para que funcione no Windows
 	---@param path string
 	local function mitigate_case(path)
 		local dir, file = fs.getDir(path), fs.getName(path)
@@ -580,28 +580,28 @@ elseif mode == "install" or mode == "update" then
 		end
 	end
 
-	---@param dl_stat 1|2|3 download status
-	---@param file string file name
-	---@param attempt integer recursive attempt #
-	---@param sf_install function installer function for recursion
+	---@param dl_stat 1|2|3 status do download
+	---@param file string nome do arquivo
+	---@param attempt integer tentativa recursiva #
+	---@param sf_install function função do instalador para recursão
 	local function handle_dl_fail(dl_stat, file, attempt, sf_install)
 		red()
 		if dl_stat == 1 then
-			pln("failed to download "..file)
+			pln("falha ao baixar "..file)
 		elseif dl_stat > 1 then
-			if dl_stat == 2 then pln("filesystem error with "..file) else pln("not enough space for "..file) end
+			if dl_stat == 2 then pln("erro no sistema de arquivos com "..file) else pln("espaço insuficiente para "..file) end
 			if attempt == 1 then
-				orange();pln("re-attempting operation...");white()
+				orange();pln("tentando a operação novamente...");white()
 				sf_install(2)
 			elseif attempt == 2 then
 				yellow()
-				if dl_stat == 2 then pln("There was an error writing to a file.") else pln("Insufficient space available.") end
+				if dl_stat == 2 then pln("Ocorreu um erro ao gravar em um arquivo.") else pln("Espaço disponível insuficiente.") end
 				lgray()
 				if dl_stat == 2 then
-					pln("This may be due to insufficent space available or file permission issues. The installer can now attempt to delete files not used by the SCADA system.")
-				else pln("The installer can now attempt to delete files not used by the SCADA system.") end
+					pln("Isso pode ocorrer devido a espaço disponível insuficiente ou problemas de permissão de arquivo. O instalador pode tentar excluir agora arquivos não utilizados pelo sistema SCADA.")
+				else pln("O instalador pode tentar excluir agora arquivos não utilizados pelo sistema SCADA.") end
 				white()
-				if not ask_y_n("Continue", false) then
+				if not ask_y_n("Continuar", false) then
 					success = false
 					return
 				end
@@ -609,19 +609,19 @@ elseif mode == "install" or mode == "update" then
 				sf_install(3)
 			elseif attempt == 3 then
 				yellow()
-				if dl_stat == 2 then pln("There again was an error writing to a file.") else pln("Insufficient space available.") end
+				if dl_stat == 2 then pln("Ocorreu novamente um erro ao gravar em um arquivo.") else pln("Espaço disponível insuficiente.") end
 				lgray()
 				if dl_stat == 2 then
-					pln("This may be due to insufficent space available or file permission issues. Please delete any unused files you have on this computer then try again. Do not delete the "..app..".settings file unless you want to re-configure.")
-				else pln("Please delete any unused files you have on this computer then try again. Do not delete the "..app..".settings file unless you want to re-configure.") end
+					pln("Isso pode ocorrer devido a espaço disponível insuficiente ou problemas de permissão de arquivo. Por favor, exclua quaisquer arquivos não utilizados que você tenha neste computador e tente novamente. Não exclua o arquivo "..app..".settings a menos que deseje reconfigurar.")
+				else pln("Por favor, exclua quaisquer arquivos não utilizados que você tenha neste computador e tente novamente. Não exclua o arquivo "..app..".settings a menos que deseje reconfigurar.") end
 				white()
 				success = false
 			end
 		end
 	end
 
-	-- single file update routine: go through all files and replace one by one
-	---@param attempt integer recursive attempt #
+	-- rotina de atualização de arquivo único: percorrer todos os arquivos e substituir um por um
+	---@param attempt integer tentativa recursiva #
 	local function sf_install(attempt)
 		if attempt > 1 then os.sleep(2.0) end
 
@@ -630,21 +630,21 @@ elseif mode == "install" or mode == "update" then
 
 		for k, dep in pairs(sf_deps) do
 			if mode == "update" and unchanged(dep) then
-				pkg_msg(dep, "skipping install of unchanged package", true)
+				pkg_msg(dep, "pulando instalação de pacote inalterado", true)
 				sf_deps[k] = nil
 			else
-				pkg_msg(dep, IS_PKT and "installing..." or "installing package...")
+				pkg_msg(dep, IS_PKT and "instalando..." or "instalando pacote...")
 				lgray()
 
-				-- beginning on the second try, delete the directory before starting
+				-- a partir da segunda tentativa, excluir o diretório antes de começar
 				if attempt >= 2 then
 					if dep == "common" then
 						if fs.exists("/scada-common") then
-							fs.delete("/scada-common");pln("deleted /scada-common")
+							fs.delete("/scada-common");pln("excluído /scada-common")
 						end
 					elseif dep ~= "system" then
 						if fs.exists("/"..dep) then
-							fs.delete("/"..dep);pln("deleted /"..dep)
+							fs.delete("/"..dep);pln("excluído /"..dep)
 						end
 					end
 				end
@@ -667,24 +667,24 @@ elseif mode == "install" or mode == "update" then
 				end
 
 				hide_progress()
-				if not abort_attempt then pkg_msg(dep, "installed!");sf_deps[k] = nil end
+				if not abort_attempt then pkg_msg(dep, "instalado!");sf_deps[k] = nil end
 				term.clearLine()
 			end
 			if abort_attempt or not success then break end
 		end
 	end
 
-	-- handle update/install
+	-- lidar com atualização/instalação
 	if single_file_mode then sf_install(1)
 	else
 		if fs.exists(INSTALL_DIR) then fs.delete(INSTALL_DIR);fs.makeDir(INSTALL_DIR) end
 
-		-- download all dependencies
+		-- baixar todas as dependências
 		for _, dep in pairs(deps) do
 			if mode == "update" and unchanged(dep) then
-				pkg_msg(dep, "skipping download of unchanged package", true)
+				pkg_msg(dep, "pulando download de pacote inalterado", true)
 			else
-				pkg_msg(dep, IS_PKT and "downloading..." or "downloading package...")
+				pkg_msg(dep, IS_PKT and "baixando..." or "baixando pacote...")
 				lgray()
 
 				local files, n = file_list[dep], 1
@@ -694,14 +694,14 @@ elseif mode == "install" or mode == "update" then
 					local dl_stat = http_get_file(file, INSTALL_DIR.."/")
 					success = dl_stat == 0
 					if dl_stat == 1 then
-						red();pln("failed to download "..file)
+						red();pln("falha ao baixar "..file)
 						break
 					elseif dl_stat == 2 then
-						red();pln("filesystem error with "..file)
+						red();pln("erro no sistema de arquivos com "..file)
 						break
 					elseif dl_stat == 3 then
-						-- this shouldn't occur in this mode
-						red();pln("not enough space for "..file)
+						-- isso não deve ocorrer neste modo
+						red();pln("espaço insuficiente para "..file)
 						break
 					end
 					show_progress(n/#files)
@@ -710,19 +710,19 @@ elseif mode == "install" or mode == "update" then
 				end
 
 				hide_progress()
-				if success then pkg_msg(dep, IS_PKT and "downloaded!" or "download complete!") end
+				if success then pkg_msg(dep, IS_PKT and "baixado!" or "download concluído!") end
 				term.clearLine()
 			end
 			if not success then break end
 		end
 
-		-- copy in downloaded files (installation)
+		-- copiar arquivos baixados (instalação)
 		if success then
 			for _, dep in pairs(deps) do
 				if mode == "update" and unchanged(dep) then
-					pkg_msg(dep, "skipping install of unchanged package", true)
+					pkg_msg(dep, "pulando instalação de pacote inalterado", true)
 				else
-					pkg_msg(dep, IS_PKT and "installing..." or "installing package...")
+					pkg_msg(dep, IS_PKT and "instalando..." or "instalando pacote...")
 					lgray()
 
 					local files = file_list[dep]
@@ -733,7 +733,7 @@ elseif mode == "install" or mode == "update" then
 						fs.move(temp_file, file)
 					end
 
-					pkg_msg(dep, "installed!")
+					pkg_msg(dep, "instalado!")
 				end
 			end
 		end
@@ -744,39 +744,39 @@ elseif mode == "install" or mode == "update" then
 	if success then
 		write_install_manifest(r_manifest, deps)
 		green()
-		if mode == "install" then print("Installation") else print("Update") end
-		pln(" completed successfully.")
-		white();pln("Ready to clean up unused files, press any key to continue...")
+		if mode == "install" then print("Instalação") else print("Atualização") end
+		pln(" concluída com sucesso.")
+		white();pln("Pronto para limpar arquivos não utilizados, pressione qualquer tecla para continuar...")
 		any_key();clean(r_manifest)
-		white();pln("Done.")
+		white();pln("Concluído.")
 	else
 		red()
 		if single_file_mode then
-			if mode == "install" then print("Installation") else print("Update") end
-			pln(" failed, files may have been skipped.")
+			if mode == "install" then print("A instalação") else print("A atualização") end
+			pln(" falhou, arquivos podem ter sido ignorados.")
 		else
-			if mode == "install" then pln("Installation failed.")
-			else orange();pln("Update failed, existing files unmodified.") end
+			if mode == "install" then pln("A instalação falhou.")
+			else orange();pln("A atualização falhou, os arquivos existentes não foram modificados.") end
 		end
 	end
 elseif mode == "uninstall" then
 	ok, l_manifest = read_local_manifest()
 	if not ok then
-		red();pln("Error parsing local installation manifest.");white()
+		red();pln("Erro ao analisar o manifesto de instalação local.");white()
 		return
 	end
 
 	if l_manifest.versions[app] == nil then
-		red();pln("Error: '"..app.."' is not installed.")
+		red();pln("Erro: '"..app.."' não está instalado.")
 		return
 	end
 
-	orange();pln("Uninstalling all "..app.." files...");white()
+	orange();pln("Desinstalando todos os arquivos de "..app.."...");white()
 
-	-- ask for confirmation
-	if not ask_y_n("Continue", false) then return end
+	-- pedir confirmação
+	if not ask_y_n("Continuar", false) then return end
 
-	-- delete unused files first
+	-- excluir arquivos não utilizados primeiro
 	clean(l_manifest)
 
 	local file_list = l_manifest.files
@@ -784,12 +784,12 @@ elseif mode == "uninstall" then
 
 	table.insert(deps, app)
 
-	-- delete all installed files
+	-- excluir todos os arquivos instalados
 	lgray()
 	for _, dep in pairs(deps) do
 		local files = file_list[dep]
 		for _, file in pairs(files) do
-			if fs.exists(file) then fs.delete(file);pln("deleted "..file) end
+			if fs.exists(file) then fs.delete(file);pln("excluído "..file) end
 		end
 
 		local folder = files[1]
@@ -799,34 +799,34 @@ elseif mode == "uninstall" then
 		end
 
 		if fs.isDir(folder) then
-			fs.delete(folder);pln("deleted directory "..folder)
+			fs.delete(folder);pln("diretório excluído "..folder)
 		end
 	end
 
-	-- delete log file
+	-- excluir arquivo de log
 	local log_deleted, cfg = false, app..".settings"
 	if fs.exists(cfg) and settings.load(cfg) then
 		local log = settings.get("LogPath")
 		if log ~= nil then
 			log_deleted = true
 			if fs.exists(log) then
-				fs.delete(log);pln("deleted log file "..log)
+				fs.delete(log);pln("arquivo de log excluído "..log)
 			end
 		end
 	end
 
 	if not log_deleted then
-		red();pln("Failed to delete log file (it may not exist).");lgray()
+		red();pln("Falha ao excluir o arquivo de log (ele pode não existir).");lgray()
 	end
 
 	if fs.exists(cfg) then
-		fs.delete(cfg);pln("deleted "..cfg)
+		fs.delete(cfg);pln("excluído "..cfg)
 	end
 
 	fs.delete("install_manifest.json")
-	pln("deleted install_manifest.json")
+	pln("excluído install_manifest.json")
 
-	green();pln("Done!")
+	green();pln("Concluído!")
 end
 
 white()

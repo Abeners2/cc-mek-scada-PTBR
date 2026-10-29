@@ -1,5 +1,5 @@
 --
--- A Guide App Subsection
+-- Uma Subsecao do Aplicativo de Guia
 --
 
 local log            = require("scada-common.log")
@@ -24,7 +24,7 @@ local cpair = core.cpair
 local DOC_TYPE  = docs.DOC_ITEM_TYPE
 local LIST_TYPE = docs.DOC_LIST_TYPE
 
--- new guide documentation section
+-- nova secao de documentacao do guia
 ---@param data pkt__sect_construct_data
 ---@param base_page nav_tree_page
 ---@param title string
@@ -124,14 +124,14 @@ return function (data, base_page, title, items, scroll_height)
         elseif item.type == DOC_TYPE.TIP then
             ---@cast item pocket_doc_tip
 
-            TextBox{parent=def_list,text="TIP!",fg_bg=cpair(colors.orange,colors._INHERIT)}
+            TextBox{parent=def_list,text="DICA!",fg_bg=cpair(colors.orange,colors._INHERIT)}
             TextBox{parent=def_list,text=item.text}
 
             page_end = Div{parent=def_list,height=1,can_focus=true}
         elseif item.type == DOC_TYPE.IMPORTANT then
             ---@cast item pocket_doc_important
 
-            TextBox{parent=def_list,text="IMPORTANT!",fg_bg=cpair(colors.yellow,colors._INHERIT)}
+            TextBox{parent=def_list,text="IMPORTANTE!",fg_bg=cpair(colors.yellow,colors._INHERIT)}
             TextBox{parent=def_list,text=item.text}
 
             page_end = Div{parent=def_list,height=1,can_focus=true}

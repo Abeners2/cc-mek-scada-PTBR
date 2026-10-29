@@ -1,5 +1,5 @@
 --
--- RTU Connection Entry
+-- Entrada de Conexão de RTU
 --
 
 local databus       = require("supervisor.databus")
@@ -17,9 +17,9 @@ local ALIGN = core.ALIGN
 
 local cpair = core.cpair
 
--- create an RTU list entry
----@param parent ListBox parent
----@param id integer RTU session ID
+-- criar uma entrada da lista de RTU
+---@param parent ListBox pai
+---@param id integer ID da sessão da RTU
 local function init(parent, id)
     local s_hi_box = style.theme.highlight_box
 
@@ -27,7 +27,7 @@ local function init(parent, id)
 
     local term_w, _ = term.getSize()
 
-    -- root div
+    -- div raiz
     local root = Div{parent=parent,x=2,y=2,height=4,width=parent.get_width()-2}
     local entry = Div{parent=root,x=2,y=1,height=3,fg_bg=style.theme.highlight_box_bright}
 
@@ -38,7 +38,7 @@ local function init(parent, id)
     TextBox{parent=entry,y=3,text="",width=8,fg_bg=s_hi_box}
     rtu_addr.register(databus.ps, ps_prefix .. "addr", rtu_addr.set_value)
 
-    TextBox{parent=entry,x=10,y=2,text="UNITS:",width=7}
+    TextBox{parent=entry,x=10,y=2,text="UNIDS:",width=7}
     local unit_count = DataIndicator{parent=entry,x=17,y=2,unit="",format="%2d",value=0,width=2,fg_bg=style.fp.label_d_fg}
     unit_count.register(databus.ps, ps_prefix .. "units", unit_count.set_value)
 

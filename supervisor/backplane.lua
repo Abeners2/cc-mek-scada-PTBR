@@ -1,5 +1,5 @@
 --
--- Supervisor System Core Peripheral Backplane
+-- Backplane de Periféricos do Núcleo do Sistema Supervisor
 --
 
 local log     = require("scada-common.log")
@@ -16,23 +16,23 @@ local backplane = {}
 
 local _bp = {
     config = nil,       ---@type svr_config
-    lan_iface = false,  ---@type string|false wired comms modem name
+    lan_iface = false,  ---@type string|false nome do modem de comunicações cabeado
 
-    wd_nic = nil,       ---@type nic|nil wired nic
-    wl_nic = nil,       ---@type nic|nil wireless nic
-    nic_map = {}        ---@type nic[] connected nics
+    wd_nic = nil,       ---@type nic|nil nic cabeada
+    wl_nic = nil,       ---@type nic|nil nic sem fio
+    nic_map = {}        ---@type nic[] nics conectadas
 }
 
--- network interfaces indexed by peripheral names
+-- interfaces de rede indexadas por nomes de periféricos
 backplane.nics = _bp.nic_map
 
--- initialize the system peripheral backplane
+-- inicializar o backplane de periféricos do sistema
 ---@param config svr_config
 ---@return boolean success
 function backplane.init(config)
     _bp.lan_iface = config.WiredModem
 
-    -- setup the wired modem, if configured
+    -- configurar o modem cabeado, se configurado
     if type(_bp.lan_iface) == "string" then
         local modem  = ppm.get_modem(_bp.lan_iface)
         local wd_nic = network.nic(modem)
@@ -40,8 +40,8 @@ function backplane.init(config)
         log.info("BKPLN: WIRED PHY_" .. util.trinary(modem, "UP ", "DOWN ") .. _bp.lan_iface)
 
         if not (modem and _bp.lan_iface) then
-            println("startup> wired comms modem not found")
-            log.fatal("BKPLN: no wired comms modem on startup")
+            println("startup> modem de comunicações cabeado não encontrado")
+            log.fatal("BKPLN: sem modem de comunicações cabeado na inicialização")
             return false
         end
 
@@ -54,7 +54,7 @@ function backplane.init(config)
         databus.tx_hw_wd_modem(true)
     end
 
-    -- setup the wireless modem, if configured
+    -- configurar o modem sem fio, se configurado
     if config.WirelessModem then
         local modem, iface = ppm.get_wireless_modem()
         local wl_nic       = network.nic(modem)
@@ -62,8 +62,8 @@ function backplane.init(config)
         log.info("BKPLN: WIRELESS PHY_" .. util.trinary(modem, "UP ", "DOWN") .. (iface or ""))
 
         if not (modem and iface) then
-            println("startup> wireless comms modem not found")
-            log.fatal("BKPLN: no wireless comms modem on startup")
+            println("startup> modem de comunicações sem fio não encontrado")
+            log.fatal("BKPLN: sem modem de comunicações sem fio na inicialização")
             return false
         end
 
@@ -79,7 +79,7 @@ function backplane.init(config)
     return true
 end
 
--- handle a backplane peripheral attach
+-- tratar uma conexão de periférico no backplane
 ---@param iface string
 ---@param type string
 ---@param device ppm_generic
@@ -93,39 +93,39 @@ function backplane.attach(iface, type, device, print_no_fp)
         log.info(util.c("BKPLN: ", util.trinary(m_is_wl, "WIRELESS", "WIRED"), " PHY_ATTACH ", iface))
 
         if _bp.wd_nic and (_bp.lan_iface == iface) then
-            -- connect this as the wired NIC
+            -- conectar isto como a NIC cabeada
             _bp.wd_nic.connect(device)
             _bp.nic_map[iface] = _bp.wd_nic
 
             log.info("BKPLN: WIRED PHY_UP " .. iface)
-            print_no_fp("wired comms modem reconnected")
+            print_no_fp("modem de comunicações cabeado reconectado")
 
             databus.tx_hw_wd_modem(true)
         elseif _bp.wl_nic and (not _bp.wl_nic.is_connected()) and m_is_wl then
-            -- connect this as the wireless NIC
+            -- conectar isto como a NIC sem fio
             _bp.wl_nic.connect(device)
             _bp.nic_map[iface] = _bp.wl_nic
 
             log.info("BKPLN: WIRELESS PHY_UP " .. iface)
-            print_no_fp("wireless comms modem reconnected")
+            print_no_fp("modem de comunicações sem fio reconectado")
 
             databus.tx_hw_wl_modem(true)
         elseif _bp.wl_nic and m_is_wl then
-            -- the wireless NIC already has a modem
+            -- a NIC sem fio já possui um modem
             device.closeAll()
 
-            print_no_fp("standby wireless modem connected")
-            log.info("BKPLN: standby wireless modem connected")
+            print_no_fp("modem sem fio de reserva conectado")
+            log.info("BKPLN: modem sem fio de reserva conectado")
         else
             device.closeAll()
 
-            print_no_fp("unassigned modem connected")
-            log.warning("BKPLN: unassigned modem connected")
+            print_no_fp("modem não atribuído conectado")
+            log.warning("BKPLN: modem não atribuído conectado")
         end
     end
 end
 
--- handle a backplane peripheral detach
+-- tratar uma desconexão de periférico no backplane
 ---@param iface string
 ---@param type string
 ---@param device ppm_generic
@@ -142,20 +142,20 @@ function backplane.detach(iface, type, device, print_no_fp)
             _bp.wd_nic.disconnect()
             log.info("BKPLN: WIRED PHY_DOWN " .. iface)
 
-            print_no_fp("wired modem disconnected")
-            log.warning("BKPLN: wired comms modem disconnected")
+            print_no_fp("modem cabeado desconectado")
+            log.warning("BKPLN: modem de comunicações cabeado desconectado")
 
             databus.tx_hw_wd_modem(false)
         elseif _bp.wl_nic and _bp.wl_nic.is_modem(device) then
             _bp.wl_nic.disconnect()
             log.info("BKPLN: WIRELESS PHY_DOWN " .. iface)
 
-            print_no_fp("wireless comms modem disconnected")
-            log.warning("BKPLN: wireless comms modem disconnected")
+            print_no_fp("modem de comunicações sem fio desconectado")
+            log.warning("BKPLN: modem de comunicações sem fio desconectado")
 
             local modem, m_iface = ppm.get_wireless_modem()
             if modem then
-                log.info("BKPLN: found another wireless modem, using it for comms")
+                log.info("BKPLN: outro modem sem fio encontrado, usando-o para comunicações")
 
                 _bp.wl_nic.connect(modem)
                 log.info("BKPLN: WIRELESS PHY_UP " .. m_iface)
@@ -163,8 +163,8 @@ function backplane.detach(iface, type, device, print_no_fp)
                 databus.tx_hw_wl_modem(false)
             end
         else
-            print_no_fp("unassigned modem disconnected")
-            log.warning("BKPLN: unassigned modem disconnected")
+            print_no_fp("modem não atribuído desconectado")
+            log.warning("BKPLN: modem não atribuído desconectado")
         end
     end
 end

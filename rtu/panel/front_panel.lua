@@ -1,5 +1,5 @@
 --
--- RTU Front Panel GUI
+-- GUI do Painel Frontal da RTU
 --
 
 local types         = require("scada-common.types")
@@ -30,12 +30,12 @@ local border = core.border
 
 local ind_grn = style.ind_grn
 
-local UNIT_TYPE_LABELS = { "UNKNOWN", "REDSTONE", "BOILER", "TURBINE", "DYNAMIC TANK", "IND MATRIX", "SPS", "SNA", "ENV DETECTOR", "ENERGY CORE" }
+local UNIT_TYPE_LABELS = { "DESCONHECIDO", "REDSTONE", "CALDEIRA", "TURBINA", "TANQUE DIN.", "MATRIZ IND.", "SPS", "SNA", "DETECTOR AMB", "NUCL. ENERG." }
 
--- create new front panel view
----@param panel DisplayBox main displaybox
----@param config rtu_config configuraiton
----@param units rtu_registry_entry[] unit list
+-- criar nova visualização do painel frontal
+---@param panel DisplayBox caixa de exibição principal
+---@param config rtu_config configuração
+---@param units rtu_registry_entry[] lista de unidades
 local function init(panel, config, units)
     local s_hi_box = style.theme.highlight_box
 
@@ -43,24 +43,24 @@ local function init(panel, config, units)
 
     local term_w, term_h = term.getSize()
 
-    TextBox{parent=panel,y=1,text="RTU GATEWAY",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
+    TextBox{parent=panel,y=1,text="GATEWAY RTU",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
 
     --
-    -- system indicators
+    -- indicadores do sistema
     --
 
     local system = Div{parent=panel,width=14,height=term_h-5,x=2,y=3}
 
     local status = LED{parent=system,label="STATUS",colors=cpair(colors.green,colors.red)}
-    local heartbeat = LED{parent=system,label="HEARTBEAT",colors=ind_grn}
+    local heartbeat = LED{parent=system,label="PULSO",colors=ind_grn}
     system.line_break()
 
     status.register(databus.ps, "status", status.update)
     heartbeat.register(databus.ps, "heartbeat", heartbeat.update)
 
     if config.WirelessModem and config.WiredModem then
-        local wd_modem = LEDPair{parent=system,label="WD MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
-        local wl_modem = LEDPair{parent=system,label="WL MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+        local wd_modem = LEDPair{parent=system,label="MODEM CABO",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+        local wl_modem = LEDPair{parent=system,label="MODEM S/FIO",off=colors.green_off,c1=colors.yellow,c2=colors.green}
 
         local function wd_modem_update()
             if databus.ps.get("has_wd_modem") then
@@ -100,12 +100,12 @@ local function init(panel, config, units)
     end
 
     if not style.colorblind then
-        local network = RGBLED{parent=system,label="NETWORK",colors={colors.green,colors.red,colors.yellow,colors.orange,style.ind_bkg}}
+        local network = RGBLED{parent=system,label="REDE",colors={colors.green,colors.red,colors.yellow,colors.orange,style.ind_bkg}}
         network.update(types.PANEL_LINK_STATE.DISCONNECTED)
         network.register(databus.ps, "link_state", network.update)
     else
-        local nt_lnk = LEDPair{parent=system,label="NT LINKED",off=style.ind_bkg,c1=colors.red,c2=colors.green}
-        local nt_ver = LEDPair{parent=system,label="NT VERSION",off=style.ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_lnk = LEDPair{parent=system,label="REDE VINC.",off=style.ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_ver = LEDPair{parent=system,label="VERSAO REDE",off=style.ind_bkg,c1=colors.red,c2=colors.green}
 
         nt_lnk.register(databus.ps, "link_state", function (state)
             local value = 2
@@ -134,7 +134,7 @@ local function init(panel, config, units)
 
     system.line_break()
 
-    local rt_main = LED{parent=system,label="RT MAIN",colors=ind_grn}
+    local rt_main = LED{parent=system,label="RT PRINC.",colors=ind_grn}
     local rt_comm = LED{parent=system,label="RT COMMS",colors=ind_grn}
     system.line_break()
 
@@ -142,7 +142,7 @@ local function init(panel, config, units)
     rt_comm.register(databus.ps, "routine__comms", rt_comm.update)
 
     --
-    -- hardware labeling
+    -- identificação do hardware
     --
 
     local hw_labels = Rectangle{parent=panel,x=2,y=term_h-6,width=14,height=5,border=border(1,s_hi_box.bkg,true),even_inner=true}
@@ -154,23 +154,23 @@ local function init(panel, config, units)
     TextBox{parent=hw_labels,text="SN "..comp_id.."-RTU",fg_bg=s_hi_box}
 
     --
-    -- speaker count
+    -- contagem de alto-falantes
     --
 
-    TextBox{parent=panel,x=2,y=term_h-1,text="SPEAKERS",width=8,fg_bg=style.fp.text_fg}
+    TextBox{parent=panel,x=2,y=term_h-1,text="FALANTES",width=8,fg_bg=style.fp.text_fg}
     local speaker_count = DataIndicator{parent=panel,x=11,y=term_h-1,format="%3d",value=0,width=3,fg_bg=style.theme.field_box}
     speaker_count.register(databus.ps, "speaker_count", speaker_count.update)
 
     --
-    -- unit status list
+    -- lista de status das unidades
     --
 
     local threads = Div{parent=panel,width=8,height=term_h-3,x=17,y=3}
 
-    -- display as many units as we can with 1 line of padding above and below
+    -- exibir o máximo de unidades possível com 1 linha de espaçamento acima e abaixo
     local list_length = math.min(#units, term_h - 3)
 
-    -- show routine statuses
+    -- mostrar status das rotinas
     for i = 1, list_length do
         TextBox{parent=threads,y=i,text=util.sprintf("%02d",i)}
         local rt_unit = LED{parent=threads,x=4,y=i,label="RT",colors=util.trinary(units[i].type~=RTU_UNIT_TYPE.REDSTONE,ind_grn,cpair(style.ind_bkg,style.ind_bkg))}
@@ -181,23 +181,23 @@ local function init(panel, config, units)
 
     local relay_counter = 0
 
-    -- show hardware statuses
+    -- mostrar status do hardware
     for i = 1, list_length do
         local unit = units[i]
 
         local is_rs = unit.type == RTU_UNIT_TYPE.REDSTONE
 
-        -- hardware status
+        -- status do hardware
         local unit_hw = RGBLED{parent=unit_hw_statuses,y=i,label="",colors={colors.red,colors.orange,colors.yellow,colors.green}}
 
         unit_hw.register(databus.ps, "unit_hw_" .. i, unit_hw.update)
 
-        -- unit name identifier (type + index)
+        -- identificador do nome da unidade (tipo + índice)
         local function get_name()
             if is_rs then
                 local is_local = unit.name == "redstone_local"
                 relay_counter = relay_counter + util.trinary(is_local, 0, 1)
-                return util.c("REDSTONE", util.trinary(is_local, "", " RELAY " .. relay_counter))
+                return util.c("REDSTONE", util.trinary(is_local, "", " RELE " .. relay_counter))
             else
                 return util.c(UNIT_TYPE_LABELS[unit.type + 1], " ", util.trinary(util.is_int(unit.index), unit.index, ""))
             end
@@ -207,9 +207,9 @@ local function init(panel, config, units)
 
         name_box.register(databus.ps, "unit_type_" .. i, function () name_box.set_value(get_name()) end)
 
-        -- assignment (unit # or facility)
+        -- atribuição (unidade # ou instalação)
         if unit.reactor then
-            local for_unit = util.trinary(unit.reactor == 0, "\x1a FACIL ", "\x1a UNIT " .. unit.reactor)
+            local for_unit = util.trinary(unit.reactor == 0, "\x1a INST. ", "\x1a UNID " .. unit.reactor)
             TextBox{parent=unit_hw_statuses,y=i,x=term_w-32,text=for_unit,fg_bg=disabled_fg}
         end
     end
