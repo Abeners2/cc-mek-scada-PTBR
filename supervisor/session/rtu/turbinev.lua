@@ -44,19 +44,19 @@ local PERIODICS = {
 
 local WRITE_BUSY_WAIT = 1000
 
--- create a new turbinev rtu session runner
+-- criar um novo executor de sessão RTU turbinev
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer RTU ID
 ---@param advert rtu_advertisement RTU advertisement table
 ---@param out_queue mqueue RTU message out queue
 function turbinev.new(session_id, unit_id, advert, out_queue)
-    -- checks
+    -- verificações
     if advert.type ~= RTU_UNIT_TYPE.TURBINE_VALVE then
-        log.error("attempt to instantiate turbinev RTU for type " .. types.rtu_type_to_string(advert.type))
+        log.error("tentativa de instanciar RTU turbinev para o tipo " .. types.rtu_type_to_string(advert.type))
         return nil
     elseif not util.is_int(advert.index) then
-        log.error("attempt to instantiate turbinev RTU without index")
+        log.error("tentativa de instanciar RTU turbinev sem índice")
         return nil
     end
 
@@ -81,76 +81,76 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
 
     -- PRIVATE FUNCTIONS --
 
-    -- increment the dumping mode
+    -- incrementar o modo de descarte
     local function _inc_dump_mode()
-        -- set mode command
+        -- comando de definir modo
         if self.mode_cmd == "IDLE" then self.mode_cmd = "DUMPING_EXCESS"
         elseif self.mode_cmd == "DUMPING_EXCESS" then self.mode_cmd = "DUMPING"
         elseif self.mode_cmd == "DUMPING" then self.mode_cmd = "IDLE"
         end
 
-        -- write coil 1 with unused value 0
+        -- escrever bobina 1 com valor não usado 0
         if self.session.send_request(TXN_TYPES.INC_DUMP, MODBUS_FCODE.WRITE_SINGLE_COIL, { 1, 0 }, WRITE_BUSY_WAIT) == false then
             self.resend_mode = true
         end
     end
 
-    -- decrement the dumping mode
+    -- decrementar o modo de descarte
     local function _dec_dump_mode()
-        -- set mode command
+        -- comando de definir modo
         if self.mode_cmd == "IDLE" then self.mode_cmd = "DUMPING"
         elseif self.mode_cmd == "DUMPING_EXCESS" then self.mode_cmd = "IDLE"
         elseif self.mode_cmd == "DUMPING" then self.mode_cmd = "DUMPING_EXCESS"
         end
 
-        -- write coil 2 with unused value 0
+        -- escrever bobina 2 com valor não usado 0
         if self.session.send_request(TXN_TYPES.DEC_DUMP, MODBUS_FCODE.WRITE_SINGLE_COIL, { 2, 0 }, WRITE_BUSY_WAIT) == false then
             self.resend_mode = true
         end
     end
 
-    -- set the dumping mode
+    -- definir o modo de descarte
     ---@param mode dumping_mode
     local function _set_dump_mode(mode)
         self.mode_cmd = mode
 
-        -- write holding register 1
+        -- escrever registrador de retenção 1
         if self.session.send_request(TXN_TYPES.SET_DUMP, MODBUS_FCODE.WRITE_SINGLE_HOLD_REG, { 1, mode }, WRITE_BUSY_WAIT) == false then
             self.resend_mode = true
         end
     end
 
-    -- query if the multiblock is formed
+    -- consultar se o multibloco está formado
     ---@param time_now integer
     local function _request_formed(time_now)
-        -- read discrete input 1 (start = 1, count = 1)
+        -- ler entrada discreta 1 (início = 1, quantidade = 1)
         if self.session.send_request(TXN_TYPES.FORMED, MODBUS_FCODE.READ_DISCRETE_INPUTS, { 1, 1 }) ~= false then
             self.periodics.next_formed_req = time_now + PERIODICS.FORMED
         end
     end
 
-    -- query the build of the device
+    -- consultar o build do dispositivo
     ---@param time_now integer
     local function _request_build(time_now)
-        -- read input registers 1 through 15 (start = 1, count = 15)
+        -- ler registradores de entrada 1 a 15 (início = 1, quantidade = 15)
         if self.session.send_request(TXN_TYPES.BUILD, MODBUS_FCODE.READ_INPUT_REGS, { 1, 15 }) ~= false then
             self.periodics.next_build_req = time_now + PERIODICS.BUILD
         end
     end
 
-    -- query the state of the device
+    -- consultar o estado do dispositivo
     ---@param time_now integer
     local function _request_state(time_now)
-        -- read input registers 16 through 19 (start = 16, count = 4)
+        -- ler registradores de entrada 16 a 19 (início = 16, quantidade = 4)
         if self.session.send_request(TXN_TYPES.STATE, MODBUS_FCODE.READ_INPUT_REGS, { 16, 4 }) ~= false then
             self.periodics.next_state_req = time_now + PERIODICS.STATE
         end
     end
 
-    -- query the tanks of the device
+    -- consultar os tanques do dispositivo
     ---@param time_now integer
     local function _request_tanks(time_now)
-        -- read input registers 20 through 25 (start = 20, count = 6)
+        -- ler registradores de entrada 20 a 25 (início = 20, quantidade = 6)
         if self.session.send_request(TXN_TYPES.TANKS, MODBUS_FCODE.READ_INPUT_REGS, { 20, 6 }) ~= false then
             self.periodics.next_tanks_req = time_now + PERIODICS.TANKS
         end
@@ -158,22 +158,22 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
 
     -- PUBLIC FUNCTIONS --
 
-    -- handle an ADU
+    -- tratar uma ADU
     ---@param adu modbus_adu
     function public.handle_adu(adu)
         local txn_type = self.session.try_resolve(adu)
         if txn_type == false then
-            -- nothing to do
+            -- nada a fazer
         elseif txn_type == TXN_TYPES.FORMED then
-            -- formed response
-            -- load in data if correct length
+            -- resposta de formado
+            -- carregar dados se o tamanho estiver correto
             if adu.length == 1 then
                 self.db.formed = adu.data[1]
 
                 if not self.db.formed then self.has_build = false end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.BUILD then
-            -- build response
+            -- resposta de build
             if adu.length == 15 then
                 self.db.build.last_update      = util.time_ms()
                 self.db.build.length           = adu.data[1]
@@ -196,7 +196,7 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
                 out_queue.push_data(unit_session.RTU_US_DATA.BUILD_CHANGED, { unit = advert.reactor, type = advert.type })
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.STATE then
-            -- state response
+            -- resposta de estado
             if adu.length == 4 then
                 self.db.state.last_update      = util.time_ms()
                 self.db.state.flow_rate        = adu.data[1]
@@ -209,7 +209,7 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
                 end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.TANKS then
-            -- tanks response
+            -- resposta de tanques
             if adu.length == 6 then
                 self.db.tanks.last_update = util.time_ms()
                 self.db.tanks.steam       = adu.data[1]
@@ -220,21 +220,21 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
                 self.db.tanks.energy_fill = adu.data[6]
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.INC_DUMP or txn_type == TXN_TYPES.DEC_DUMP or txn_type == TXN_TYPES.SET_DUMP then
-            -- successful acknowledgement
+            -- confirmação bem-sucedida
         else self.session.log_resolve_fail(txn_type) end
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
     function public.update(time_now)
-        -- check command queue
+        -- verificar fila de comandos
         while self.session.in_q.ready() do
-            -- get a new message to process
+            -- obter uma nova mensagem para processar
             local msg = self.session.in_q.pop()
 
             if msg ~= nil then
                 if msg.qtype == mqueue.TYPE.COMMAND then
-                    -- instruction
+                    -- instrução
                     local cmd = msg.message
 
                     if cmd == TBV_RTU_S_CMDS.INC_DUMP_MODE then
@@ -242,10 +242,10 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
                     elseif cmd == TBV_RTU_S_CMDS.DEC_DUMP_MODE then
                         _dec_dump_mode()
                     else
-                        log.debug(util.c(log_tag, "unrecognized in-queue command ", cmd))
+                        log.debug(util.c(log_tag, "comando da fila não reconhecido ", cmd))
                     end
                 elseif msg.qtype == mqueue.TYPE.DATA then
-                    -- instruction with body
+                    -- instrução com corpo
                     local cmd = msg.message ---@type queue_data
                     if cmd.key == TBV_RTU_S_DATA.SET_DUMP_MODE then
                         if cmd.val == DUMPING_MODE.IDLE or
@@ -253,22 +253,22 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
                            cmd.val == DUMPING_MODE.DUMPING then
                             _set_dump_mode(cmd.val)
                         else
-                            log.debug(util.c(log_tag, "unrecognized dumping mode \"", cmd.val, "\""))
+                            log.debug(util.c(log_tag, "modo de descarte não reconhecido \"", cmd.val, "\""))
                         end
                     else
-                        log.debug(util.c(log_tag, "unrecognized in-queue data ", cmd.key))
+                        log.debug(util.c(log_tag, "dado da fila não reconhecido ", cmd.key))
                     end
                 end
             end
 
-            -- max 100ms spent processing queue
+            -- máximo de 100ms gastos processando a fila
             if util.time() - time_now > 100 then
-                log.warning(log_tag .. "exceeded 100ms queue process limit")
+                log.warning(log_tag .. "limite de 100ms de processamento da fila excedido")
                 break
             end
         end
 
-        -- try to resend mode if needed
+        -- tentar reenviar o modo se necessário
         if self.resend_mode then
             self.resend_mode = false
             _set_dump_mode(self.mode_cmd)
@@ -276,7 +276,7 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
 
         time_now = util.time()
 
-        -- handle periodics
+        -- tratar periódicos
 
         if self.periodics.next_formed_req <= time_now then _request_formed(time_now) end
 
@@ -289,14 +289,14 @@ function turbinev.new(session_id, unit_id, advert, out_queue)
         self.session.post_update()
     end
 
-    -- invalidate build cache
+    -- invalidar cache de build
     function public.invalidate_cache()
         self.periodics.next_formed_req = 0
         self.periodics.next_build_req = 0
         self.has_build = false
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db() return self.db end
 

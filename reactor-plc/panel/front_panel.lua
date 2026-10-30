@@ -33,7 +33,9 @@ local ALIGN = core.ALIGN
 local cpair = core.cpair
 local border = core.border
 
--- create new front panel view
+-- criar nova visualização do painel frontal
+---@param panel DisplayBox displaybox principal
+---@param config plc_config configuração
 ---@param panel DisplayBox main displaybox
 ---@param config plc_config configuraiton
 local function init(panel, config)
@@ -64,8 +66,8 @@ local function init(panel, config)
     -- DIAGNOSTICS DISPLAY
     --
 
-    local debug_header = TextBox{parent=diag_page,y=1,text="FISSION REACTOR PLC DIAGNOSTICS - UNIT ?",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
-    debug_header.register(databus.ps, "unit_id", function (id) debug_header.set_value(util.c("FISSION REACTOR PLC DIAGNOSTICS - UNIT ", id)) end)
+    local debug_header = TextBox{parent=diag_page,y=1,text="DIAGNÓSTICO DO PLC DO REATOR DE FISSÃO - UNIDADE ?",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
+    debug_header.register(databus.ps, "unit_id", function (id) debug_header.set_value(util.c("DIAGNÓSTICO DO PLC DO REATOR DE FISSÃO - UNIDADE ", id)) end)
 
     --
     -- ramp control
@@ -73,7 +75,7 @@ local function init(panel, config)
 
     local ramp = Div{parent=diag_page,width=19,height=12,x=2,y=3}
 
-    local ra = LED{parent=ramp,label="RAMPING ACTIVE",colors=ind_grn}
+    local ra = LED{parent=ramp,label="RAMPA ATIVA",colors=ind_grn}
     TextBox{parent=ramp,x=3,text="SETPOINT"}
     local sp  = DataIndicator{parent=ramp,y=2,x=12,unit="",format="%8.2f",value=0,width=8,fg_bg=s_hi_box}
 
@@ -103,9 +105,9 @@ local function init(panel, config)
 
     local limit = Div{parent=diag_page,width=27,height=18,x=diag_page.get_width()-25,y=3}
 
-    local fm = LED{parent=limit,label="FUEL MON ACTIVE",colors=ind_grn}
-    local la = LED{parent=limit,label="LIMITING ACTIVE",colors=ind_grn}
-    local fr = LED{parent=limit,label="LIMIT FORCE RAMP",colors=ind_wht}
+    local fm = LED{parent=limit,label="MON COMB ATIVO",colors=ind_grn}
+    local la = LED{parent=limit,label="LIMITE ATIVO",colors=ind_grn}
+    local fr = LED{parent=limit,label="LIM FORÇA RAMPA",colors=ind_wht}
 
     fm.register(databus.ps, "spctl_limit_mon", fm.update)
     la.register(databus.ps, "spctl_limit_lim", la.update)
@@ -151,16 +153,16 @@ local function init(panel, config)
     tps.register(databus.ps, "spctl_data_tps", tps.update)
     tt.register(databus.ps, "spctl_data_tick", tt.update)
 
-    PushButton{parent=diag_page,x=diag_page.get_width()-6,y=15,min_width=6,text="BACK",callback=show_main,fg_bg=cpair(colors.black,colors.white),active_fg_bg=cpair(colors.black,colors.gray)}
+    PushButton{parent=diag_page,x=diag_page.get_width()-6,y=15,min_width=6,text="VOLTAR",callback=show_main,fg_bg=cpair(colors.black,colors.white),active_fg_bg=cpair(colors.black,colors.gray)}
 
-    TextBox{parent=diag_page,y=diag_page.get_height()-2,width=diag_page.get_width(),alignment=ALIGN.CENTER,text="VALUES ONLY UPDATED WHILE THIS PAGE IS ACTIVE\nTHIS IMPACTS PERFORMANCE - GO BACK BEFORE CLOSING",fg_bg=cpair(style.theme.label,colors._INHERIT)}
+    TextBox{parent=diag_page,y=diag_page.get_height()-2,width=diag_page.get_width(),alignment=ALIGN.CENTER,text="VALORES ATUALIZADOS SÓ ENQUANTO ESTA PÁGINA ESTIVER ATIVA\nISSO AFETA O DESEMPENHO - VOLTE ANTES DE FECHAR",fg_bg=cpair(style.theme.label,colors._INHERIT)}
 
     --
     -- STANDARD DISPLAY
     --
 
-    local header = TextBox{parent=main_page,y=1,text="FISSION REACTOR PLC - UNIT ?",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
-    header.register(databus.ps, "unit_id", function (id) header.set_value(util.c("FISSION REACTOR PLC - UNIT ", id)) end)
+    local header = TextBox{parent=main_page,y=1,text="PLC DO REATOR DE FISSÃO - UNIDADE ?",alignment=ALIGN.CENTER,fg_bg=style.theme.header}
+    header.register(databus.ps, "unit_id", function (id) header.set_value(util.c("PLC DO REATOR DE FISSÃO - UNIDADE ", id)) end)
 
     --
     -- system indicators
@@ -175,19 +177,19 @@ local function init(panel, config)
     heartbeat.register(databus.ps, "heartbeat", heartbeat.update)
 
     if config.Networked then
-        local auto_ctl = LED{parent=system,label="AUTO CONTROL",colors=ind_grn}
+        local auto_ctl = LED{parent=system,label="CONTROLE AUTO",colors=ind_grn}
         auto_ctl.register(databus.ps, "auto_control", auto_ctl.update)
     end
 
     system.line_break()
 
-    local reactor = LEDPair{parent=system,label="REACTOR",off=colors.red,c1=colors.yellow,c2=colors.green}
+    local reactor = LEDPair{parent=system,label="REATOR",off=colors.red,c1=colors.yellow,c2=colors.green}
     reactor.register(databus.ps, "reactor_dev_state", reactor.update)
 
     if config.Networked then
         if config.WirelessModem and config.WiredModem then
-            local wd_modem = LEDPair{parent=system,label="WD MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
-            local wl_modem = LEDPair{parent=system,label="WL MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+            local wd_modem = LEDPair{parent=system,label="MODEM CAB",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+            local wl_modem = LEDPair{parent=system,label="MODEM S/FIO",off=colors.green_off,c1=colors.yellow,c2=colors.green}
 
             local function wd_modem_update()
                 if databus.ps.get("has_wd_modem") then
@@ -230,13 +232,13 @@ local function init(panel, config)
     end
 
     if not style.colorblind then
-        local network = RGBLED{parent=system,label="NETWORK",colors={colors.green,colors.red,colors.yellow,colors.orange,style.ind_bkg}}
+        local network = RGBLED{parent=system,label="REDE",colors={colors.green,colors.red,colors.yellow,colors.orange,style.ind_bkg}}
         network.update(types.PANEL_LINK_STATE.DISCONNECTED)
         network.register(databus.ps, "link_state", network.update)
     else
-        local nt_lnk = LEDPair{parent=system,label="NT LINKED",off=style.ind_bkg,c1=colors.red,c2=colors.green}
-        local nt_ver = LEDPair{parent=system,label="NT VERSION",off=style.ind_bkg,c1=colors.red,c2=colors.green}
-        local nt_col = LED{parent=system,label="NT COLLISION",colors=ind_red}
+        local nt_lnk = LEDPair{parent=system,label="REDE LIGADA",off=style.ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_ver = LEDPair{parent=system,label="REDE VERSÃO",off=style.ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_col = LED{parent=system,label="REDE COLISÃO",colors=ind_red}
 
         nt_lnk.register(databus.ps, "link_state", function (state)
             local value = 2
@@ -267,10 +269,10 @@ local function init(panel, config)
 
     system.line_break()
 
-    local rt_main = LED{parent=system,label="RT MAIN",colors=ind_grn}
+    local rt_main = LED{parent=system,label="RT PRINC",colors=ind_grn}
     local rt_rps  = LED{parent=system,label="RT RPS",colors=ind_grn}
-    local rt_cmtx = LED{parent=system,label="RT COMMS TX",colors=ind_grn}
-    local rt_cmrx = LED{parent=system,label="RT COMMS RX",colors=ind_grn}
+    local rt_cmtx = LED{parent=system,label="RT COM TX",colors=ind_grn}
+    local rt_cmrx = LED{parent=system,label="RT COM RX",colors=ind_grn}
     local rt_sctl = LED{parent=system,label="RT SPCTL",colors=ind_grn}
     system.line_break()
 
@@ -286,17 +288,17 @@ local function init(panel, config)
 
     local status = Div{parent=main_page,width=term_w-32,height=18,x=17,y=3}
 
-    local active = LED{parent=status,x=2,width=12,label="REACTOR ACTIVE",colors=ind_grn}
+    local active = LED{parent=status,x=2,width=12,label="REATOR ATIVO",colors=ind_grn}
 
     -- only show emergency coolant LED if emergency coolant is configured for this device
     if plc.config.EmerCoolEnable then
-        local emer_cool = LED{parent=status,x=2,width=14,label="EMERG. COOLANT",colors=cpair(colors.yellow,colors.yellow_off)}
+        local emer_cool = LED{parent=status,x=2,width=14,label="REFRIG. EMERG.",colors=cpair(colors.yellow,colors.yellow_off)}
         emer_cool.register(databus.ps, "emer_cool", emer_cool.update)
     end
 
     local status_trip_rct = Rectangle{parent=status,height=3,border=border(1,s_hi_box.bkg,true),even_inner=true}
     local status_trip = Div{parent=status_trip_rct,height=1,fg_bg=s_hi_box}
-    local scram = LED{parent=status_trip,width=10,label="RPS TRIP",colors=ind_red,flash=true,period=flasher.PERIOD.BLINK_250_MS}
+    local scram = LED{parent=status_trip,width=10,label="TRIP RPS",colors=ind_red,flash=true,period=flasher.PERIOD.BLINK_250_MS}
 
     local controls_rct = Rectangle{parent=status,width=status.get_width()-2,height=3,border=border(1,s_hi_box.bkg,true),even_inner=true}
     local controls = Div{parent=controls_rct,width=controls_rct.get_width()-2,height=1,fg_bg=s_hi_box}
@@ -321,7 +323,7 @@ local function init(panel, config)
 
     -- warning about multiple reactors connected
 
-    local warn_strings = { "!! DANGER !!\n>1 REACTOR\nLOGIC ADAPTER", "REMOVE\nALL BUT ONE\nLOGIC ADAPTER" }
+    local warn_strings = { "!! PERIGO !!\n>1 ADAPTADOR\nLÓGICO REATOR", "REMOVA TODOS\nMENOS UM\nADAPT. LÓGICO" }
     local multi_warn = TextBox{parent=status,text=warn_strings[1],width=status.get_width()-2,alignment=ALIGN.CENTER,fg_bg=cpair(colors.yellow,colors.red),hidden=true}
 
     local warn_toggle = true
@@ -350,19 +352,19 @@ local function init(panel, config)
 
     local rps = Rectangle{parent=main_page,width=16,height=16,x=term_w-15,y=3,border=border(1,s_hi_box.bkg),thin=true,fg_bg=s_hi_box}
     local rps_man  = LED{parent=rps,label="MANUAL",colors=ind_red}
-    local rps_auto = LED{parent=rps,label="AUTOMATIC",colors=ind_red}
+    local rps_auto = LED{parent=rps,label="AUTOMÁTICO",colors=ind_red}
     rps.line_break()
     local rps_tmo  = LED{parent=rps,label="TIMEOUT",colors=ind_red}
     rps.line_break()
-    local rps_flt  = LED{parent=rps,label="PLC FAULT",colors=ind_red}
-    local rps_fail = LED{parent=rps,label="RCT FAULT",colors=ind_red}
+    local rps_flt  = LED{parent=rps,label="FALHA PLC",colors=ind_red}
+    local rps_fail = LED{parent=rps,label="FALHA RCT",colors=ind_red}
     rps.line_break()
-    local rps_dmg  = LED{parent=rps,label="HI DAMAGE",colors=ind_red}
-    local rps_tmp  = LED{parent=rps,label="HI TEMP",colors=ind_red}
-    local rps_wst  = LED{parent=rps,label="HI WASTE",colors=ind_red}
+    local rps_dmg  = LED{parent=rps,label="DANO ALTO",colors=ind_red}
+    local rps_tmp  = LED{parent=rps,label="TEMP ALTA",colors=ind_red}
+    local rps_wst  = LED{parent=rps,label="RESÍD ALTO",colors=ind_red}
     rps.line_break()
-    local rps_ccl  = LED{parent=rps,label="LO CCOOLANT",colors=ind_red}
-    local rps_hcl  = LED{parent=rps,label="HI HCOOLANT",colors=ind_red}
+    local rps_ccl  = LED{parent=rps,label="CCOOL BAIXO",colors=ind_red}
+    local rps_hcl  = LED{parent=rps,label="HCOOL ALTO",colors=ind_red}
 
     rps_man.register(databus.ps, "rps_manual", rps_man.update)
     rps_auto.register(databus.ps, "rps_automatic", rps_auto.update)

@@ -1,5 +1,5 @@
 --
--- Coordinator Front Panel GUI
+-- GUI do Painel Frontal do Coordenador
 --
 
 local types     = require("scada-common.types")
@@ -35,7 +35,7 @@ local border = core.border
 
 local led_grn = style.led_grn
 
--- create new front panel view
+-- cria a nova visualizacao do painel frontal
 ---@param panel DisplayBox main displaybox
 ---@param config crd_config configuration
 local function init(panel, config)
@@ -45,28 +45,28 @@ local function init(panel, config)
 
     local term_w, term_h = term.getSize()
 
-    TextBox{parent=panel,y=1,text="SCADA COORDINATOR",alignment=ALIGN.CENTER,fg_bg=style.fp_theme.header}
+    TextBox{parent=panel,y=1,text="COORDENADOR SCADA",alignment=ALIGN.CENTER,fg_bg=style.fp_theme.header}
 
     local page_div = Div{parent=panel,y=3}
 
     --
-    -- system indicators
+    -- indicadores do sistema
     --
 
     local main_page = Div{parent=page_div,y=1}
 
     local system = Div{parent=main_page,width=14,height=17,x=2,y=2}
 
-    local status = LED{parent=system,label="STATUS",colors=cpair(colors.green,colors.red)}
-    local heartbeat = LED{parent=system,label="HEARTBEAT",colors=led_grn}
+    local status = LED{parent=system,label="ESTADO",colors=cpair(colors.green,colors.red)}
+    local heartbeat = LED{parent=system,label="BATIMENTO",colors=led_grn}
     system.line_break()
 
     status.register(ps, "status", status.update)
     heartbeat.register(ps, "heartbeat", heartbeat.update)
 
     if config.WirelessModem and config.WiredModem then
-        local wd_modem = LEDPair{parent=system,label="WD MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
-        local wl_modem = LEDPair{parent=system,label="WL MODEM",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+        local wd_modem = LEDPair{parent=system,label="MODEM CABO",off=colors.green_off,c1=colors.yellow,c2=colors.green}
+        local wl_modem = LEDPair{parent=system,label="MODEM S/FIO",off=colors.green_off,c1=colors.yellow,c2=colors.green}
 
         local function wd_modem_update()
             if ps.get("has_wd_modem") then
@@ -106,12 +106,12 @@ local function init(panel, config)
     end
 
     if not style.colorblind then
-        local network = RGBLED{parent=system,label="NETWORK",colors={colors.green,colors.red,colors.yellow,colors.orange,style.fp_ind_bkg}}
+        local network = RGBLED{parent=system,label="REDE",colors={colors.green,colors.red,colors.yellow,colors.orange,style.fp_ind_bkg}}
         network.update(types.PANEL_LINK_STATE.DISCONNECTED)
         network.register(ps, "link_state", network.update)
     else
-        local nt_lnk = LEDPair{parent=system,label="NT LINKED",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
-        local nt_ver = LEDPair{parent=system,label="NT VERSION",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_lnk = LEDPair{parent=system,label="NT LIGADO",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
+        local nt_ver = LEDPair{parent=system,label="NT VERSAO",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
 
         nt_lnk.register(ps, "link_state", function (state)
             local value = 2
@@ -148,26 +148,26 @@ local function init(panel, config)
 
     local hmi_devs = Div{parent=main_page,width=16,height=17,x=18,y=2}
 
-    local speaker = LED{parent=hmi_devs,label="SPEAKER",colors=led_grn}
+    local speaker = LED{parent=hmi_devs,label="ALTO-FALANTE",colors=led_grn}
     speaker.register(ps, "has_speaker", speaker.update)
 
     hmi_devs.line_break()
 
-    local main_disp = LEDPair{parent=hmi_devs,label="MAIN DISPLAY",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
+    local main_disp = LEDPair{parent=hmi_devs,label="TELA PRINCIPAL",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
     main_disp.register(ps, "main_monitor", main_disp.update)
 
-    local flow_disp = LEDPair{parent=hmi_devs,label="FLOW DISPLAY",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
+    local flow_disp = LEDPair{parent=hmi_devs,label="TELA DE FLUXO",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
     flow_disp.register(ps, "flow_monitor", flow_disp.update)
 
     hmi_devs.line_break()
 
     for i = 1, config.UnitCount do
-        local unit_disp = LEDPair{parent=hmi_devs,label="UNIT "..i.." DISPLAY",off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
+        local unit_disp = LEDPair{parent=hmi_devs,label="TELA UNID. "..i,off=style.fp_ind_bkg,c1=colors.red,c2=colors.green}
         unit_disp.register(ps, "unit_monitor_" .. i, unit_disp.update)
     end
 
     --
-    -- hardware labeling
+    -- identificacao de hardware
     --
 
     local hw_labels = Rectangle{parent=main_page,x=2,y=term_h-7,width=14,height=5,border=border(1,s_hi_box.bkg,true),even_inner=true}
@@ -179,16 +179,16 @@ local function init(panel, config)
     TextBox{parent=hw_labels,text="SN "..comp_id.."-CRD",fg_bg=s_hi_box}
 
     --
-    -- page handling
+    -- gerenciamento de paginas
     --
 
-    -- API page
+    -- pagina da API
 
     local api_page = Div{parent=page_div,y=1,hidden=true}
     local api_list = ListBox{parent=api_page,y=1,height=term_h-2,width=term_w,scroll_height=1000,fg_bg=style.fp.text_fg,nav_fg_bg=cpair(colors.gray,colors.lightGray),nav_active=cpair(colors.black,colors.gray)}
-    local _ = Div{parent=api_list,height=1} -- padding
+    local _ = Div{parent=api_list,height=1} -- espacamento
 
-    -- assemble page panes
+    -- monta os paineis de pagina
 
     local panes = { main_page, api_page }
 
@@ -201,7 +201,7 @@ local function init(panel, config)
 
     TabBar{parent=panel,y=2,tabs=tabs,min_width=9,callback=page_pane.set_value,fg_bg=style.fp_theme.highlight_box_bright}
 
-    -- link pocket API list management to PGI
+    -- vincula o gerenciamento da lista da API de pocket a PGI
     pgi.link_elements(api_list, pkt_entry)
 end
 

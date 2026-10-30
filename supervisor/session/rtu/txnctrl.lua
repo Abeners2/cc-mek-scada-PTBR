@@ -1,15 +1,15 @@
 --
--- MODBUS Transaction Controller
+-- Controlador de Transações MODBUS
 --
 
 local util = require("scada-common.util")
 
 local txnctrl = {}
 
--- 2000ms max wait
+-- espera máxima de 2000ms
 local TIMEOUT = 2000
 
--- create a new transaction controller
+-- criar um novo controlador de transações
 ---@nodiscard
 function txnctrl.new()
     local self = {
@@ -23,19 +23,19 @@ function txnctrl.new()
     local insert = table.insert
     local remove = table.remove
 
-    -- get the length of the transaction list
+    -- obter o tamanho da lista de transações
     ---@nodiscard
     function public.length()
         return #self.list
     end
 
-    -- check if there are no active transactions
+    -- verificar se não há transações ativas
     ---@nodiscard
     function public.empty()
         return #self.list == 0
     end
 
-    -- create a new transaction of the given type
+    -- criar uma nova transação do tipo informado
     ---@nodiscard
     ---@param txn_type integer
     ---@return integer txn_id
@@ -53,7 +53,7 @@ function txnctrl.new()
         return txn_id
     end
 
-    -- mark a transaction as resolved to get its transaction type
+    -- marcar uma transação como resolvida para obter seu tipo
     ---@nodiscard
     ---@param txn_id integer
     ---@return integer|nil txn_type
@@ -71,7 +71,7 @@ function txnctrl.new()
         return txn_type
     end
 
-    -- renew a transaction by re-inserting it with its ID and type
+    -- renovar uma transação reinserindo-a com seu ID e tipo
     ---@param txn_id integer
     ---@param txn_type integer
     function public.renew(txn_id, txn_type)
@@ -82,13 +82,13 @@ function txnctrl.new()
         })
     end
 
-    -- close timed-out transactions
+    -- fechar transações expiradas
     function public.cleanup()
         local now = util.time()
         util.filter_table(self.list, function (txn) return txn.expiry > now end)
     end
 
-    -- clear the transaction list
+    -- limpar a lista de transações
     function public.clear()
         self.list = {}
     end

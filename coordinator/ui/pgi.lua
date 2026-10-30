@@ -1,5 +1,5 @@
 --
--- Protected Graphics Interface
+-- Interface Grafica Protegida (PGI)
 --
 
 local log  = require("scada-common.log")
@@ -10,13 +10,13 @@ local pgi = {}
 local data = {
     pkt_list = nil,  ---@type ListBox|nil
     pkt_entry = nil, ---@type function
-    -- session entries
+    -- entradas de sessao
     s_entries = {
         pkt = {}     ---@type Div[]
     }
 }
 
--- link list boxes
+-- vincula as caixas de lista
 ---@param pkt_list ListBox pocket list element
 ---@param pkt_entry fun(parent: ListBox, id: integer) : Div pocket entry constructor
 function pgi.link_elements(pkt_list, pkt_entry)
@@ -24,13 +24,13 @@ function pgi.link_elements(pkt_list, pkt_entry)
     data.pkt_entry = pkt_entry
 end
 
--- unlink all fields, disabling the PGI
+-- desvincula todos os campos, desabilitando a PGI
 function pgi.unlink()
     data.pkt_list = nil
     data.pkt_entry = nil
 end
 
--- add a PKT entry to the PKT list
+-- adiciona uma entrada PKT a lista PKT
 ---@param session_id integer pocket session
 function pgi.create_pkt_entry(session_id)
     if data.pkt_list ~= nil and data.pkt_entry ~= nil then
@@ -39,12 +39,12 @@ function pgi.create_pkt_entry(session_id)
         if success then
             data.s_entries.pkt[session_id] = result
         else
-            log.error(util.c("PGI: failed to create PKT entry (", result, ")"), true)
+            log.error(util.c("PGI: falha ao criar entrada PKT (", result, ")"), true)
         end
     end
 end
 
--- delete a PKT entry from the PKT list
+-- remove uma entrada PKT da lista PKT
 ---@param session_id integer pocket session
 function pgi.delete_pkt_entry(session_id)
     if data.s_entries.pkt[session_id] ~= nil then
@@ -52,10 +52,10 @@ function pgi.delete_pkt_entry(session_id)
         data.s_entries.pkt[session_id] = nil
 
         if not success then
-            log.error(util.c("PGI: failed to delete PKT entry (", result, ")"), true)
+            log.error(util.c("PGI: falha ao remover entrada PKT (", result, ")"), true)
         end
     else
-        log.debug(util.c("PGI: tried to delete unknown PKT entry ", session_id))
+        log.debug(util.c("PGI: tentou remover entrada PKT desconhecida ", session_id))
     end
 end
 

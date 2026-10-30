@@ -1,5 +1,5 @@
 --
--- Unit Display Splash Screen
+-- Tela de abertura do display da unidade
 --
 
 local ioctl   = require("coordinator.ioctl")
@@ -12,7 +12,7 @@ local Waiting = require("graphics.elements.animations.Waiting")
 
 local ALIGN = core.ALIGN
 
--- create new unit splash screen
+-- cria a nova tela de abertura da unidade
 ---@param main DisplayBox unit displaybox
 ---@param id integer
 local function init(main, id)
@@ -20,7 +20,7 @@ local function init(main, id)
 
     Waiting{parent=main,x=mid_x-2,y=mid_y-4}
 
-    local status = TextBox{parent=main,x=mid_x-15,y=mid_y+2,width=30,text="Waiting...",alignment=ALIGN.CENTER}
+    local status = TextBox{parent=main,x=mid_x-15,y=mid_y+2,width=30,text="Aguardando...",alignment=ALIGN.CENTER}
 
     status.register(ioctl.get_db().os_ps, "splash_status_unit_" .. id, status.set_value)
 end

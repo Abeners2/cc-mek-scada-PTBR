@@ -38,7 +38,7 @@ local PERIODICS = {
     OUTPUT_SYNC = 200
 }
 
--- create a new block of IO banks (facility, then each unit)
+-- criar um novo bloco de bancos de E/S (instalação, depois cada unidade)
 local function new_io_block() return { [0] = {}, {}, {}, {}, {} } end
 
 ---@class dig_phy_entry
@@ -49,16 +49,16 @@ local function new_io_block() return { [0] = {}, {}, {}, {}, {} } end
 ---@field phy number actual value
 ---@field req number commanded value
 
--- create a new redstone rtu session runner
+-- criar um novo executor de sessão RTU redstone
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer RTU ID
 ---@param advert rtu_advertisement RTU advertisement table
 ---@param out_queue mqueue RTU message out queue
 function redstone.new(session_id, unit_id, advert, out_queue)
-    -- type check
+    -- verificação de tipo
     if advert.type ~= RTU_UNIT_TYPE.REDSTONE then
-        log.error("attempt to instantiate redstone RTU for type " .. types.rtu_type_to_string(advert.type))
+        log.error("tentativa de instanciar RTU redstone para o tipo " .. types.rtu_type_to_string(advert.type))
         return nil
     end
 
@@ -84,7 +84,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
             analog_out = {}     ---@type { bank: integer, port: IO_PORT }[] holding registers
         },
         phy_trans = { coils = -1, hold_regs = -1 },
-        -- last set/read ports (reflecting the current state of the RTU)
+        -- últimas portas definidas/lidas (refletindo o estado atual da RTU)
         ---@class rs_io_states
         phy_io = {
             digital_in = new_io_block(),    ---@type dig_phy_entry[][] discrete inputs
@@ -94,7 +94,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
         },
         ---@class redstone_session_db
         db = {
-            -- read/write functions for connected I/O
+            -- funções de leitura/escrita para E/S conectada
             ---@type (rs_db_dig_io|rs_db_ana_io)[][]
             io = new_io_block()
         }
@@ -105,7 +105,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
 
     -- INITIALIZE --
 
-    -- setup I/O
+    -- configurar E/S
     for bank = 0, 4 do
         for i = 1, #advert.rs_conns[bank] do
             local port = advert.rs_conns[bank][i]
@@ -182,12 +182,12 @@ function redstone.new(session_id, unit_id, advert, out_queue)
 
                     self.db.io[bank][port] = io_f
                 else
-                    -- should be unreachable code, we already validated ports
-                    log.error(util.c(log_tag, "failed to identify advertisement port IO mode (", bank, ":", port, ")"), true)
+                    -- código que deveria ser inalcançável, as portas já foram validadas
+                    log.error(util.c(log_tag, "falha ao identificar o modo de E/S da porta do anúncio (", bank, ":", port, ")"), true)
                     return nil
                 end
             else
-                log.error(util.c(log_tag, "invalid advertisement port (", bank, ":", port, ")"), true)
+                log.error(util.c(log_tag, "porta de anúncio inválida (", bank, ":", port, ")"), true)
                 return nil
             end
         end
@@ -195,17 +195,17 @@ function redstone.new(session_id, unit_id, advert, out_queue)
 
     -- PRIVATE FUNCTIONS --
 
-    -- query discrete inputs
+    -- consultar entradas discretas
     local function _request_discrete_inputs()
         self.session.send_request(TXN_TYPES.DI_READ, MODBUS_FCODE.READ_DISCRETE_INPUTS, { 1, #self.io_map.digital_in })
     end
 
-    -- query input registers
+    -- consultar registradores de entrada
     local function _request_input_registers()
         self.session.send_request(TXN_TYPES.INPUT_REG_READ, MODBUS_FCODE.READ_INPUT_REGS, { 1, #self.io_map.analog_in })
     end
 
-    -- write all coil outputs
+    -- escrever todas as saídas de bobina
     local function _write_coils()
         local params = { 1 }
 
@@ -218,12 +218,12 @@ function redstone.new(session_id, unit_id, advert, out_queue)
         self.phy_trans.coils = self.session.send_request(TXN_TYPES.COIL_WRITE, MODBUS_FCODE.WRITE_MUL_COILS, params)
     end
 
-    -- read all coil outputs
+    -- ler todas as saídas de bobina
     local function _read_coils()
         self.session.send_request(TXN_TYPES.COIL_READ, MODBUS_FCODE.READ_COILS, { 1, #self.io_map.digital_out })
     end
 
-    -- write all holding register outputs
+    -- escrever todas as saídas de registradores de retenção
     local function _write_holding_registers()
         local params = { 1 }
 
@@ -236,29 +236,29 @@ function redstone.new(session_id, unit_id, advert, out_queue)
         self.phy_trans.hold_regs = self.session.send_request(TXN_TYPES.HOLD_REG_WRITE, MODBUS_FCODE.WRITE_MUL_HOLD_REGS, params)
     end
 
-    -- read all holding register outputs
+    -- ler todas as saídas de registradores de retenção
     local function _read_holding_registers()
         self.session.send_request(TXN_TYPES.HOLD_REG_READ, MODBUS_FCODE.READ_MUL_HOLD_REGS, { 1, #self.io_map.analog_out })
     end
 
     -- PUBLIC FUNCTIONS --
 
-    -- handle an ADU
+    -- tratar uma ADU
     ---@param adu modbus_adu
     function public.handle_adu(adu)
         local txn_type = self.session.try_resolve(adu)
         if txn_type == false then
-            -- check if this is a failed write request
-            -- redstone operations are always immediately executed, so this would not be from an ACK or BUSY
+            -- verificar se esta é uma requisição de escrita que falhou
+            -- operações de redstone são sempre executadas imediatamente, então isto não seria de um ACK ou BUSY
             if adu.txn_id == self.phy_trans.coils then
                 self.phy_trans.coils = TXN_READY
-                log.debug(log_tag .. "failed to write coils, retrying soon")
+                log.debug(log_tag .. "falha ao escrever bobinas, tentando novamente em breve")
             elseif adu.txn_id == self.phy_trans.hold_regs then
                 self.phy_trans.hold_regs = TXN_READY
-                log.debug(log_tag .. "failed to write holding registers, retrying soon")
+                log.debug(log_tag .. "falha ao escrever registradores de retenção, tentando novamente em breve")
             end
         elseif txn_type == TXN_TYPES.DI_READ then
-            -- discrete input read response
+            -- resposta de leitura de entrada discreta
             if adu.length == #self.io_map.digital_in then
                 for i = 1, adu.length do
                     local entry = self.io_map.digital_in[i]
@@ -268,7 +268,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
                 end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.INPUT_REG_READ then
-            -- input register read response
+            -- resposta de leitura de registradores de entrada
             if adu.length == #self.io_map.analog_in then
                 for i = 1, adu.length do
                     local entry = self.io_map.analog_in[i]
@@ -278,12 +278,12 @@ function redstone.new(session_id, unit_id, advert, out_queue)
                 end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.COIL_WRITE then
-            -- successful acknowledgement, read back
+            -- confirmação bem-sucedida, ler de volta
             _read_coils()
         elseif txn_type == TXN_TYPES.COIL_READ then
-            -- update phy I/O table
-            -- if there are multiple outputs for the same port, they will overwrite eachother (but *should* be identical)
-            -- given these are redstone outputs, if one worked they all should have, so no additional verification will be done
+            -- atualizar tabela de E/S física
+            -- se houver várias saídas para a mesma porta, elas se sobrescreverão (mas *devem* ser idênticas)
+            -- como estas são saídas de redstone, se uma funcionou todas devem ter funcionado, então nenhuma verificação adicional será feita
             if adu.length == #self.io_map.digital_out then
                 for i = 1, adu.length do
                     local entry = self.io_map.digital_out[i]
@@ -297,12 +297,12 @@ function redstone.new(session_id, unit_id, advert, out_queue)
                 self.phy_trans.coils = TXN_READY
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.HOLD_REG_WRITE then
-            -- successful acknowledgement, read back
+            -- confirmação bem-sucedida, ler de volta
             _read_holding_registers()
         elseif txn_type == TXN_TYPES.HOLD_REG_READ then
-            -- update phy I/O table
-            -- if there are multiple outputs for the same port, they will overwrite eachother (but *should* be identical)
-            -- given these are redstone outputs, if one worked they all should have, so no additional verification will be done
+            -- atualizar tabela de E/S física
+            -- se houver várias saídas para a mesma porta, elas se sobrescreverão (mas *devem* ser idênticas)
+            -- como estas são saídas de redstone, se uma funcionou todas devem ter funcionado, então nenhuma verificação adicional será feita
             if adu.length == #self.io_map.analog_out then
                 for i = 1, adu.length do
                     local entry = self.io_map.analog_out[i]
@@ -316,10 +316,10 @@ function redstone.new(session_id, unit_id, advert, out_queue)
         else self.session.log_resolve_fail(txn_type) end
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
     function public.update(time_now)
-        -- poll digital inputs
+        -- ler entradas digitais
         if self.has_di then
             if self.periodics.next_di_req <= time_now then
                 _request_discrete_inputs()
@@ -327,7 +327,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
             end
         end
 
-        -- sync digital outputs
+        -- sincronizar saídas digitais
         if self.has_do then
             if (self.periodics.next_cl_sync <= time_now) and (self.phy_trans.coils == TXN_READY) then
                 for bank = 0, 4 do
@@ -350,7 +350,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
             end
         end
 
-        -- poll analog inputs
+        -- ler entradas analógicas
         if self.has_ai then
             if self.periodics.next_ir_req <= time_now then
                 _request_input_registers()
@@ -358,7 +358,7 @@ function redstone.new(session_id, unit_id, advert, out_queue)
             end
         end
 
-        -- sync analog outputs
+        -- sincronizar saídas analógicas
         if self.has_ao then
             if (self.periodics.next_hr_sync <= time_now) and (self.phy_trans.hold_regs == TXN_READY) then
                 for bank = 0, 4 do
@@ -384,13 +384,13 @@ function redstone.new(session_id, unit_id, advert, out_queue)
         self.session.post_update()
     end
 
-    -- force a re-read of cached outputs
+    -- forçar uma nova leitura das saídas em cache
     function public.invalidate_cache()
         _read_coils()
         _read_holding_registers()
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db() return self.db end
 

@@ -21,19 +21,19 @@ local PERIODICS = {
     RAD = 500
 }
 
--- create a new environment detector rtu session runner
+-- criar um novo executor de sessão RTU de detector de ambiente
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer RTU ID
 ---@param advert rtu_advertisement RTU advertisement table
 ---@param out_queue mqueue RTU message out queue
 function envd.new(session_id, unit_id, advert, out_queue)
-    -- checks
+    -- verificações
     if advert.type ~= RTU_UNIT_TYPE.ENV_DETECTOR then
-        log.error("attempt to instantiate envd RTU for type " .. types.rtu_type_to_string(advert.type))
+        log.error("tentativa de instanciar RTU envd para o tipo " .. types.rtu_type_to_string(advert.type))
         return nil
     elseif not util.is_int(advert.index) then
-        log.error("attempt to instantiate envd RTU without index")
+        log.error("tentativa de instanciar RTU envd sem índice")
         return nil
     end
 
@@ -57,10 +57,10 @@ function envd.new(session_id, unit_id, advert, out_queue)
 
     -- PRIVATE FUNCTIONS --
 
-    -- query the radiation readings of the device
+    -- consultar as leituras de radiação do dispositivo
     ---@param time_now integer
     local function _request_radiation(time_now)
-        -- read input registers 1 and 2 (start = 1, count = 2)
+        -- ler registradores de entrada 1 e 2 (início = 1, quantidade = 2)
         if self.session.send_request(TXN_TYPES.RAD, MODBUS_FCODE.READ_INPUT_REGS, { 1, 2 }) ~= false then
             self.periodics.next_rad_req = time_now + PERIODICS.RAD
         end
@@ -68,14 +68,14 @@ function envd.new(session_id, unit_id, advert, out_queue)
 
     -- PUBLIC FUNCTIONS --
 
-    -- handle an ADU
+    -- tratar uma ADU
     ---@param adu modbus_adu
     function public.handle_adu(adu)
         local txn_type = self.session.try_resolve(adu)
         if txn_type == false then
-            -- nothing to do
+            -- nada a fazer
         elseif txn_type == TXN_TYPES.RAD then
-            -- radiation status response
+            -- resposta de status de radiação
             if adu.length == 2 then
                 self.db.last_update   = util.time_ms()
                 self.db.radiation     = adu.data[1]
@@ -84,7 +84,7 @@ function envd.new(session_id, unit_id, advert, out_queue)
         else self.session.log_resolve_fail(txn_type) end
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
     function public.update(time_now)
         if self.periodics.next_rad_req <= time_now then _request_radiation(time_now) end
@@ -92,12 +92,12 @@ function envd.new(session_id, unit_id, advert, out_queue)
         self.session.post_update()
     end
 
-    -- invalidate build cache
+    -- invalidar cache de build
     function public.invalidate_cache()
-        -- no build cache for this device
+        -- sem cache de build para este dispositivo
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db() return self.db end
 

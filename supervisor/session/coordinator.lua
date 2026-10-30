@@ -21,7 +21,7 @@ local WASTE_MODE = types.WASTE_MODE
 
 local SV_Q_DATA = svqtypes.SV_Q_DATA
 
--- retry time constants in ms
+-- constantes de tempo de repetição em ms
 -- local INITIAL_WAIT = 1500
 local RETRY_PERIOD = 1000
 local PARTIAL_RETRY_PERIOD = 2000
@@ -43,7 +43,7 @@ local PERIODICS = {
     STATUS = 500
 }
 
--- coordinator supervisor session
+-- sessão do supervisor do coordenador
 ---@nodiscard
 ---@param id integer session ID
 ---@param s_addr integer device source address
@@ -54,33 +54,33 @@ local PERIODICS = {
 ---@param facility facility facility data table
 ---@param fp_ok boolean if the front panel UI is running
 function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, timeout, facility, fp_ok)
-    -- print a log message to the terminal as long as the UI isn't running
+    -- imprimir uma mensagem de log no terminal enquanto a UI não estiver em execução
     local function println(message) if not fp_ok then util.println_ts(message) end end
 
     local log_tag = "crdn_session(" .. id .. "): "
 
     local self = {
         units = facility.get_units(),
-        -- connection properties
-        seq_num = i_seq_num + 2, -- next after the establish approval was sent
+        -- propriedades da conexão
+        seq_num = i_seq_num + 2, -- próximo após o envio da aprovação de estabelecimento
         r_seq_num = i_seq_num + 1,
         connected = true,
         conn_watchdog = util.new_watchdog(timeout),
         establish_time = util.time_s(),
         last_rtt = 0,
-        -- periodic messages
+        -- mensagens periódicas
         periodics = {
             last_update = 0,
             keep_alive = 0,
             status_packet = 0
         },
-        -- when to next retry one of these messages
+        -- quando tentar novamente uma dessas mensagens
         retry_times = {
             builds_packet = 0,
             f_builds_packet = 0,
             u_builds_packet = 0
         },
-        -- message acknowledgements
+        -- confirmações de mensagens
         acks = {
             builds = false,
             fac_builds = false,
@@ -88,14 +88,14 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         }
     }
 
-    -- mark this coordinator session as closed, stop watchdog
+    -- marcar esta sessão do coordenador como fechada, parar o watchdog
     local function _close()
         self.conn_watchdog.cancel()
         self.connected = false
         databus.tx_crd_disconnected()
     end
 
-    -- send a CRDN packet
+    -- enviar um pacote CRDN
     ---@param msg_type CRDN_TYPE
     ---@param msg table
     local function _send(msg_type, msg)
@@ -108,7 +108,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         self.seq_num = self.seq_num + 1
     end
 
-    -- send a SCADA management packet
+    -- enviar um pacote de gerenciamento SCADA
     ---@param msg_type MGMT_TYPE
     ---@param msg table
     local function _send_mgmt(msg_type, msg)
@@ -121,7 +121,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         self.seq_num = self.seq_num + 1
     end
 
-    -- send both facility and unit builds
+    -- enviar as builds da instalação e das unidades
     local function _send_all_builds()
         local unit_builds = {}
 
@@ -133,12 +133,12 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         _send(CRDN_TYPE.INITIAL_BUILDS, { facility.get_build(), unit_builds })
     end
 
-    -- send facility builds
+    -- enviar as builds da instalação
     local function _send_fac_builds()
         _send(CRDN_TYPE.FAC_BUILDS, { facility.get_build() })
     end
 
-    -- send unit builds
+    -- enviar as builds das unidades
     local function _send_unit_builds()
         local builds = {}
 
@@ -150,7 +150,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         _send(CRDN_TYPE.UNIT_BUILDS, { builds })
     end
 
-    -- send facility status
+    -- enviar o status da instalação
     local function _send_fac_status()
         local status = {
             facility.get_control_status(),
@@ -162,7 +162,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         _send(CRDN_TYPE.FAC_STATUS, status)
     end
 
-    -- send unit statuses
+    -- enviar os status das unidades
     local function _send_unit_statuses()
         local status = {}
 
@@ -182,25 +182,25 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
         _send(CRDN_TYPE.UNIT_STATUSES, status)
     end
 
-    -- handle a packet
+    -- tratar um pacote
     ---@param pkt mgmt_packet|crdn_packet
     local function _handle_packet(pkt)
-        -- check sequence number
+        -- verificar o número de sequência
         if self.r_seq_num ~= pkt.scada_frame.seq_num() then
-            log.warning(log_tag .. "sequence out-of-order: next = " .. self.r_seq_num .. ", new = " .. pkt.scada_frame.seq_num())
+            log.warning(log_tag .. "sequência fora de ordem: próximo =  " .. self.r_seq_num .. ", novo = " .. pkt.scada_frame.seq_num())
             return
         else
             self.r_seq_num = pkt.scada_frame.seq_num() + 1
         end
 
-        -- feed watchdog
+        -- alimentar o watchdog
         self.conn_watchdog.feed()
 
-        -- process packet
+        -- processar pacote
         if pkt.scada_frame.protocol() == PROTOCOL.SCADA_MGMT then
             ---@cast pkt mgmt_packet
             if pkt.type == MGMT_TYPE.KEEP_ALIVE then
-                -- keep alive reply
+                -- resposta de keep alive
                 if pkt.length == 2 then
                     local srv_start = pkt.data[1]
                     -- local crd_send = pkt.data[2]
@@ -208,7 +208,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                     self.last_rtt = srv_now - srv_start
 
                     if self.last_rtt > 750 then
-                        log.warning(log_tag .. "CRD KEEP_ALIVE round trip time > 750ms (" .. self.last_rtt .. "ms)")
+                        log.warning(log_tag .. "CRD KEEP_ALIVE tempo de ida e volta > 750ms (" .. self.last_rtt .. "ms)")
                     end
 
                     -- log.debug(log_tag .. "CRD RTT = " .. self.last_rtt .. "ms")
@@ -216,29 +216,29 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
 
                     databus.tx_crd_rtt(self.last_rtt)
                 else
-                    log.debug(log_tag .. "SCADA keep alive packet length mismatch")
+                    log.debug(log_tag .. "tamanho do pacote de keep alive SCADA incompatível")
                 end
             elseif pkt.type == MGMT_TYPE.CLOSE then
-                -- close the session
+                -- fechar a sessão
                 _close()
             elseif pkt.type == MGMT_TYPE.SWITCH_NET then
-                -- request to change the network, passed sequence ID check
-                log.debug(log_tag .. "received valid connection switch request")
+                -- solicitação para trocar a rede, passou na verificação do ID de sequência
+                log.debug(log_tag .. "solicitação válida de troca de conexão recebida")
             elseif pkt.type == MGMT_TYPE.ESTABLISH then
-                -- something is wrong, kill the session
+                -- algo está errado, encerrar a sessão
                 _close()
-                log.warning(log_tag .. "terminated session due to an unexpected ESTABLISH packet")
+                log.warning(log_tag .. "sessão encerrada devido a um pacote ESTABLISH inesperado")
             else
-                log.debug(log_tag .. "handler received unsupported SCADA_MGMT packet type " .. pkt.type)
+                log.debug(log_tag .. "tratador recebeu tipo de pacote SCADA_MGMT não suportado " .. pkt.type)
             end
         elseif pkt.scada_frame.protocol() == PROTOCOL.SCADA_CRDN then
             ---@cast pkt crdn_packet
             if pkt.type == CRDN_TYPE.INITIAL_BUILDS then
-                -- acknowledgement to coordinator receiving builds
+                -- confirmação de que o coordenador recebeu as builds
                 self.acks.builds = true
             elseif pkt.type == CRDN_TYPE.PROCESS_READY then
                 if pkt.length == 7 then
-                    -- coordinator has sent all initial process data, power-on recovery is now possible
+                    -- o coordenador enviou todos os dados iniciais do processo, a recuperação ao ligar agora é possível
 
                     ---@type start_auto_config
                     local config = {
@@ -253,10 +253,10 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
 
                     facility.boot_recovery_start(config)
                 else
-                    log.debug(log_tag .. "CRDN process ready packet length mismatch")
+                    log.debug(log_tag .. "tamanho do pacote CRDN de processo pronto incompatível")
                 end
             elseif pkt.type == CRDN_TYPE.FAC_BUILDS then
-                -- acknowledgement to coordinator receiving builds
+                -- confirmação de que o coordenador recebeu as builds
                 self.acks.fac_builds = true
             elseif pkt.type == CRDN_TYPE.FAC_CMD then
                 if pkt.length >= 1 then
@@ -293,7 +293,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
 
                             _send(CRDN_TYPE.FAC_CMD, { cmd, table.unpack(facility.auto_start(config)) })
                         else
-                            log.debug(log_tag .. "CRDN auto start (with configuration) packet length mismatch")
+                            log.debug(log_tag .. "tamanho do pacote CRDN de início automático (com configuração) incompatível")
                         end
                     elseif cmd == FAC_COMMAND.ACK_ALL_ALARMS then
                         facility.ack_all()
@@ -302,39 +302,39 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                         if pkt.length == 2 then
                             _send(CRDN_TYPE.FAC_CMD, { cmd, facility.set_waste_product(pkt.data[2]) })
                         else
-                            log.debug(log_tag .. "CRDN set waste mode packet length mismatch")
+                            log.debug(log_tag .. "tamanho do pacote CRDN de definir modo de resíduos incompatível")
                         end
                     elseif cmd == FAC_COMMAND.SET_PU_FB then
                         if pkt.length == 2 then
                             _send(CRDN_TYPE.FAC_CMD, { cmd, facility.set_pu_fallback(pkt.data[2] == true) })
                         else
-                            log.debug(log_tag .. "CRDN set pu fallback packet length mismatch")
+                            log.debug(log_tag .. "tamanho do pacote CRDN de definir fallback de Pu incompatível")
                         end
                     elseif cmd == FAC_COMMAND.SET_SPS_LP then
                         if pkt.length == 2 then
                             _send(CRDN_TYPE.FAC_CMD, { cmd, facility.set_sps_low_power(pkt.data[2] == true) })
                         else
-                            log.debug(log_tag .. "CRDN set sps low power packet length mismatch")
+                            log.debug(log_tag .. "tamanho do pacote CRDN de definir baixa energia do SPS incompatível")
                         end
                     else
-                        log.debug(log_tag .. "CRDN facility command unknown")
+                        log.debug(log_tag .. "comando de instalação CRDN desconhecido")
                     end
                 else
-                    log.debug(log_tag .. "CRDN facility command packet length mismatch")
+                    log.debug(log_tag .. "tamanho do pacote de comando de instalação CRDN incompatível")
                 end
             elseif pkt.type == CRDN_TYPE.UNIT_BUILDS then
-                -- acknowledgement to coordinator receiving builds
+                -- confirmação de que o coordenador recebeu as builds
                 self.acks.unit_builds = true
             elseif pkt.type == CRDN_TYPE.UNIT_CMD then
                 if pkt.length >= 2 then
-                    -- get command and unit id
+                    -- obter comando e ID da unidade
                     local cmd = pkt.data[1]
                     local uid = pkt.data[2]
 
-                    -- pkt.data[3] will be nil except for some commands
+                    -- pkt.data[3] será nil, exceto para alguns comandos
                     local data = { uid, pkt.data[3] }
 
-                    -- continue if valid unit id
+                    -- continuar se o ID da unidade for válido
                     if util.is_int(uid) and uid > 0 and uid <= #self.units then
                         local unit   = self.units[uid]
                         local manual = facility.get_group(uid) == AUTO_GROUP.MANUAL
@@ -348,7 +348,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                             if manual then
                                 out_queue.push_data(SV_Q_DATA.START, data)
                             else
-                                -- denied
+                                -- negado
                                 _send(CRDN_TYPE.UNIT_CMD, { cmd, uid, false })
                             end
                         elseif cmd == UNIT_COMMAND.RESET_RPS then
@@ -361,14 +361,14 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                                     out_queue.push_data(SV_Q_DATA.SET_BURN, data)
                                 end
                             else
-                                log.debug(log_tag .. "CRDN unit command burn rate missing option")
+                                log.debug(log_tag .. "comando de unidade CRDN de taxa de queima sem opção")
                             end
                         elseif cmd == UNIT_COMMAND.SET_WASTE then
                             if (pkt.length == 3) and (type(pkt.data[3]) == "number") and
                                (pkt.data[3] >= WASTE_MODE.AUTO) and (pkt.data[3] <= WASTE_MODE.MANUAL_ANTI_MATTER) then
                                 unit.set_waste_mode(pkt.data[3])
                             else
-                                log.debug(log_tag .. "CRDN unit command set waste missing/invalid option")
+                                log.debug(log_tag .. "comando de unidade CRDN de definir resíduos com opção ausente/inválida")
                             end
                         elseif cmd == UNIT_COMMAND.ACK_ALL_ALARMS then
                             unit.ack_all()
@@ -377,13 +377,13 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                             if pkt.length == 3 then
                                 unit.ack_alarm(pkt.data[3])
                             else
-                                log.debug(log_tag .. "CRDN unit command ack alarm missing alarm id")
+                                log.debug(log_tag .. "comando de unidade CRDN de confirmar alarme sem ID do alarme")
                             end
                         elseif cmd == UNIT_COMMAND.RESET_ALARM then
                             if pkt.length == 3 then
                                 unit.reset_alarm(pkt.data[3])
                             else
-                                log.debug(log_tag .. "CRDN unit command reset alarm missing alarm id")
+                                log.debug(log_tag .. "comando de unidade CRDN de resetar alarme sem ID do alarme")
                             end
                         elseif cmd == UNIT_COMMAND.SET_GROUP then
                             facility.cancel_recovery()
@@ -392,19 +392,19 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                                (pkt.data[3] >= AUTO_GROUP.MANUAL) and (pkt.data[3] <= AUTO_GROUP.BACKUP) then
                                 facility.set_group(unit.get_id(), pkt.data[3])
                             else
-                                log.debug(log_tag .. "CRDN unit command set group missing group id")
+                                log.debug(log_tag .. "comando de unidade CRDN de definir grupo sem ID do grupo")
                             end
                         else
-                            log.debug(log_tag .. "CRDN unit command unknown")
+                            log.debug(log_tag .. "comando de unidade CRDN desconhecido")
                         end
                     else
-                        log.debug(log_tag .. "CRDN unit command invalid")
+                        log.debug(log_tag .. "comando de unidade CRDN inválido")
                     end
                 else
-                    log.debug(log_tag .. "CRDN unit command packet length mismatch")
+                    log.debug(log_tag .. "tamanho do pacote de comando de unidade CRDN incompatível")
                 end
             else
-                log.debug(log_tag .. "handler received unexpected SCADA_CRDN packet type " .. pkt.type)
+                log.debug(log_tag .. "tratador recebeu tipo de pacote SCADA_CRDN inesperado " .. pkt.type)
             end
         end
     end
@@ -412,53 +412,53 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
     ---@class crd_session
     local public = {}
 
-    -- get the session ID
+    -- obter o ID da sessão
     ---@nodiscard
     function public.get_id() return id end
 
-    -- check if a timer matches this session's watchdog
+    -- verificar se um timer corresponde ao watchdog desta sessão
     ---@nodiscard
     function public.check_wd(timer)
         return self.conn_watchdog.is_timer(timer) and self.connected
     end
 
-    -- close the connection
+    -- fechar a conexão
     function public.close()
         _close()
         _send_mgmt(MGMT_TYPE.CLOSE, {})
-        println("connection to coordinator " .. id .. " closed by server")
-        log.info(log_tag .. "session closed by server")
+        println("conexão com o coordenador " .. id .. " fechada pelo servidor")
+        log.info(log_tag .. "sessão fechada pelo servidor")
     end
 
-    -- iterate the session
+    -- iterar a sessão
     ---@nodiscard
     ---@return boolean connected
     function public.iterate()
         if self.connected then
             ------------------
-            -- handle queue --
+            -- tratar fila --
             ------------------
 
             local handle_start = util.time()
 
             while in_queue.ready() and self.connected do
-                -- get a new message to process
+                -- obter uma nova mensagem para processar
                 local message = in_queue.pop()
 
                 if message ~= nil then
                     if message.qtype == mqueue.TYPE.NETWORK then
-                        -- handle a packet
+                        -- tratar um pacote
                         _handle_packet(message.message)
                     elseif message.qtype == mqueue.TYPE.DATA then
-                        -- instruction with body
+                        -- instrução com corpo
                         local cmd = message.message ---@type queue_data
 
                         if cmd.key == CRD_S_DATA.CMD_ACK then
                             local ack = cmd.val ---@type coord_ack
                             _send(CRDN_TYPE.UNIT_CMD, { ack.cmd, ack.unit, ack.ack })
                         elseif cmd.key == CRD_S_DATA.RESEND_PLC_BUILD then
-                            -- re-send PLC build
-                            -- retry logic will be kept as-is, so as long as no retry is needed, this will be a small update
+                            -- reenviar build do PLC
+                            -- a lógica de repetição será mantida como está, então, desde que nenhuma repetição seja necessária, esta será uma pequena atualização
                             self.retry_times.builds_packet = util.time() + PARTIAL_RETRY_PERIOD
                             self.acks.unit_builds = false
 
@@ -471,8 +471,8 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                         elseif cmd.key == CRD_S_DATA.RESEND_RTU_BUILD then
                             local unit_id = cmd.val.unit
                             if unit_id > 0 then
-                                -- re-send unit RTU builds
-                                -- retry logic will be kept as-is, so as long as no retry is needed, this will be a small update
+                                -- reenviar builds das RTUs das unidades
+                                -- a lógica de repetição será mantida como está, então, desde que nenhuma repetição seja necessária, esta será uma pequena atualização
                                 self.retry_times.u_builds_packet = util.time() + PARTIAL_RETRY_PERIOD
                                 self.acks.unit_builds = false
 
@@ -482,35 +482,35 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
 
                                 _send(CRDN_TYPE.UNIT_BUILDS, { builds })
                             else
-                                -- re-send facility RTU builds
-                                -- retry logic will be kept as-is, so as long as no retry is needed, this will be a small update
+                                -- reenviar builds das RTUs da instalação
+                                -- a lógica de repetição será mantida como está, então, desde que nenhuma repetição seja necessária, esta será uma pequena atualização
                                 self.retry_times.f_builds_packet = util.time() + PARTIAL_RETRY_PERIOD
                                 self.acks.fac_builds = false
 
                                 _send(CRDN_TYPE.FAC_BUILDS, { facility.get_build(cmd.val.type) })
                             end
                         else
-                            log.error(log_tag .. "unsupported data command received in in_queue (this is a bug)", true)
+                            log.error(log_tag .. "comando de dados não suportado recebido em in_queue (isto é um bug)", true)
                         end
                     end
                 end
 
-                -- max 100ms spent processing queue
+                -- máximo de 100ms gastos processando a fila
                 if util.time() - handle_start > 100 then
-                    log.warning(log_tag .. "exceeded 100ms queue process limit")
+                    log.warning(log_tag .. "limite de 100ms de processamento da fila excedido")
                     break
                 end
             end
 
-            -- exit if connection was closed
+            -- sair se a conexão foi fechada
             if not self.connected then
-                println("connection to coordinator closed by remote host")
-                log.info(log_tag .. "session closed by remote host")
+                println("conexão com o coordenador fechada pelo host remoto")
+                log.info(log_tag .. "sessão fechada pelo host remoto")
                 return self.connected
             end
 
             ----------------------
-            -- update periodics --
+            -- atualizar periódicos --
             ----------------------
 
             local elapsed = util.time() - self.periodics.last_update
@@ -525,7 +525,7 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
                 periodics.keep_alive = 0
             end
 
-            -- statuses to coordinator
+            -- status para o coordenador
 
             periodics.status_packet = periodics.status_packet + elapsed
             if periodics.status_packet >= PERIODICS.STATUS then
@@ -537,12 +537,12 @@ function coordinator.new_session(id, s_addr, i_seq_num, in_queue, out_queue, tim
             self.periodics.last_update = util.time()
 
             ---------------------
-            -- attempt retries --
+            -- tentar repetições --
             ---------------------
 
             local rtimes = self.retry_times
 
-            -- builds packet retries
+            -- repetições de pacotes de builds
 
             if not self.acks.builds then
                 if rtimes.builds_packet - util.time() <= 0 then

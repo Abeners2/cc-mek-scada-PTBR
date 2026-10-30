@@ -1,5 +1,5 @@
 --
--- Main Display Splash Screen
+-- Tela de abertura do display principal
 --
 
 local ioctl   = require("coordinator.ioctl")
@@ -15,7 +15,7 @@ local Waiting = require("graphics.elements.animations.Waiting")
 
 local ALIGN = core.ALIGN
 
--- create new main splash screen
+-- cria a nova tela de abertura principal
 ---@param main DisplayBox main displaybox
 local function init(main)
     local ps = ioctl.get_db().os_ps
@@ -30,8 +30,8 @@ local function init(main)
 
     anim.register(ps, "splash_anim_clear", function () anim.delete() end)
 
-    local status_1 = TextBox{parent=main,y=mid_y+15,text="Starting up the SCADA System",alignment=ALIGN.CENTER}
-    local status_2 = TextBox{parent=main,y=mid_y+17,text="Initializing...",alignment=ALIGN.CENTER}
+    local status_1 = TextBox{parent=main,y=mid_y+15,text="Iniciando o Sistema SCADA",alignment=ALIGN.CENTER}
+    local status_2 = TextBox{parent=main,y=mid_y+17,text="Inicializando...",alignment=ALIGN.CENTER}
 
     status_1.register(ps, "splash_status_1", status_1.set_value)
     status_2.register(ps, "splash_status_2", status_2.set_value)

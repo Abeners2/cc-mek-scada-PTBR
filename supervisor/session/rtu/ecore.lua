@@ -27,16 +27,16 @@ local PERIODICS = {
 
 local DEACTIVATION_TIMEOUT_ms = 3000
 
--- create a new ecore rtu session runner
+-- criar um novo executor de sessão RTU ecore
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer RTU ID
 ---@param advert rtu_advertisement RTU advertisement table
 ---@param out_queue mqueue RTU message out queue
 function ecore.new(session_id, unit_id, advert, out_queue)
-    -- checks
+    -- verificações
     if advert.type ~= RTU_UNIT_TYPE.ENERGY_CORE then
-        log.error("attempt to instantiate ecore RTU for type " .. types.rtu_type_to_string(advert.type))
+        log.error("tentativa de instanciar RTU ecore para o tipo " .. types.rtu_type_to_string(advert.type))
         return nil
     end
 
@@ -45,7 +45,7 @@ function ecore.new(session_id, unit_id, advert, out_queue)
     local self = {
         session = unit_session.new(session_id, unit_id, advert, out_queue, log_tag, TXN_TAGS),
         has_build = false,
-        -- formed tracking (activation/decativation)
+        -- rastreamento de formação (ativação/desativação)
         formed = {
             build_ok = false,
             state_ok = true,
@@ -63,26 +63,26 @@ function ecore.new(session_id, unit_id, advert, out_queue)
 
     -- PRIVATE FUNCTIONS --
 
-    -- query the build of the device
+    -- consultar o build do dispositivo
     ---@param time_now integer
     local function _request_build(time_now)
-        -- read input registers 1 through 1 (start = 1, count = 1)
+        -- ler registradores de entrada 1 a 1 (início = 1, quantidade = 1)
         if self.session.send_request(TXN_TYPES.BUILD, MODBUS_FCODE.READ_INPUT_REGS, { 1, 1 }) ~= false then
             self.periodics.next_build_req = time_now + PERIODICS.BUILD
         end
     end
 
-    -- query the state of the device
+    -- consultar o estado do dispositivo
     ---@param time_now integer
     local function _request_state(time_now)
-        -- read input register 2 through 5 (start = 2, count = 4)
+        -- ler registrador de entrada 2 a 5 (início = 2, quantidade = 4)
         if self.session.send_request(TXN_TYPES.STATE, MODBUS_FCODE.READ_INPUT_REGS, { 2, 4 }) ~= false then
             self.periodics.next_state_req = time_now + PERIODICS.STATE
         end
     end
 
-    -- update computed values <br/>
-    -- <b>IMPORTANT: ok is the check for max_energy > 0, otherwise this will allow for a divide by zero</b>
+    -- atualizar valores calculados <br/>
+    -- <b>IMPORTANTE: ok é a verificação de max_energy > 0, caso contrário isso permitiria uma divisão por zero</b>
     ---@param ok boolean if the build is received and the maximum energy is > 0
     local function _update_virtual(ok)
         self.db.virtual.last_update = self.db.state.last_update
@@ -98,15 +98,15 @@ function ecore.new(session_id, unit_id, advert, out_queue)
 
     -- PUBLIC FUNCTIONS --
 
-    -- handle an ADU
+    -- tratar uma ADU
     ---@param adu modbus_adu
     function public.handle_adu(adu)
         local txn_type = self.session.try_resolve(adu)
         if txn_type == false then
-            -- nothing to do
+            -- nada a fazer
         elseif txn_type == TXN_TYPES.BUILD then
-            -- build response
-            -- load in data if correct length
+            -- resposta de build
+            -- carregar dados se o tamanho estiver correto
             if adu.length == 1 then
                 self.db.build.last_update = util.time_ms()
                 self.db.build.max_energy  = adu.data[1]
@@ -143,8 +143,8 @@ function ecore.new(session_id, unit_id, advert, out_queue)
                 out_queue.push_data(unit_session.RTU_US_DATA.BUILD_CHANGED, { unit = advert.reactor, type = advert.type })
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.STATE then
-            -- state response
-            -- load in data if correct length
+            -- resposta de estado
+            -- carregar dados se o tamanho estiver correto
             if adu.length == 4 then
                 self.db.state.last_update = util.time_ms()
                 self.db.state.input       = adu.data[1]
@@ -157,7 +157,7 @@ function ecore.new(session_id, unit_id, advert, out_queue)
         else self.session.log_resolve_fail(txn_type) end
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
     function public.update(time_now)
         if self.periodics.next_build_req <= time_now then _request_build(time_now) end
@@ -166,13 +166,13 @@ function ecore.new(session_id, unit_id, advert, out_queue)
         self.session.post_update()
     end
 
-    -- invalidate build cache
+    -- invalidar cache de build
     function public.invalidate_cache()
         self.periodics.next_build_req = 0
         self.has_build = false
     end
 
-    -- try to determine if this energy core is formed or not based on expected input rate
+    -- tentar determinar se este núcleo de energia está formado ou não com base na taxa de entrada esperada
     ---@param gen_in number expected input from generator(s)
     function public.eval_formed(gen_in)
         local build, state = self.db.build, self.db.state
@@ -195,7 +195,7 @@ function ecore.new(session_id, unit_id, advert, out_queue)
         self.db.formed = self.formed.build_ok and self.formed.state_ok
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db() return self.db end
 

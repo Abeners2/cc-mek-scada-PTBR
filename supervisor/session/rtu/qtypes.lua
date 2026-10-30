@@ -1,24 +1,24 @@
 ---@class rtu_unit_qtypes
 local qtypes = {}
 
--- turbine valve rtu session commands
+-- comandos de sessão RTU da válvula de turbina
 local TBV_RTU_S_CMDS = {
     INC_DUMP_MODE = 1,
     DEC_DUMP_MODE = 2
 }
 
--- turbine valve rtu session commands w/ parameters
+-- comandos de sessão RTU da válvula de turbina c/ parâmetros
 local TBV_RTU_S_DATA = {
     SET_DUMP_MODE = 1
 }
 
--- dynamic tank valve rtu session commands
+-- comandos de sessão RTU da válvula de tanque dinâmico
 local DTV_RTU_S_CMDS = {
     INC_CONT_MODE = 1,
     DEC_CONT_MODE = 2
 }
 
--- dynamic tank valve rtu session commands w/ parameters
+-- comandos de sessão RTU da válvula de tanque dinâmico c/ parâmetros
 local DTV_RTU_S_DATA = {
     SET_CONT_MODE = 1
 }

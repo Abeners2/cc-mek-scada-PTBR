@@ -24,7 +24,7 @@ unit_session.RTU_US_DATA = RTU_US_DATA
 
 local DEFAULT_BUSY_WAIT = 3000
 
--- create a new unit session runner
+-- criar um novo executor de sessão de unidade
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer MODBUS unit ID
@@ -52,7 +52,7 @@ function unit_session.new(session_id, unit_id, advert, out_queue, log_tag, txn_t
 
     -- PROTECTED FUNCTIONS --
 
-    -- send a MODBUS message, creating a transaction in the process
+    -- enviar uma mensagem MODBUS, criando uma transação no processo
     ---@param txn_type integer transaction type
     ---@param f_code MODBUS_FCODE function code
     ---@param register_param (number|string)[] register range or register and values
@@ -75,7 +75,7 @@ function unit_session.new(session_id, unit_id, advert, out_queue, log_tag, txn_t
         return txn_id
     end
 
-    -- try to resolve a MODBUS transaction
+    -- tentar resolver uma transação MODBUS
     ---@nodiscard
     ---@param adu modbus_adu MODBUS ADU
     ---@return integer|false txn_type, integer txn_id transaction type or false on error/busy, transaction ID
@@ -86,111 +86,111 @@ function unit_session.new(session_id, unit_id, advert, out_queue, log_tag, txn_t
                 local txn_tag = util.c(" (", txn_tags[txn_type], ")")
 
                 if txn_type == nil then
-                    -- couldn't find this transaction
-                    log.debug(log_tag .. "MODBUS: expired or spurious transaction reply (txn_id " .. adu.txn_id .. ")")
+                    -- não foi possível encontrar esta transação
+                    log.debug(log_tag .. "MODBUS: resposta de transação expirada ou espúria (txn_id " .. adu.txn_id .. ")")
                     return false, adu.txn_id
                 end
 
                 if bit.band(adu.func_code, MODBUS_FCODE.ERROR_FLAG) ~= 0 then
-                    -- transaction incomplete or failed
+                    -- transação incompleta ou falhou
                     local ex = adu.data[1]
                     if ex == MODBUS_EXCODE.ILLEGAL_FUNCTION then
-                        log.error(log_tag .. "MODBUS: illegal function" .. txn_tag)
+                        log.error(log_tag .. "MODBUS: função ilegal" .. txn_tag)
                     elseif ex == MODBUS_EXCODE.ILLEGAL_DATA_ADDR then
-                        log.error(log_tag .. "MODBUS: illegal data address" .. txn_tag)
+                        log.error(log_tag .. "MODBUS: endereço de dados ilegal" .. txn_tag)
                     elseif ex == MODBUS_EXCODE.SERVER_DEVICE_FAIL then
                         if self.device_fail then
-                            log.debug(log_tag .. "MODBUS: repeated device failure" .. txn_tag)
+                            log.debug(log_tag .. "MODBUS: falha repetida do dispositivo" .. txn_tag)
                         else
                             self.device_fail = true
-                            log.warning(log_tag .. "MODBUS: device failure" .. txn_tag)
+                            log.warning(log_tag .. "MODBUS: falha do dispositivo" .. txn_tag)
                         end
                     elseif ex == MODBUS_EXCODE.ACKNOWLEDGE then
-                        -- will have to wait on reply, renew the transaction
+                        -- será necessário aguardar a resposta, renovar a transação
                         self.transaction_controller.renew(adu.txn_id, txn_type)
                     elseif ex == MODBUS_EXCODE.SERVER_DEVICE_BUSY then
-                        -- will have to try again later
+                        -- será necessário tentar novamente mais tarde
                         self.last_busy = util.time_ms()
-                        log.warning(log_tag .. "MODBUS: device busy" .. txn_tag)
+                        log.warning(log_tag .. "MODBUS: dispositivo ocupado" .. txn_tag)
                     elseif ex == MODBUS_EXCODE.NEG_ACKNOWLEDGE then
-                        -- general failure
-                        log.error(log_tag .. "MODBUS: negative acknowledge (bad request)" .. txn_tag)
+                        -- falha geral
+                        log.error(log_tag .. "MODBUS: confirmação negativa (requisição inválida)" .. txn_tag)
                     elseif ex == MODBUS_EXCODE.GATEWAY_PATH_UNAVAILABLE then
-                        -- RTU gateway has no known unit with the given ID
-                        log.error(log_tag .. "MODBUS: gateway path unavailable (unknown unit)" .. txn_tag)
+                        -- o gateway RTU não possui unidade conhecida com o ID informado
+                        log.error(log_tag .. "MODBUS: caminho do gateway indisponível (unidade desconhecida)" .. txn_tag)
                     elseif ex ~= nil then
-                        -- unsupported exception code
-                        log.debug(log_tag .. "MODBUS: unsupported error " .. ex .. txn_tag)
+                        -- código de exceção não suportado
+                        log.debug(log_tag .. "MODBUS: erro não suportado " .. ex .. txn_tag)
                     else
-                        -- nil exception code
-                        log.debug(log_tag .. "MODBUS: nil exception code" .. txn_tag)
+                        -- código de exceção nulo
+                        log.debug(log_tag .. "MODBUS: código de exceção nulo" .. txn_tag)
                     end
                 else
-                    -- clear device fail flag
+                    -- limpar flag de falha do dispositivo
                     self.device_fail = false
 
-                    -- no error, return the transaction type
+                    -- sem erro, retornar o tipo da transação
                     return txn_type, adu.txn_id
                 end
             else
-                log.error(log_tag .. "wrong unit ID: " .. adu.unit_id, true)
+                log.error(log_tag .. "ID de unidade incorreto: " .. adu.unit_id, true)
             end
         else
-            log.error(log_tag .. "illegal packet type " .. adu.scada_frame.protocol(), true)
+            log.error(log_tag .. "tipo de pacote ilegal " .. adu.scada_frame.protocol(), true)
         end
 
-        -- error or transaction in progress, return false
+        -- erro ou transação em andamento, retornar false
         return false, adu.txn_id
     end
 
-    -- post update tasks
+    -- tarefas pós-atualização
     function protected.post_update()
         self.transaction_controller.cleanup()
     end
 
-    -- log a transaction reply length mismatch
+    -- registrar divergência no tamanho da resposta de uma transação
     ---@param txn_type integer transaction type
     function protected.log_length_mismatch(txn_type)
-        log.debug(log_tag .. "MODBUS transaction reply length mismatch (" .. txn_tags[txn_type] .. ")")
+        log.debug(log_tag .. "divergência no tamanho da resposta da transação MODBUS (" .. txn_tags[txn_type] .. ")")
     end
 
-    -- log a transaction resolution failure
+    -- registrar falha na resolução de uma transação
     ---@param txn_type integer? transaction type
     function protected.log_resolve_fail(txn_type)
-        log.error(log_tag .. "unknown transaction " .. util.trinary(txn_type == nil, "reply", util.c("type ", txn_type)))
+        log.error(log_tag .. "transação desconhecida " .. util.trinary(txn_type == nil, "reply", util.c("type ", txn_type)))
     end
 
-    -- get the public interface
+    -- obter a interface pública
     ---@nodiscard
     function protected.get() return public end
 
     -- PUBLIC FUNCTIONS --
 
-    -- get the RTU gateway session ID
+    -- obter o ID de sessão do gateway RTU
     ---@nodiscard
     function public.get_session_id() return session_id end
-    -- get the unit ID
+    -- obter o ID da unidade
     ---@nodiscard
     function public.get_unit_id() return unit_id end
-    -- get the RTU type
+    -- obter o tipo de RTU
     ---@nodiscard
     function public.get_unit_type() return advert.type end
-    -- get the device index
+    -- obter o índice do dispositivo
     ---@nodiscard
     function public.get_device_idx() return self.device_index or 0 end
-    -- get the reactor ID
+    -- obter o ID do reator
     ---@nodiscard
     function public.get_reactor() return self.reactor end
-    -- get the command queue
+    -- obter a fila de comandos
     ---@nodiscard
     function public.get_cmd_queue() return protected.in_q end
 
-    -- close this unit
+    -- fechar esta unidade
     function public.close() self.connected = false end
-    -- check if this unit is connected
+    -- verificar se esta unidade está conectada
     ---@nodiscard
     function public.is_connected() return self.connected end
-    -- check if this unit is faulted
+    -- verificar se esta unidade está com falha
     ---@nodiscard
     function public.is_faulted() return self.device_fail end
 
@@ -198,31 +198,31 @@ function unit_session.new(session_id, unit_id, advert, out_queue, log_tag, txn_t
 
 -- luacheck: no unused args
 
-    -- handle a MODBUS ADU
+    -- tratar uma ADU MODBUS
     ---@param adu modbus_adu
 ---@diagnostic disable-next-line: unused-local
     function public.handle_adu(adu)
-        log.debug("template unit_session.handle_adu() called", true)
+        log.debug("modelo unit_session.handle_adu() chamado", true)
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
 ---@diagnostic disable-next-line: unused-local
     function public.update(time_now)
-        log.debug("template unit_session.update() called", true)
+        log.debug("modelo unit_session.update() chamado", true)
     end
 
 -- luacheck: unused args
 
-    -- invalidate build cache
+    -- invalidar cache de build
     function public.invalidate_cache()
-        log.debug("template unit_session.invalidate_cache() called", true)
+        log.debug("modelo unit_session.invalidate_cache() chamado", true)
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db()
-        log.debug("template unit_session.get_db() called", true)
+        log.debug("modelo unit_session.get_db() chamado", true)
         return {}
     end
 

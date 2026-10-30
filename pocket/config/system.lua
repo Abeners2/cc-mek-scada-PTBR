@@ -245,7 +245,7 @@ function system.create(tool_ctl, main_pane, cfg_sys, divs, style, startup, exit)
 
     --#endregion
 
-    --#region Summary and Saving
+    --#region Resumo e Salvamento
 
     local sum_c_1 = Div{parent=summary,x=2,y=4,width=24}
     local sum_c_2 = Div{parent=summary,x=2,y=4,width=24}

@@ -44,19 +44,19 @@ local PERIODICS = {
 
 local WRITE_BUSY_WAIT = 1000
 
--- create a new dynamicv rtu session runner
+-- criar um novo executor de sessão RTU dynamicv
 ---@nodiscard
 ---@param session_id integer RTU gateway session ID
 ---@param unit_id integer RTU ID
 ---@param advert rtu_advertisement RTU advertisement table
 ---@param out_queue mqueue RTU message out queue
 function dynamicv.new(session_id, unit_id, advert, out_queue)
-    -- checks
+    -- verificações
     if advert.type ~= RTU_UNIT_TYPE.DYNAMIC_VALVE then
-        log.error("attempt to instantiate dynamicv RTU for type " .. types.rtu_type_to_string(advert.type))
+        log.error("tentativa de instanciar RTU dynamicv para o tipo " .. types.rtu_type_to_string(advert.type))
         return nil
     elseif not util.is_int(advert.index) then
-        log.error("attempt to instantiate dynamicv RTU without index")
+        log.error("tentativa de instanciar RTU dynamicv sem índice")
         return nil
     end
 
@@ -81,76 +81,76 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
 
     -- PRIVATE FUNCTIONS --
 
-    -- increment the container mode
+    -- incrementar o modo do contêiner
     local function _inc_cont_mode()
-        -- set mode command
+        -- comando de definir modo
         if self.mode_cmd == "BOTH" then self.mode_cmd = "FILL"
         elseif self.mode_cmd == "FILL" then self.mode_cmd = "EMPTY"
         elseif self.mode_cmd == "EMPTY" then self.mode_cmd = "BOTH"
         end
 
-        -- write coil 1 with unused value 0
+        -- escrever bobina 1 com valor não usado 0
         if self.session.send_request(TXN_TYPES.INC_CONT, MODBUS_FCODE.WRITE_SINGLE_COIL, { 1, 0 }, WRITE_BUSY_WAIT) == false then
             self.resend_mode = true
         end
     end
 
-    -- decrement the container mode
+    -- decrementar o modo do contêiner
     local function _dec_cont_mode()
-        -- set mode command
+        -- comando de definir modo
         if self.mode_cmd == "BOTH" then self.mode_cmd = "EMPTY"
         elseif self.mode_cmd == "EMPTY" then self.mode_cmd = "FILL"
         elseif self.mode_cmd == "FILL" then self.mode_cmd = "BOTH"
         end
 
-        -- write coil 2 with unused value 0
+        -- escrever bobina 2 com valor não usado 0
         if self.session.send_request(TXN_TYPES.DEC_CONT, MODBUS_FCODE.WRITE_SINGLE_COIL, { 2, 0 , WRITE_BUSY_WAIT}) == false then
             self.resend_mode = false
         end
     end
 
-    -- set the container mode
+    -- definir o modo do contêiner
     ---@param mode container_mode
     local function _set_cont_mode(mode)
         self.mode_cmd = mode
 
-        -- write holding register 1
+        -- escrever registrador de retenção 1
         if self.session.send_request(TXN_TYPES.SET_CONT, MODBUS_FCODE.WRITE_SINGLE_HOLD_REG, { 1, mode }, WRITE_BUSY_WAIT) == false then
             self.resend_mode = false
         end
     end
 
-    -- query if the multiblock is formed
+    -- consultar se o multibloco está formado
     ---@param time_now integer
     local function _request_formed(time_now)
-        -- read discrete input 1 (start = 1, count = 1)
+        -- ler entrada discreta 1 (início = 1, quantidade = 1)
         if self.session.send_request(TXN_TYPES.FORMED, MODBUS_FCODE.READ_DISCRETE_INPUTS, { 1, 1 }) ~= false then
             self.periodics.next_formed_req = time_now + PERIODICS.FORMED
         end
     end
 
-    -- query the build of the device
+    -- consultar o build do dispositivo
     ---@param time_now integer
     local function _request_build(time_now)
-        -- read input registers 1 through 7 (start = 1, count = 7)
+        -- ler registradores de entrada 1 a 7 (início = 1, quantidade = 7)
         if self.session.send_request(TXN_TYPES.BUILD, MODBUS_FCODE.READ_INPUT_REGS, { 1, 7 }) ~= false then
             self.periodics.next_build_req = time_now + PERIODICS.BUILD
         end
     end
 
-    -- query the state of the device
+    -- consultar o estado do dispositivo
     ---@param time_now integer
     local function _request_state(time_now)
-        -- read holding register 1 (start = 1, count = 1)
+        -- ler registrador de retenção 1 (início = 1, quantidade = 1)
         if self.session.send_request(TXN_TYPES.STATE, MODBUS_FCODE.READ_MUL_HOLD_REGS, { 1, 1 }) ~= false then
             self.periodics.next_state_req = time_now + PERIODICS.STATE
         end
     end
 
-    -- query the tanks of the device
+    -- consultar os tanques do dispositivo
     ---@param time_now integer
     local function _request_tanks(time_now)
-        -- read input registers 8 through 9 (start = 8, count = 2)
+        -- ler registradores de entrada 8 a 9 (início = 8, quantidade = 2)
         if self.session.send_request(TXN_TYPES.TANKS, MODBUS_FCODE.READ_INPUT_REGS, { 8, 2 }) ~= false then
             self.periodics.next_tanks_req = time_now + PERIODICS.TANKS
         end
@@ -158,22 +158,22 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
 
     -- PUBLIC FUNCTIONS --
 
-    -- handle an ADU
+    -- tratar uma ADU
     ---@param adu modbus_adu
     function public.handle_adu(adu)
         local txn_type = self.session.try_resolve(adu)
         if txn_type == false then
-            -- nothing to do
+            -- nada a fazer
         elseif txn_type == TXN_TYPES.FORMED then
-            -- formed response
-            -- load in data if correct length
+            -- resposta de formado
+            -- carregar dados se o tamanho estiver correto
             if adu.length == 1 then
                 self.db.formed = adu.data[1]
 
                 if not self.db.formed then self.has_build = false end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.BUILD then
-            -- build response
+            -- resposta de build
             if adu.length == 7 then
                 self.db.build.last_update        = util.time_ms()
                 self.db.build.length             = adu.data[1]
@@ -188,7 +188,7 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
                 out_queue.push_data(unit_session.RTU_US_DATA.BUILD_CHANGED, { unit = advert.reactor, type = advert.type })
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.STATE then
-            -- state response
+            -- resposta de estado
             if adu.length == 1 then
                 self.db.state.last_update    = util.time_ms()
                 self.db.state.container_mode = adu.data[1]
@@ -198,28 +198,28 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
                 end
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.TANKS then
-            -- tanks response
+            -- resposta de tanques
             if adu.length == 2 then
                 self.db.tanks.last_update = util.time_ms()
                 self.db.tanks.stored      = adu.data[1]
                 self.db.tanks.fill        = adu.data[2]
             else self.session.log_length_mismatch(txn_type) end
         elseif txn_type == TXN_TYPES.INC_CONT or txn_type == TXN_TYPES.DEC_CONT or txn_type == TXN_TYPES.SET_CONT then
-            -- successful acknowledgement
+            -- confirmação bem-sucedida
         else self.session.log_resolve_fail(txn_type) end
     end
 
-    -- update this runner
+    -- atualizar este executor
     ---@param time_now integer milliseconds
     function public.update(time_now)
-        -- check command queue
+        -- verificar fila de comandos
         while self.session.in_q.ready() do
-            -- get a new message to process
+            -- obter uma nova mensagem para processar
             local msg = self.session.in_q.pop()
 
             if msg ~= nil then
                 if msg.qtype == mqueue.TYPE.COMMAND then
-                    -- instruction
+                    -- instrução
                     local cmd = msg.message
 
                     if cmd == DTV_RTU_S_CMDS.INC_CONT_MODE then
@@ -227,10 +227,10 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
                     elseif cmd == DTV_RTU_S_CMDS.DEC_CONT_MODE then
                         _dec_cont_mode()
                     else
-                        log.debug(util.c(log_tag, "unrecognized in-queue command ", cmd))
+                        log.debug(util.c(log_tag, "comando da fila não reconhecido ", cmd))
                     end
                 elseif msg.qtype == mqueue.TYPE.DATA then
-                    -- instruction with body
+                    -- instrução com corpo
                     local cmd = msg.message ---@type queue_data
                     if cmd.key == DTV_RTU_S_DATA.SET_CONT_MODE then
                         if cmd.val == CONTAINER_MODE.BOTH or
@@ -238,22 +238,22 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
                            cmd.val == CONTAINER_MODE.EMPTY then
                             _set_cont_mode(cmd.val)
                         else
-                            log.debug(util.c(log_tag, "unrecognized container mode \"", cmd.val, "\""))
+                            log.debug(util.c(log_tag, "modo de contêiner não reconhecido \"", cmd.val, "\""))
                         end
                     else
-                        log.debug(util.c(log_tag, "unrecognized in-queue data ", cmd.key))
+                        log.debug(util.c(log_tag, "dado da fila não reconhecido ", cmd.key))
                     end
                 end
             end
 
-            -- max 100ms spent processing queue
+            -- máximo de 100ms gastos processando a fila
             if util.time() - time_now > 100 then
-                log.warning(log_tag .. "exceeded 100ms queue process limit")
+                log.warning(log_tag .. "limite de 100ms de processamento da fila excedido")
                 break
             end
         end
 
-        -- try to resend mode if needed
+        -- tentar reenviar o modo se necessário
         if self.resend_mode then
             self.resend_mode = false
             _set_cont_mode(self.mode_cmd)
@@ -261,7 +261,7 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
 
         time_now = util.time()
 
-        -- handle periodics
+        -- tratar periódicos
 
         if self.periodics.next_formed_req <= time_now then _request_formed(time_now) end
 
@@ -274,14 +274,14 @@ function dynamicv.new(session_id, unit_id, advert, out_queue)
         self.session.post_update()
     end
 
-    -- invalidate build cache
+    -- invalidar cache de build
     function public.invalidate_cache()
         self.periodics.next_formed_req = 0
         self.periodics.next_build_req = 0
         self.has_build = false
     end
 
-    -- get the unit session database
+    -- obter o banco de dados da sessão da unidade
     ---@nodiscard
     function public.get_db() return self.db end
 

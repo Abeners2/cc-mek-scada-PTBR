@@ -16,14 +16,14 @@ local cpair = core.cpair
 
 local config = coordinator.config
 
--- front panel styling
+-- estilo do painel frontal
 
 style.fp_theme = themes.sandstone
 style.fp = themes.get_fp_style(style.fp_theme)
 
 style.led_grn = cpair(colors.green, colors.green_off)
 
--- main GUI styling
+-- estilo da GUI principal
 
 ---@class theme
 local smooth_stone = {
@@ -51,7 +51,7 @@ local smooth_stone = {
 
     colors = themes.smooth_stone.colors,
 
-    -- color re-mappings for assistive modes
+    -- remapeamento de cores para modos assistivos
     color_modes = themes.smooth_stone.color_modes
 }
 
@@ -81,13 +81,13 @@ local deepslate = {
 
     colors = themes.deepslate.colors,
 
-    -- color re-mappings for assistive modes
+    -- remapeamento de cores para modos assistivos
     color_modes = themes.deepslate.color_modes
 }
 
 style.theme = smooth_stone
 
--- set themes per configurations
+-- define os temas conforme a configuracao
 ---@param main UI_THEME main UI theme
 ---@param fp FP_THEME front panel theme
 ---@param color_mode COLOR_MODE the color mode to use
@@ -112,13 +112,13 @@ function style.set_themes(main, fp, color_mode)
     style.root = cpair(style.theme.text, style.theme.bg)
     style.label = cpair(style.theme.label, style.theme.bg)
 
-    -- high contrast text (also tags)
+    -- texto de alto contraste (tambem tags)
     style.hc_text = cpair(style.theme.text, style.theme.text_inv)
-    -- text on default background
+    -- texto no fundo padrao
     style.text_colors = cpair(style.theme.text, style.theme.bg)
-    -- label & unit colors
+    -- cores de rotulo e unidade
     style.lu_colors = cpair(style.theme.label, style.theme.label)
-    -- label & unit colors (darker if set)
+    -- cores de rotulo e unidade (mais escuras se definido)
     style.lu_colors_dark = cpair(style.theme.label_dark, style.theme.label_dark)
 
     style.ind_grn = cpair(util.trinary(colorblind, colors.blue, colors.green), style.ind_bkg)
@@ -135,7 +135,7 @@ function style.set_themes(main, fp, color_mode)
     style.fp = themes.get_fp_style(style.fp_theme)
 end
 
--- COMMON COLOR PAIRS --
+-- PARES DE CORES COMUNS --
 
 style.wh_gray = cpair(colors.white, colors.gray)
 
@@ -148,106 +148,106 @@ style.lg_gray = cpair(colors.lightGray, colors.gray)
 style.lg_white = cpair(colors.lightGray, colors.white)
 style.gray_white = cpair(colors.gray, colors.white)
 
--- UI COMPONENTS --
+-- COMPONENTES DE UI --
 
 style.reactor = {
-    -- reactor states<br>
+    -- estados do reator<br>
     ---@see REACTOR_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "PLC OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "PLC  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "DISABLED" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" },
-        { color = cpair(colors.black, colors.red),    text = "SCRAMMED" },
-        { color = cpair(colors.black, colors.red),    text = "FORCE DISABLED" }
+        { color = cpair(colors.black, colors.yellow), text = "PLC OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "PLC  FALHA" },
+        { color = cpair(colors.white, colors.gray),   text = "DESATIVADO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" },
+        { color = cpair(colors.black, colors.red),    text = "EM SCRAM" },
+        { color = cpair(colors.black, colors.red),    text = "DESAT. FORCADO" }
     }
 }
 
 style.boiler = {
-    -- boiler states<br>
+    -- estados da caldeira<br>
     ---@see BOILER_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" }
+        { color = cpair(colors.black, colors.yellow), text = "OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "RTU  FALHA" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" }
     }
 }
 
 style.turbine = {
-    -- turbine states<br>
+    -- estados da turbina<br>
     ---@see TURBINE_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" },
-        { color = cpair(colors.black, colors.red),    text = "TRIP" }
+        { color = cpair(colors.black, colors.yellow), text = "OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "RTU  FALHA" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" },
+        { color = cpair(colors.black, colors.red),    text = "DESARME" }
     }
 }
 
 style.dtank = {
-    -- dynamic tank states<br>
+    -- estados do tanque dinamico<br>
     ---@see TANK_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
+        { color = cpair(colors.black, colors.yellow), text = "OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "RTU  FALHA" },
         { color = cpair(colors.black, colors.green),  text = "ONLINE" },
-        { color = cpair(colors.black, colors.yellow), text = "LOW FILL" },
-        { color = cpair(colors.black, colors.green),  text = "FILLED" }
+        { color = cpair(colors.black, colors.yellow), text = "NIVEL BAIXO" },
+        { color = cpair(colors.black, colors.green),  text = "CHEIO" }
     }
 }
 
 style.ess = {
-    -- induction matrix and energy core states<br>
+    -- estados da matriz de inducao e do nucleo de energia<br>
     ---@see ESS_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
+        { color = cpair(colors.black, colors.yellow), text = "OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "RTU  FALHA" },
         { color = cpair(colors.black, colors.green),  text = "ONLINE" },
-        { color = cpair(colors.black, colors.yellow), text = "LOW CHARGE" },
-        { color = cpair(colors.black, colors.yellow), text = "HIGH  CHARGE" }
+        { color = cpair(colors.black, colors.yellow), text = "CARGA BAIXA" },
+        { color = cpair(colors.black, colors.yellow), text = "CARGA  ALTA" }
     }
 }
 
 style.sps = {
-    -- SPS states<br>
+    -- estados do SPS<br>
     ---@see SPS_STATE
     states = {
-        { color = cpair(colors.black, colors.yellow), text = "OFF-LINE" },
-        { color = cpair(colors.black, colors.orange), text = "NOT FORMED" },
-        { color = cpair(colors.black, colors.orange), text = "RTU  FAULT" },
-        { color = cpair(colors.white, colors.gray),   text = "IDLE" },
-        { color = cpair(colors.black, colors.green),  text = "ACTIVE" }
+        { color = cpair(colors.black, colors.yellow), text = "OFFLINE" },
+        { color = cpair(colors.black, colors.orange), text = "NAO FORMADO" },
+        { color = cpair(colors.black, colors.orange), text = "RTU  FALHA" },
+        { color = cpair(colors.white, colors.gray),   text = "OCIOSO" },
+        { color = cpair(colors.black, colors.green),  text = "ATIVO" }
     }
 }
 
--- get waste styling, which depends on the configuration
+-- obtem o estilo de residuos, que depende da configuracao
 ---@return { states: { color: color, text: string }, states_abbrv: { color: color, text: string }, options: string[], unit_opts: { text: string, fg_bg: cpair, active_fg_bg:cpair } }
 function style.get_waste()
     local pu_color = util.trinary(config.GreenPuPellet, colors.green, colors.cyan)
     local po_color = util.trinary(config.GreenPuPellet, colors.cyan, colors.green)
 
     return {
-        -- auto waste processing states
+        -- estados do processamento automatico de residuos
         states = {
-            { color = cpair(colors.black, pu_color),      text = "PLUTONIUM" },
-            { color = cpair(colors.black, po_color),      text = "POLONIUM" },
-            { color = cpair(colors.black, colors.purple), text = "ANTI MATTER" }
+            { color = cpair(colors.black, pu_color),      text = "PLUTONIO" },
+            { color = cpair(colors.black, po_color),      text = "POLONIO" },
+            { color = cpair(colors.black, colors.purple), text = "ANTIMATERIA" }
         },
         states_abbrv = {
             { color = cpair(colors.black, pu_color),      text = "Pu" },
             { color = cpair(colors.black, po_color),      text = "Po" },
             { color = cpair(colors.black, colors.purple), text = "AM" }
         },
-        -- process radio button options
-        options = { "Plutonium", "Polonium", "Antimatter" },
-        -- unit waste selection
+        -- opcoes do botao de selecao do processo
+        options = { "Plutonio", "Polonio", "Antimateria" },
+        -- selecao de residuo da unidade
         unit_opts = {
             { text = "Auto", fg_bg = cpair(colors.black, colors.lightGray), active_fg_bg = cpair(colors.white, colors.gray) },
             { text = "Pu", fg_bg = cpair(colors.black, colors.lightGray), active_fg_bg = cpair(colors.black, pu_color) },

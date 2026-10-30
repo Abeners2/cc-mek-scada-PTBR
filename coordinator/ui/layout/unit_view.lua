@@ -1,10 +1,10 @@
 --
--- Reactor Unit SCADA Coordinator GUI
+-- GUI do Coordenador SCADA da Unidade de Reator
 --
 
 local unit_detail = require("coordinator.ui.components.unit_detail")
 
--- create a unit view
+-- cria uma visualizacao de unidade
 ---@param main DisplayBox main displaybox
 ---@param id integer
 local function init(main, id)

@@ -42,12 +42,12 @@ local self = {
 
 -- report successful completion of the check
 local function check_complete()
-    TextBox{parent=self.sc_log,text="> all tests passed!",fg_bg=cpair(colors.blue,colors._INHERIT)}
+    TextBox{parent=self.sc_log,text="> todos os testes passaram!",fg_bg=cpair(colors.blue,colors._INHERIT)}
     TextBox{parent=self.sc_log,text=""}
     local more = Div{parent=self.sc_log,height=3,fg_bg=cpair(colors.gray,colors._INHERIT)}
-    TextBox{parent=more,text="if you still have a problem:"}
-    TextBox{parent=more,text="- check the wiki on GitHub"}
-    TextBox{parent=more,text="- ask for help on GitHub discussions or Discord"}
+    TextBox{parent=more,text="se ainda tiver um problema:"}
+    TextBox{parent=more,text="- consulte a wiki no GitHub"}
+    TextBox{parent=more,text="- peça ajuda nas discussões do GitHub ou no Discord"}
 end
 
 -- send a management packet to the supervisor (one-time broadcast)
@@ -68,7 +68,7 @@ local function handle_packet(packet)
     local error_msg = nil
 
     if packet.scada_frame.local_channel() ~= self.settings.PLC_Channel then
-        error_msg = "error: unknown receive channel"
+        error_msg = "erro: canal de recebimento desconhecido"
     elseif packet.scada_frame.remote_channel() == self.settings.SVR_Channel and packet.scada_frame.protocol() == PROTOCOL.SCADA_MGMT then
         if packet.type == MGMT_TYPE.ESTABLISH then
             if packet.length == 1 then
@@ -77,19 +77,19 @@ local function handle_packet(packet)
                 if est_ack== ESTABLISH_ACK.ALLOW then
                     -- success
                 elseif est_ack == ESTABLISH_ACK.DENY then
-                    error_msg = "error: supervisor connection denied"
+                    error_msg = "erro: conexão com o supervisor negada"
                 elseif est_ack == ESTABLISH_ACK.COLLISION then
-                    error_msg = "another reactor PLC is connected with this reactor unit ID"
+                    error_msg = "outro PLC de reator está conectado com este ID de unidade de reator"
                 elseif est_ack == ESTABLISH_ACK.BAD_VERSION then
-                    error_msg = "reactor PLC comms version does not match supervisor comms version, make sure both devices are up-to-date (ccmsi update)"
+                    error_msg = "a versão de comunicação do PLC do reator não corresponde à do supervisor, garanta que ambos os dispositivos estejam atualizados (ccmsi update)"
                 else
-                    error_msg = "error: invalid reply from supervisor"
+                    error_msg = "erro: resposta inválida do supervisor"
                 end
             else
-                error_msg = "error: invalid reply length from supervisor"
+                error_msg = "erro: tamanho de resposta inválido do supervisor"
             end
         else
-            error_msg = "error: didn't get an establish reply from supervisor"
+            error_msg = "erro: não recebeu resposta de estabelecimento do supervisor"
         end
     end
 
@@ -128,27 +128,27 @@ local function self_check()
     -- check for comms modems
     if cfg.Networked then
         if cfg.WiredModem then
-            self.self_check_msg("> check wired comms modem connected...", self.wd_modem, "please connect the wired comms modem " .. cfg.WiredModem)
+            self.self_check_msg("> verificar modem cabeado conectado...", self.wd_modem, "conecte o modem de comunicação cabeado " .. cfg.WiredModem)
         end
 
         if cfg.WirelessModem then
-            self.self_check_msg("> check wireless/ender modem connected...", self.wl_modem, "please connect an ender or wireless modem for wireless comms")
+            self.self_check_msg("> verificar modem sem fio/ender conectado...", self.wl_modem, "conecte um modem ender ou sem fio para comunicação sem fio")
         end
     end
 
-    self.self_check_msg("> check fission reactor connected...", reactor ~= nil, "please connect the reactor PLC to the reactor's fission reactor logic adapter")
-    self.self_check_msg("> check fission reactor formed...")
+    self.self_check_msg("> verificar reator de fissão conectado...", reactor ~= nil, "conecte o PLC do reator ao adaptador lógico do reator de fissão do reator")
+    self.self_check_msg("> verificar reator de fissão formado...")
     -- this consumes events, but that is fine here
-    self.self_check_msg(nil, reactor and reactor.isFormed(), "ensure the fission reactor multiblock is formed")
-    self.self_check_msg("> check for no more than one reactor...", #ppm.get_all_devices("fissionReactorLogicAdapter") <= 1, "there MUST be no more than one reactor connected, as a PLC uses the first one it finds, which may not always be the same one")
+    self.self_check_msg(nil, reactor and reactor.isFormed(), "garanta que a multiestrutura do reator de fissão esteja formada")
+    self.self_check_msg("> verificar não mais que um reator...", #ppm.get_all_devices("fissionReactorLogicAdapter") <= 1, "NÃO pode haver mais de um reator conectado, pois um PLC usa o primeiro que encontra, que nem sempre é o mesmo")
 
-    self.self_check_msg("> check configuration...", valid_cfg, "go through Configure System and apply settings to set any missing settings and repair any corrupted ones")
+    self.self_check_msg("> verificar configuração...", valid_cfg, "passe por Configurar Sistema e aplique as configurações para definir as que faltam e reparar as corrompidas")
 
     if cfg.Networked and valid_cfg then
         self.checking_wl = true
 
         if cfg.WirelessModem and self.wl_modem then
-            self.self_check_msg("> check wireless supervisor connection...")
+            self.self_check_msg("> verificar conexão sem fio com o supervisor...")
 
             -- init mac as needed
             if cfg.AuthKey and string.len(cfg.AuthKey) >= 8 then
@@ -173,7 +173,7 @@ local function self_check()
             -- skip to wired
             util.push_event("conn_test_complete", true)
         else
-            self.self_check_msg("> no modem, can't test supervisor connection", false)
+            self.self_check_msg("> sem modem, não é possível testar a conexão com o supervisor", false)
         end
     else
         if self.self_check_pass then check_complete() end
@@ -209,7 +209,7 @@ function check.create(main_pane, settings_cfg, check_sys, style)
 
     local sc = Div{parent=check_sys,x=2,y=4,width=49}
 
-    TextBox{parent=check_sys,y=2,text=" Reactor PLC Self-Check",fg_bg=bw_fg_bg}
+    TextBox{parent=check_sys,y=2,text=" Autoverificação do PLC do Reator",fg_bg=bw_fg_bg}
 
     self.sc_log = ListBox{parent=sc,y=1,height=12,width=49,scroll_height=100,fg_bg=bw_fg_bg,nav_fg_bg=g_lg_fg_bg,nav_active=cpair(colors.black,colors.gray)}
 
@@ -223,7 +223,7 @@ function check.create(main_pane, settings_cfg, check_sys, style)
         end
 
         if type(fail_msg) == "string" then
-            TextBox{parent=last_check[1],x=last_check[2],y=1,text=tri(success,"PASS","FAIL"),fg_bg=tri(success,cpair(colors.green,colors._INHERIT),cpair(colors.red,colors._INHERIT))}
+            TextBox{parent=last_check[1],x=last_check[2],y=1,text=tri(success,"OK","FALHA"),fg_bg=tri(success,cpair(colors.green,colors._INHERIT),cpair(colors.red,colors._INHERIT))}
 
             if not success then
                 local fail = Div{parent=self.sc_log,height=#util.strwrap(fail_msg, 46)}
@@ -234,8 +234,8 @@ function check.create(main_pane, settings_cfg, check_sys, style)
         end
     end
 
-    PushButton{parent=sc,y=14,text="\x1b Back",callback=function()exit_self_check(main_pane)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
-    self.run_test_btn = PushButton{parent=sc,x=40,y=14,min_width=10,text="Run Test",callback=function()self_check()end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
+    PushButton{parent=sc,y=14,text="\x1b Voltar",callback=function()exit_self_check(main_pane)end,fg_bg=nav_fg_bg,active_fg_bg=btn_act_fg_bg}
+    self.run_test_btn = PushButton{parent=sc,x=40,y=14,min_width=10,text="Testar",callback=function()self_check()end,fg_bg=cpair(colors.black,colors.blue),active_fg_bg=btn_act_fg_bg,dis_fg_bg=btn_dis_fg_bg}
 end
 
 -- handle incoming modem messages
@@ -265,12 +265,12 @@ function check.conn_test_callback(pass)
 
     if self.checking_wl then
         if not pass then
-            self.self_check_msg(nil, false, "make sure your supervisor is running, listening on the wireless interface, your channels are correct, trusted ranges are set properly (if enabled), facility keys match (if set), and if you are using wireless modems rather than ender modems, that your devices are close together in the same dimension")
+            self.self_check_msg(nil, false, "verifique se o supervisor está em execução, escutando na interface sem fio, se os canais estão corretos, se os alcances confiáveis estão configurados corretamente (se ativados), se as chaves da instalação coincidem (se definidas) e, se usa modems sem fio em vez de ender, se os dispositivos estão próximos na mesma dimensão")
         end
 
         if cfg.WiredModem and self.wd_modem then
             self.checking_wl = false
-            self.self_check_msg("> check wired supervisor connection...")
+            self.self_check_msg("> verificar conexão cabeada com o supervisor...")
 
             comms.set_trusted_range(0)
 
@@ -290,7 +290,7 @@ function check.conn_test_callback(pass)
         end
     else
         if not pass then
-            self.self_check_msg(nil, false, "make sure your supervisor is running, listening on the wired interface, the wire is intact, and your channels are correct")
+            self.self_check_msg(nil, false, "verifique se o supervisor está em execução, escutando na interface cabeada, se o cabo está intacto e se os canais estão corretos")
         end
 
         if self.self_check_pass then check_complete() end
